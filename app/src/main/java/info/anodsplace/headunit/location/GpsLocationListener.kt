@@ -16,7 +16,6 @@ import info.anodsplace.headunit.contract.LocationUpdateIntent
 
 class GpsLocationListener constructor(private val context: Context): LocationListener {
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-    private val broadcastManager = App.provide(context).localBroadcastManager
     private var requested: Boolean = false
 
     @SuppressLint("MissingPermission")
@@ -35,7 +34,7 @@ class GpsLocationListener constructor(private val context: Context): LocationLis
     }
 
     override fun onLocationChanged(location: Location) {
-        broadcastManager.sendBroadcast(LocationUpdateIntent(location))
+        context.sendBroadcast(LocationUpdateIntent(location))
     }
 
     override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {

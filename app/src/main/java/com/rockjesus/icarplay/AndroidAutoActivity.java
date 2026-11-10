@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import io.github.jqssun.airplay.R;
 import info.anodsplace.headunit.App;
 import info.anodsplace.headunit.aap.AapProjectionActivity;
 import info.anodsplace.headunit.aap.AapService;

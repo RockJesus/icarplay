@@ -14,7 +14,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import android.widget.Toast
 import info.anodsplace.headunit.App
-import info.anodsplace.headunit.R
+import io.github.jqssun.airplay.R
 import info.anodsplace.headunit.aap.protocol.messages.NightModeEvent
 import info.anodsplace.headunit.connection.AccessoryConnection
 import info.anodsplace.headunit.connection.SocketAccessoryConnection
@@ -74,7 +74,6 @@ class AapService : Service(), UsbReceiver.Listener, AccessoryConnection.Listener
 
         val notification = NotificationCompat.Builder(this, App.defaultChannel)
                 .setSmallIcon(R.drawable.ic_stat_aa)
-                .setTicker("Android Auto 运行中")
                 .setWhen(System.currentTimeMillis())
                 .setContentTitle("Android Auto 运行中")
                 .setContentText("手机已连接或正在连接")
@@ -84,11 +83,11 @@ class AapService : Service(), UsbReceiver.Listener, AccessoryConnection.Listener
                 .setPriority(Notification.PRIORITY_HIGH)
                 .build()
 
+        startForeground(1, notification)
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             startService(GpsLocationService.intent(this))
         }
-
-        startForeground(1, notification)
 
         accessoryConnection!!.connect(this)
 

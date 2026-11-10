@@ -3,7 +3,7 @@ package info.anodsplace.headunit.app
 import android.app.Activity
 import android.os.Bundle
 
-import info.anodsplace.headunit.R
+import io.github.jqssun.airplay.R
 import info.anodsplace.headunit.utils.hideSystemUI
 
 

@@ -10,7 +10,7 @@ import android.view.MotionEvent
 import android.view.SurfaceHolder
 
 import info.anodsplace.headunit.App
-import info.anodsplace.headunit.R
+import io.github.jqssun.airplay.R
 import info.anodsplace.headunit.aap.protocol.Screen
 import info.anodsplace.headunit.aap.protocol.messages.TouchEvent
 import info.anodsplace.headunit.aap.protocol.messages.VideoFocusEvent
@@ -31,7 +31,7 @@ class AapProjectionActivity : SurfaceActivity(), SurfaceHolder.Callback {
 
     private val keyCodeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val event = intent.getParcelableExtra<KeyEvent>(KeyIntent.extraEvent)
+            val event = intent.getParcelableExtra<KeyEvent>(KeyIntent.extraEvent) ?: return
             onKeyEvent(event.keyCode, event.action == KeyEvent.ACTION_DOWN)
         }
     }
@@ -44,7 +44,7 @@ class AapProjectionActivity : SurfaceActivity(), SurfaceHolder.Callback {
             return
         }
 
-        surface = findViewById(R.id.surface)
+        surface = findViewById<ProjectionView>(R.id.surface)
         screen = Screen.forResolution(App.provide(this).settings.resolution)
 
         surface.setSurfaceCallback(this)

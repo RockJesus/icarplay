@@ -1,0 +1,35 @@
+iCarPlay third-party notices
+============================
+
+Android Auto receiver / AAP protocol layer
+------------------------------------------
+This project includes code derived from:
+
+  android-auto-headunit
+  https://github.com/harryjph/android-auto-headunit
+  Copyright (C) Harry J. Phillips and contributors
+  License: GNU Affero General Public License v3.0 (AGPL-3.0)
+
+The Android Auto module includes the AAP framing, USB AOA transport,
+TLS handshake, audio/video decoding, touch/input, sensor and location
+handling. It is combined with the rest of iCarPlay under the terms of
+AGPL-3.0; the full AGPL-3.0 text is in LICENSE-AGPL-3.0.txt.
+
+Because AGPL-3.0 and GPL-3.0 are compatible for combination under
+GPLv3 section 13, the combined work is distributed as AGPL-3.0. The
+AirPlay portion remains available under GPL-3.0 as described in the
+upstream notices below.
+
+AirPlay / UxPlay
+----------------
+AirPlay support is derived from:
+
+  jqssun/android-airplay-server
+  https://github.com/jqssun/android-airplay-server
+  and FDH2/UxPlay
+  https://github.com/FDH2/UxPlay
+  License: GPL-3.0
+
+No Apple MFi authentication material, Apple private key, Google
+proprietary Android Auto APK, or extracted commercial head-unit
+firmware is included in this repository.
