@@ -3,7 +3,9 @@
 面向 **2020 款福特锐际 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
 **一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、CarPlay 入口和内置小白点**。
 
-> **当前开发版本 v0.2.0（Android Auto 分支构建完成后发布）**
+> **当前版本 v0.2.0**
+>
+> 下载：[`icarplay-v0.2.0.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.2.0/icarplay-v0.2.0.apk)
 >
 > - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
 >   支持 iPhone / iPad / Mac 的屏幕镜像与音频，Android 7.0+ 可运行。
