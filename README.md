@@ -1,93 +1,108 @@
-# AirPlay Receiver for Android
+# iCarPlay
 
-[![Stars](https://img.shields.io/github/stars/jqssun/android-airplay-server)](https://github.com/jqssun/android-airplay-server)
-[![GitHub](https://img.shields.io/github/downloads/jqssun/android-airplay-server/total?label=GitHub&logo=GitHub)](https://github.com/jqssun/android-airplay-server/releases)
-[![license](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/jqssun/android-airplay-server/blob/main/LICENSE)
-[![build](https://img.shields.io/github/actions/workflow/status/jqssun/android-airplay-server/apk.yml?label=build)](https://github.com/jqssun/android-airplay-server/actions/workflows/apk.yml)
-[![release](https://img.shields.io/github/v/release/jqssun/android-airplay-server)](https://github.com/jqssun/android-airplay-server/releases)
+面向 **2020 款福特锐际 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
+**一个 APK 内同时提供 AirPlay 接收、CarPlay 入口和内置小白点**。
 
-A fully featured free and open-source implementation of AirPlay for Android that turns your device into an AirPlay-compatible display and speaker, based on [UxPlay](https://github.com/FDH2/UxPlay). It is the first open-source AirPlay 2 receiver for Android and Android TV, and works with iOS/iPadOS, macOS devices as well as other sender implementations.
+> **当前版本 v0.1.0**
+>
+> - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
+>   支持 iPhone / iPad / Mac 的屏幕镜像与音频，Android 7.0+ 可运行。
+> - **CarPlay：接入层已搭建**。认证后端、Apple USB 枚举、有线/无线入口、设置页已完成；
+>   **真正的 iAP2 / MFi / AirPlay 隧道尚未接入**，没有 Apple MFi 认证材料时 iPhone 不会完成配对。
+> - **内置小白点：已接入**。悬浮球由本 APK 自带，不需要第二个悬浮球 App。
 
-[<img height="48" alt="Get it on Google Play" src="https://jqssun.github.io/images/badges/google-play-store.svg">](https://play.google.com/store/apps/details?id=io.github.jqssun.airplay)
-[<img height="48" alt="Get it on F-Droid" src="https://jqssun.github.io/images/badges/fdroid.svg">](https://f-droid.org/packages/io.github.jqssun.airplay)
-[<img height="48" alt="Get it on GitHub" src="https://jqssun.github.io/images/badges/github.svg">](https://github.com/jqssun/android-airplay-server/releases/latest)
+## 能力矩阵
 
-<video loop src='https://github.com/user-attachments/assets/79ed7c0c-0102-43cc-8816-4f00ce6a4199' alt="demo" width="200" style="display: block; margin: auto;"></video>
+| 能力 | 状态 | 说明 |
+|---|---|---|
+| AirPlay 屏幕镜像 | ✅ | iOS/iPadOS/macOS 同网发现，H.264/H.265 解码 |
+| AirPlay 音频 | ✅ | AAC-ELD / AAC-LC / ALAC，AudioTrack 输出 |
+| AirPlay 视频投放 | ✅ | HLS / 远程视频，播放控制 |
+| 内置小白点 | ✅ | 可拖动，点按弹出 AirPlay / CarPlay / 设置 / 主界面 / 关闭 |
+| CarPlay 有线入口 | ⚠️ 骨架 | USB 设备枚举 + 启动状态，协议引擎未接入 |
+| CarPlay 无线入口 | ⚠️ 骨架 | Wi-Fi 状态 + 启动状态，协议引擎未接入 |
+| CarPlay 认证后端 | ⚠️ 骨架 | 本地证书 / MFi 芯片 / 远程 MFI 三选一，仅保存与检查 |
+| 不需要第二个 APK | ✅ | 悬浮球、AirPlay、CarPlay 入口都在同一个包里 |
 
-## Compatibility
+## 安装（SYNC+ 车机）
 
-- Android 7.0+, including Android TV
-- AirPlay devices on the same subnet, including iOS/iPadOS, macOS devices, or other sender implementations
+1. U 盘格式 **FAT32**，把 `icarplay-v0.1.0.apk` 放根目录；
+2. 输入法漏洞进安卓原生设置 → 存储 → U 盘 → 安装；
+3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
+4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
+5. 授予“显示在上层 / 悬浮窗”，点“开启内置小白点”；
+6. 点悬浮球 → AirPlay 开始接收；CarPlay 进入认证/连接页。
 
-## Features
+详细步骤与判读见 [`docs/INSTALL.md`](docs/INSTALL.md)。
 
-- Screen mirroring with H.264 and H.265 (HEVC) video decoding
-- Audio streaming with AAC-ELD, AAC-LC and ALAC audio decoding
-- Video playback with support for HLS, downloads, and remote controls
-- Music playback with track information, cover art, and remote controls
-- Support for Android TV with directional pad navigation and seeking controls
-- Support for Picture-in-Picture, automatic resolution and mode switching
-- Optional PIN authentication
-- Video resolution, overscan, and frame rate control
-- Audio latency control and support for software decoder fallback
-- Debug overlay with real-time statistics (FPS, bitrate, codec, resolution, frame count, audio volume, etc.)
-- Android native media session integration with notification controls
-- Wired secondary display for macOS/iPadOS devices over USB tethering
+## 两个核心的边界
 
-> [!WARNING]
-> DRM content (e.g. from the Apple TV application) is not supported.
+### AirPlay
 
-## Configure from ADB
+- 不需要 MFi，iPhone 控制中心选“屏幕镜像”即可发现 `iCarPlay`；
+- 车机与 iPhone 必须在同一局域网（推荐外接 5GHz 路由，SYNC+ 自带热点 iPhone 搜不到）；
+- **单向输出**：没有触控回传，不能在车机上反向控制 iPhone；
+- DRM 内容（Netflix、Apple TV+）黑屏；
+- 1920×720 是 8:3，16:9 的 iPhone 画面会留黑边。
 
-On devices without a display, settings can also be changed over ADB. The receiver is protected by `android.permission.DUMP` so regular installed apps cannot change them. Values are passed as text using `--es`. Using `adb shell`:
+### CarPlay
+
+- 需要 Apple MFi 认证身份，三选一：本地 `.p7b` + `.pk8`、MFi 芯片、远程 MFI 服务；
+- 当前仓库只完成接入层，不含 iAP2 / MFi 握手 / CarPlay AirPlay 隧道；
+- 没有认证材料时，`CarPlayActivity` 的有线/无线按钮只会返回“未配置认证”；
+- 接入协议栈的路线见 [`docs/CARPLAY.md`](docs/CARPLAY.md)。
+
+## 目录
+
+```
+icarplay/
+├── app/
+│   ├── src/main/kotlin/io/github/jqssun/airplay/   # 上游 AirPlay 引擎与 Compose UI
+│   ├── src/main/java/com/rockjesus/icarplay/       # iCarPlay 壳层
+│   │   ├── IcarLauncherActivity.java
+│   │   ├── FloatService.java
+│   │   ├── CarPlayActivity.java
+│   │   ├── CarPlayCore.java
+│   │   └── AuthSettingsActivity.java
+│   ├── src/main/cpp/                               # UxPlay / FFmpeg / OpenSSL 原生栈
+│   └── src/main/AndroidManifest.xml
+├── docs/
+│   ├── INSTALL.md
+│   ├── AIRPLAY.md
+│   ├── CARPLAY.md
+│   └── BUILD.md
+├── .github/workflows/apk.yml                       # GitHub Actions 构建
+└── README.md
+```
+
+## 构建
+
+CI（推荐）：
 
 ```bash
-export KEY="server_name" VALUE="Speaker"
-am broadcast -n io.github.jqssun.airplay/.SettingsReceiver -a io.github.jqssun.airplay.SET_SETTING --es key "$KEY" --es value "$VALUE"
+gh workflow run apk.yml -R RockJesus/icarplay --ref main
 ```
 
-To list all settings with their current values as JSON:
-
-```bash
-am start -n io.github.jqssun.airplay/.MainActivity
-am broadcast -n io.github.jqssun.airplay/.SettingsReceiver -a io.github.jqssun.airplay.LIST_SETTINGS
-```
-
-## Implementation
-
-This application uses the C-based [UxPlay](https://github.com/FDH2/UxPlay) library to implement the AirPlay/RAOP protocol, with a JNI bridge to the Android application layer. Audio can be decoded via MediaCodec or a software ALAC decoder, while mirroring video is decoded via MediaCodec and rendered to a SurfaceView. HLS sessions are served through a local playlist proxy.
-
-When using USB tethering, the Android device can act as a reliable secondary display over a wired connection. Apple devices natively support USB tethering over CDC-NCM, so on Android devices that default to RNDIS, you may need to switch to CDC-NCM over ADB:
-
-```bash
-adb shell settings put global tether_force_usb_functions 1
-```
-
-```mermaid
-flowchart LR
-    AppleDevice["Apple Device (Sender)"]
-    UxPlay["UxPlay (C/JNI)<br/>RAOP + mDNS<br/>FairPlay + HLS"]
-    AndroidApp["Android (Receiver)<br/>MediaCodec + AudioTrack<br/>ExoPlayer (HLS)"]
-
-    AppleDevice -- "RAOP / HLS" --> UxPlay
-    UxPlay --> AndroidApp
-```
-
-CMake is used for native C/C++ components under [`app/src/main/cpp`](app/src/main/cpp). Submodules must be initialized before building. 
+本地构建需要 JDK 21、Android SDK 37、NDK `27.0.12077973`，并初始化子模块：
 
 ```bash
 git submodule update --init --recursive
-./gradlew assembleDebug
+./gradlew assembleRelease
 ```
 
-Check out the [CI](https://github.com/jqssun/android-airplay-server/blob/main/.github/workflows/apk.yml) for more details on reproducible builds.
+详见 [`docs/BUILD.md`](docs/BUILD.md)。
 
-## Credits
+## 合规与来源
 
-- [UxPlay](https://github.com/FDH2/UxPlay) for the AirPlay/RAOP server implementation
-- [FFmpeg](https://ffmpeg.org) for the lossless audio decoder
-- [Next Player](https://github.com/anilbeesetti/nextplayer) for the video player
+- 本仓库是 **GPL-3.0** 衍生作品，分发/修改需遵守 GPLv3。
+- AirPlay 协议栈来自 [`jqssun/android-airplay-server`](https://github.com/jqssun/android-airplay-server)，
+  其底层为 [`FDH2/UxPlay`](https://github.com/FDH2/UxPlay)，并保留上游版权与许可。
+- CarPlay 接入层的设计参考了 DiPlay / xcertplay / PlayPort 的公开架构，但**未包含**
+  任何 Apple 认证材料、私钥或他人提取的配件身份。
+- 本项目与 Apple、Ford、Baidu 均无关联。
 
----
+## 风险
 
-Disclaimer: This project is not affiliated with Apple Inc.
+- SYNC+ 有签名白名单，自签名包可能直接装不上；
+- 车机默认不自启，避免 Wi-Fi Direct 导致的重启循环；
+- AirPlay 长期稳定性、音频通道、1920×720 适配仍需实车验证。
