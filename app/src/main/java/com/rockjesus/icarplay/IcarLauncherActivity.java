@@ -54,7 +54,7 @@ public class IcarLauncherActivity extends Activity {
 
         TextView sub = new TextView(this);
         sub.setText("2020 福特锐际 · SYNC+ 1.0 · Android 8.1\n"
-                + "AirPlay + CarPlay + 内置小白点，一个 APK");
+                + "AirPlay + Android Auto + CarPlay + 内置小白点，一个 APK");
         sub.setTextColor(Color.parseColor("#8B949E"));
         sub.setTextSize(12);
         sub.setPadding(0, dp(6), 0, dp(12));
@@ -79,6 +79,12 @@ public class IcarLauncherActivity extends Activity {
         buttons.addView(makeButton("CarPlay 接收（有线 / 无线）", new View.OnClickListener() {
             public void onClick(View v) {
                 startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class));
+            }
+        }), wrap());
+
+        buttons.addView(makeButton("Android Auto 接收（USB / 无线）", new View.OnClickListener() {
+            public void onClick(View v) {
+                startActivity(new Intent(IcarLauncherActivity.this, AndroidAutoActivity.class));
             }
         }), wrap());
 
@@ -127,6 +133,7 @@ public class IcarLauncherActivity extends Activity {
                 + "· 悬浮球由本 APK 自带，不需要第二个小白点 App；\n"
                 + "· 默认不注册开机自启，避免 SYNC+ 重启循环；\n"
                 + "· AirPlay 不需要 MFi，iOS 可以直接发现并镜像；\n"
+                + "· Android Auto 有线走 USB AOA，无线需手机开启 Headunit Server；\n"
                 + "· CarPlay 需要 Apple MFi 认证身份，没有材料无法完成握手。");
         note.setTextColor(Color.parseColor("#8B949E"));
         note.setTextSize(11);
@@ -157,9 +164,25 @@ public class IcarLauncherActivity extends Activity {
                         + "内置小白点：" + (running ? "运行中" : "未运行") + "\n"
                         + "AirPlay 服务：" + (isAirPlayServiceRunning() ? "运行中" : "未运行") + "\n"
                         + "CarPlay 认证：" + auth + "\n"
-                        + "Apple USB 设备：" + (usb > 0 ? usb + " 个" : "未检测到"));
+                        + "Apple USB 设备：" + (usb > 0 ? usb + " 个" : "未检测到") + "\n"
+                        + "Android Auto：" + (isAndroidAutoServiceRunning() ? "服务运行中" : "未运行"));
 
         floatButton.setText(running ? "重启内置小白点" : "开启内置小白点");
+    }
+
+    @SuppressWarnings("deprecation")
+    private boolean isAndroidAutoServiceRunning() {
+        try {
+            ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            if (am == null) return false;
+            for (ActivityManager.RunningServiceInfo info : am.getRunningServices(Integer.MAX_VALUE)) {
+                if ("info.anodsplace.headunit.aap.AapService"
+                        .equals(info.service.getClassName())) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) { }
+        return false;
     }
 
     @SuppressWarnings("deprecation")

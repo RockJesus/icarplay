@@ -1,7 +1,7 @@
 package io.github.jqssun.airplay
 
-import android.app.Application
+import info.anodsplace.headunit.App
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
-class AirPlayApp : Application()
+class AirPlayApp : App()

@@ -126,6 +126,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines)
     implementation(libs.oboe)
 
+    // Android Auto AAP protobuf (generated sources committed under java/info/anodsplace/...)
+    implementation("com.google.protobuf:protobuf-lite:3.0.1")
+
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)

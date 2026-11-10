@@ -165,6 +165,9 @@ public class FloatService extends Service {
         panel.addView(panelButton("AirPlay", new View.OnClickListener() {
             public void onClick(View v) { open(MainActivity.class); }
         }));
+        panel.addView(panelButton("Android Auto", new View.OnClickListener() {
+            public void onClick(View v) { open(AndroidAutoActivity.class); }
+        }));
         panel.addView(panelButton("CarPlay", new View.OnClickListener() {
             public void onClick(View v) { open(CarPlayActivity.class); }
         }));
@@ -190,7 +193,7 @@ public class FloatService extends Service {
         panelParams.gravity = Gravity.TOP | Gravity.START;
         int screenH = getResources().getDisplayMetrics().heightPixels;
         panelParams.x = Math.max(0, ballParams.x - dp(56));
-        panelParams.y = Math.min(ballParams.y + dp(64), Math.max(0, screenH - dp(270)));
+        panelParams.y = Math.min(ballParams.y + dp(64), Math.max(0, screenH - dp(330)));
 
         wm.addView(panel, panelParams);
     }
