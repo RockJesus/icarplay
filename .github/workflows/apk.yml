@@ -1,4 +1,4 @@
-name: Generate APK
+name: Build iCarPlay APK
 
 env:
   main_project_module: app
@@ -6,7 +6,7 @@ env:
 on:
   push:
     branches:
-      - "release/**"
+      - "main"
     tags:
       - "v*.*.*"
   workflow_dispatch:
@@ -19,10 +19,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set TAG
-        run: |
-          echo "version=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' ${{ env.main_project_module }}/build.gradle.kts)" >> $GITHUB_ENV
-
       - name: Use JDK
         uses: actions/setup-java@v6
         with:
@@ -30,21 +26,13 @@ jobs:
           java-version: "21"
           cache: "gradle"
 
-      - name: Build
+      - name: Build unsigned release
         run: |
-          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
-          echo ${{ secrets.STORE }} | base64 -d > upload.jks
-          echo ${{ secrets.LOCAL }} | base64 -d > local.properties
-          chmod +x ./gradlew;
-          ./gradlew assembleRelease bundleRelease --stacktrace
-          rm upload.jks local.properties
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --stacktrace
 
-      - name: Publish (GitHub)
-        uses: softprops/action-gh-release@v3
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          name: v${{ env.version }}
-          tag_name: v${{ env.version }}
-          files: |
-            ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk
-            ${{ env.main_project_module }}/build/outputs/bundle/release/app-release.aab
+          name: icarplay-release-unsigned
+          path: app/build/outputs/apk/release/*.apk

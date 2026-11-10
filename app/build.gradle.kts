@@ -30,11 +30,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "io.github.jqssun.airplay"
+        applicationId = "com.rockjesus.icarplay"
         minSdk = 23
         targetSdk = 37
-        versionCode = 36
-        versionName = "0.0.36"
+        versionCode = 1
+        versionName = "0.1.0"
 
         externalNativeBuild {
             cmake {
@@ -55,7 +55,7 @@ android {
             ndk { abiFilters += allAbis }
         }
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfigs.findByName("release")?.let { signingConfig = it }
             ndk { abiFilters += allAbis }
