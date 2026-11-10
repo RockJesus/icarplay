@@ -4,7 +4,7 @@
 
     <!-- Notification -->
     <string name="notification_channel">AirPlay Service</string>
-    <string name="notification_title">AirPlay Server Running</string>
+    <string name="notification_title">iCarPlay 运行中</string>
     <string name="notification_text">Accepting AirPlay connections</string>
     <string name="notification_pin_title">AirPlay PIN Required</string>
     <string name="notification_pin_text">PIN: %1$s</string>

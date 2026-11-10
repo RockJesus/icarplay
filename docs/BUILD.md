@@ -51,8 +51,8 @@ $BT/apksigner sign \
   --ks-pass pass:******** \
   --key-pass pass:******** \
   --ks-key-alias icarplay \
-  --out icarplay-v0.1.0.apk icarplay-aligned.apk
-$BT/apksigner verify --print-certs icarplay-v0.1.0.apk
+  --out icarplay-v0.1.1.apk icarplay-aligned.apk
+$BT/apksigner verify --print-certs icarplay-v0.1.1.apk
 ```
 
 ## 本机环境注意
@@ -63,5 +63,5 @@ $BT/apksigner verify --print-certs icarplay-v0.1.0.apk
 ## 版本号
 
 - `app/build.gradle.kts` 的 `versionCode` / `versionName`；
-- Release tag 与 `versionName` 对齐，例如 `v0.1.0`；
+- Release tag 与 `versionName` 对齐，例如 `v0.1.1`；
 - 下一版按十进制递增：`0.1.0 → 0.2.0`（段内不超过 9）。
