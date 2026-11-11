@@ -33,3 +33,24 @@ AirPlay support is derived from:
 No Apple MFi authentication material, Apple private key, Google
 proprietary Android Auto APK, or extracted commercial head-unit
 firmware is included in this repository.
+
+
+Huawei HiCar receiver
+---------------------
+The HiCar receiver is derived from:
+
+  huducat586/hicar-android-receiver
+  https://github.com/huducat586/hicar-android-receiver
+  Version: 0.11.1 Preview
+  License: MIT (application and adaptation code)
+
+The native library libcarlink_hichain.so was taken from that project's
+official release APK. It statically links OpenHarmony DeviceAuth/HUKS/
+securec, mbedTLS, OpenSSL and cJSON. Their license texts are bundled in
+app/src/main/assets/hicar-licenses/; the upstream third-party notice is
+in THIRD_PARTY_NOTICES-HICAR.txt.
+
+This is an unofficial community receiver. It is not affiliated with,
+endorsed by, or certified by Huawei. HiCar and related marks belong to
+their respective owners. No Huawei proprietary APK, system image, or
+vendor research binary is included.

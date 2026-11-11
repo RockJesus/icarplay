@@ -1,16 +1,19 @@
 # iCarPlay
 
 面向 **2020 款福特锐际 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
-**一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、CarPlay 入口和内置小白点**。
+**一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置小白点**。
 
-> **当前版本 v0.2.0**
+> **当前版本 v0.3.0**
 >
-> 下载：[`icarplay-v0.2.0.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.2.0/icarplay-v0.2.0.apk)
+> 下载：[`icarplay-v0.3.0.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.3.0/icarplay-v0.3.0.apk)
 >
 > - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
 >   支持 iPhone / iPad / Mac 的屏幕镜像与音频，Android 7.0+ 可运行。
 > - **Android Auto：已接入协议层，待实车验证**。USB AOA 有线 + 手机 Headunit Server
 >   手动无线（TCP 5277）；H.264 解码、音频、触控、定位均已在代码里接通。
+> - **Huawei HiCar：已接入实验接收端**。来自 MIT 项目 `huducat586/hicar-android-receiver`，
+>   华为手机使用系统自带 HiCar，手机端不需要第二个 APK；无线实现原按 Android 10+ 设计，
+>   在锐际 Android 8.1 上属于**未验证的实验路径**，详见 [`docs/HICAR.md`](docs/HICAR.md)。
 > - **CarPlay：接入层已搭建**。认证后端、Apple USB 枚举、有线/无线入口、设置页已完成；
 >   **真正的 iAP2 / MFi / AirPlay 隧道尚未接入**，没有 Apple MFi 认证材料时 iPhone 不会完成配对。
 > - **内置小白点：已接入**。悬浮球由本 APK 自带，不需要第二个悬浮球 App。
@@ -24,20 +27,21 @@
 | AirPlay 视频投放 | ✅ | HLS / 远程视频，播放控制 |
 | Android Auto 有线（USB AOA） | ✅ 代码已接入 | 手机切 AOA 配件模式，进 AAP/TLS/H.264；需 USB Host + 数据口 |
 | Android Auto 无线（Headunit Server） | ⚠️ 实验 | 手机开 Headunit Server，同一 Wi-Fi，手动输入 IP:5277 |
-| 内置小白点 | ✅ | 可拖动，点按弹出 AirPlay / Android Auto / CarPlay / 设置 / 主界面 / 关闭 |
+| Huawei HiCar（华为手机） | ⚠️ 实验 | 来自 MIT 开源接收端；需手机原生 HiCar；上游按 Android 10+ 设计，8.1 未实车验证 |
+| 内置小白点 | ✅ | 可拖动，点按弹出 AirPlay / Android Auto / HiCar / CarPlay / 设置 / 主界面 / 关闭 |
 | CarPlay 有线入口 | ⚠️ 骨架 | USB 设备枚举 + 启动状态，协议引擎未接入 |
 | CarPlay 无线入口 | ⚠️ 骨架 | Wi-Fi 状态 + 启动状态，协议引擎未接入 |
 | CarPlay 认证后端 | ⚠️ 骨架 | 本地证书 / MFi 芯片 / 远程 MFI 三选一，仅保存与检查 |
-| 不需要第二个 APK | ✅ | 悬浮球、AirPlay、Android Auto、CarPlay 入口都在同一个包里 |
+| 不需要第二个 APK | ✅ | 悬浮球、AirPlay、Android Auto、HiCar、CarPlay 入口都在同一个包里 |
 
 ## 安装（SYNC+ 车机）
 
-1. U 盘格式 **FAT32**，把 `icarplay-v0.1.1.apk` 放根目录；
+1. U 盘格式 **FAT32**，把 `icarplay-v0.3.0.apk` 放根目录；
 2. 输入法漏洞进安卓原生设置 → 存储 → U 盘 → 安装；
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
 5. 授予“显示在上层 / 悬浮窗”，点“开启内置小白点”；
-6. 点悬浮球 → AirPlay 开始接收；Android Auto 进入接收页；CarPlay 进入认证/连接页。
+6. 点悬浮球 → AirPlay 开始接收；Android Auto / HiCar 进入接收页；CarPlay 进入认证/连接页。
 
 详细步骤与判读见 [`docs/INSTALL.md`](docs/INSTALL.md)。
 
@@ -63,6 +67,15 @@
 - 1920×720 是 8:3，16:9 画面会左右留黑边；未在真车验证，详见
   [`docs/ANDROID-AUTO.md`](docs/ANDROID-AUTO.md)。
 
+### Huawei HiCar
+
+- 华为手机必须支持**原生 HiCar**（不是所有华为/荣耀机型都有）；手机端不需要安装辅助 APK；
+- 车机需要蓝牙/BLE、WLAN 热点或 Wi-Fi Direct；2020 锐际 Android 8.1 上属于**实验路径**，
+  上游按 Android 10+ 设计，重启回连问题也未解决；
+- 首次先在系统蓝牙里普通配对，再进 HiCar 页面点“开始连接”，按手机提示输入六位码；
+- 没有画面时先看诊断日志，不要反复删除系统蓝牙配对；详见
+  [`docs/HICAR.md`](docs/HICAR.md)。
+
 ### CarPlay
 
 - 需要 Apple MFi 认证身份，三选一：本地 `.p7b` + `.pk8`、MFi 芯片、远程 MFI 服务；
@@ -84,6 +97,8 @@ icarplay/
 │   │   ├── CarPlayActivity.java
 │   │   ├── CarPlayCore.java
 │   │   └── AuthSettingsActivity.java
+│   ├── src/main/java/local/hicarlab/               # Huawei HiCar 实验接收端
+│   ├── src/main/jniLibs/                           # HiCar 原生库（arm64-v8a / armeabi-v7a）
 │   ├── src/main/java/info/anodsplace/headunit/    # Android Auto AAP/TLS/解码/触控协议层
 │   │   └── aap/protocol/proto/                    # 离线生成的 protobuf-lite Java 类
 │   ├── src/main/cpp/                               # UxPlay / FFmpeg / OpenSSL 原生栈
@@ -92,6 +107,7 @@ icarplay/
 │   ├── INSTALL.md
 │   ├── AIRPLAY.md
 │   ├── ANDROID-AUTO.md
+│   ├── HICAR.md
 │   ├── CARPLAY.md
 │   └── BUILD.md
 ├── .github/workflows/apk.yml                       # GitHub Actions 构建
@@ -123,6 +139,9 @@ git submodule update --init --recursive
   其底层为 [`FDH2/UxPlay`](https://github.com/FDH2/UxPlay)，并保留上游版权与许可。
 - Android Auto 协议层来自 [`harryjph/android-auto-headunit`](https://github.com/harryjph/android-auto-headunit)
   （AGPL-3.0），保留上游版权与许可；不含 Google 私有 Android Auto APK。
+- Huawei HiCar 接收端来自 [`huducat586/hicar-android-receiver`](https://github.com/huducat586/hicar-android-receiver)
+  （MIT，0.11.1 Preview）；原生库取自其官方 release APK，第三方许可证随包放在
+  `app/src/main/assets/hicar-licenses/`，来源见 [`THIRD_PARTY_NOTICES-HICAR.txt`](THIRD_PARTY_NOTICES-HICAR.txt)。
 - CarPlay 接入层的设计参考了 DiPlay / xcertplay / PlayPort 的公开架构，但**未包含**
   任何 Apple 认证材料、私钥或他人提取的配件身份。
 - 本项目与 Apple、Ford、Baidu 均无关联。
