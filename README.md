@@ -1,15 +1,15 @@
 # iCarPlay
 
-面向 **2020 款福特锐际 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
+面向 **2020 款 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
 **一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置小白点**。
 
-> **当前版本 v0.4.4**
+> **当前版本 v0.4.5**
 >
-> 下载：[`icarplay-v0.4.4.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.4.4/icarplay-v0.4.4.apk)
+> 下载：[`icarplay-v0.4.5.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.4.5/icarplay-v0.4.5.apk)
 >
 > 本版 Release 只打包 **arm64-v8a + armeabi-v7a**，去掉车机用不到的 x86_64，APK 从约 50.8 MB 降到约 41 MB。
 >
-> v0.4.4 首页是**锐际一屏布局**：2×2 主功能卡 + 一行快捷操作 + 底部“返回锐际主屏幕”，不再需要下拉；字号、间距和卡片列数按屏幕 dp 尺寸自适应，矮屏/高密度 1920×720 车机会自动切成 4 列一行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置小白点。
+> v0.4.5 首页是**车机一屏布局**：2×2 主功能卡 + 一行快捷操作 + 底部“返回车机主屏幕”，不再需要下拉；字号、间距和卡片列数按屏幕 dp 尺寸自适应，矮屏/高密度 1920×720 车机会自动切成 4 列一行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置小白点。
 >
 > - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
 >   支持 iPhone / iPad / Mac 的屏幕镜像与音频，Android 7.0+ 可运行。
@@ -17,7 +17,7 @@
 >   手动无线（TCP 5277）；H.264 解码、音频、触控、定位均已在代码里接通。
 > - **Huawei HiCar：已接入实验接收端**。来自 MIT 项目 `huducat586/hicar-android-receiver`，
 >   华为手机使用系统自带 HiCar，手机端不需要第二个 APK；无线实现原按 Android 10+ 设计，
->   在锐际 Android 8.1 上属于**未验证的实验路径**，详见 [`docs/HICAR.md`](docs/HICAR.md)。
+>   在 SYNC+ Android 8.1 车机上属于**未验证的实验路径**，详见 [`docs/HICAR.md`](docs/HICAR.md)。
 > - **CarPlay：接入层已搭建**。认证后端、Apple USB 枚举、有线/无线入口、设置页已完成；
 >   **真正的 iAP2 / MFi / AirPlay 隧道尚未接入**，没有 Apple MFi 认证材料时 iPhone 不会完成配对。
 > - **内置小白点：已接入**。悬浮球由本 APK 自带，不需要第二个悬浮球 App。
@@ -42,7 +42,7 @@
 
 ## 安装（SYNC+ 车机）
 
-1. U 盘格式 **FAT32**，把 `icarplay-v0.4.4.apk` 放根目录；
+1. U 盘格式 **FAT32**，把 `icarplay-v0.4.5.apk` 放根目录；
 2. 输入法漏洞进安卓原生设置 → 存储 → U 盘 → 安装；
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
@@ -76,7 +76,7 @@
 ### Huawei HiCar
 
 - 华为手机必须支持**原生 HiCar**（不是所有华为/荣耀机型都有）；手机端不需要安装辅助 APK；
-- 车机需要蓝牙/BLE、WLAN 热点或 Wi-Fi Direct；2020 锐际 Android 8.1 上属于**实验路径**，
+- 车机需要蓝牙/BLE、WLAN 热点或 Wi-Fi Direct；2020 款 SYNC+ Android 8.1 车机上属于**实验路径**，
   上游按 Android 10+ 设计，重启回连问题也未解决；
 - 首次先在系统蓝牙里普通配对，再进 HiCar 页面点“开始连接”，按手机提示输入六位码；
 - 没有画面时先看诊断日志，不要反复删除系统蓝牙配对；详见

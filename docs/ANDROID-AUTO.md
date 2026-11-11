@@ -33,7 +33,7 @@ iCarPlay 在同一个 APK 里增加了 Android Auto 接收端。协议层来自
 
 ## 已知边界
 
-- 没有在 2020 款锐际 SYNC+ 真车上验证过；本机没有模拟器/NDK/adb，无法代替实车；
+- 没有在 2020 款 SYNC+ 真车上验证过；本机没有模拟器/NDK/adb，无法代替实车；
 - 车机没有 Google 服务（GMS）不影响“接收端”，但手机端 Android Auto 被厂商
   裁剪时仍然连不上；
 - 无线只做手动 IP 的 TCP 5277，不做蓝牙引导 + Wi-Fi Direct；后者在 SYNC+

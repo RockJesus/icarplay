@@ -56,7 +56,7 @@ public class AuthSettingsActivity extends Activity {
 
         root.addView(section("音频通道"), wrap());
         RadioGroup audio = group(prefs.getInt("audio_channel", 0),
-                new String[]{"默认通道", "通道 9（SYNC+ 实车验证）"});
+                new String[]{"默认通道", "通道 9（车机实车验证）"});
         audio.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             public void onCheckedChanged(RadioGroup g, int id) {
                 prefs.edit().putInt("audio_channel", id - 1000).apply();
@@ -66,7 +66,7 @@ public class AuthSettingsActivity extends Activity {
 
         root.addView(section("无线网络模式"), wrap());
         RadioGroup net = group(prefs.getInt("network_mode", 0),
-                new String[]{"现有 Wi-Fi / 同一局域网（推荐）", "车机热点（锐际上大概率不可用）"});
+                new String[]{"现有 Wi-Fi / 同一局域网（推荐）", "车机热点（部分车机上大概率不可用）"});
         net.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             public void onCheckedChanged(RadioGroup g, int id) {
                 prefs.edit().putInt("network_mode", id - 1000).apply();

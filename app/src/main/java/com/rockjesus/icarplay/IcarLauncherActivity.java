@@ -36,7 +36,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    private static final String VERSION_LABEL = "v0.4.4";
+    private static final String VERSION_LABEL = "v0.4.5";
 
     private static final int COLOR_BG = Color.parseColor("#0E1216");
     private static final int COLOR_CARD = Color.parseColor("#161B22");
@@ -171,7 +171,7 @@ public class IcarLauncherActivity extends Activity {
         }));
 
         Button back = new Button(this);
-        back.setText("←  返回锐际主屏幕");
+        back.setText("←  返回车机主屏幕");
         back.setAllCaps(false);
         sp(back, 13f);
         back.setTextColor(COLOR_TEXT);
@@ -212,7 +212,7 @@ public class IcarLauncherActivity extends Activity {
         header.addView(title, wrap());
 
         TextView model = new TextView(this);
-        model.setText(narrow ? "  锐际 · SYNC+" : "  2020 福特锐际 · SYNC+ 1.0");
+        model.setText(narrow ? "  SYNC+" : "  SYNC+ 1.0 车机");
         model.setTextColor(COLOR_MUTED);
         sp(model, 11f);
         header.addView(model, wrap());

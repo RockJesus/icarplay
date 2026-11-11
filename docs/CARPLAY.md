@@ -2,7 +2,7 @@
 
 ## 结论先说
 
-**当前 v0.4.4 的 CarPlay 仍不能真正连接 iPhone。**
+**当前 v0.4.5 的 CarPlay 仍不能真正连接 iPhone。**
 
 仓库里已经完成的是“接入层”：
 
@@ -71,7 +71,7 @@ H.264 解码、HID 触控/方控、USB NCM、无线蓝牙引导 + Wi-Fi 切换�
 
 | 路线 | 说明 | 前置条件 |
 |---|---|---|
-| **DiPlay-Legacy** | 与锐际同源硬件已有实车记录，GPLv3 | 认证材料 + 把 `:mobile` 模块并入本仓库 |
+| **DiPlay-Legacy** | 与目标车机同源硬件已有实车记录，GPLv3 | 认证材料 + 把 `:mobile` 模块并入本仓库 |
 | **PlayPort** | 同为 GPLv3，JVM 侧 CarPlay 实现，架构清晰 | 认证材料 + 移植到 Android / WebCodecs 替换 |
 | **xcertplay** | 协议实现参考，Android 9+ | 认证材料 + 处理 API 27 兼容 |
 

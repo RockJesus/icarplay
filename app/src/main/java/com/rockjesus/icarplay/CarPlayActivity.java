@@ -35,7 +35,7 @@ public class CarPlayActivity extends Activity {
         root.addView(title, wrap());
 
         TextView sub = new TextView(this);
-        sub.setText("iPhone → 锐际 SYNC+ · 有线 USB / 无线 Wi-Fi");
+        sub.setText("iPhone → SYNC+ 车机 · 有线 USB / 无线 Wi-Fi");
         sub.setTextColor(Color.parseColor("#8B949E"));
         sub.setTextSize(12);
         sub.setPadding(0, dp(6), 0, dp(12));

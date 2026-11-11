@@ -9,11 +9,11 @@ iCarPlay 内置的 **Huawei HiCar 接收端**，来自开源项目
 
 本接收端是非官方社区实现，不是华为官方产品，也未获得 HiCar 认证；HiCar 名称和商标归其权利人所有。
 
-## 在锐际上的可用边界（重要）
+## 在目标车机上的可用边界（重要）
 
-2020 款锐际 SYNC+ 1.0 是 **Android 8.1 / API 27**。上游接收端的无线连接按 **Android 10+**
+2020 款 SYNC+ 1.0 是 **Android 8.1 / API 27**。上游接收端的无线连接按 **Android 10+**
 设计，Manifest 的 `minSdkVersion 26` 并不等于 Android 8/9 可以完成无线连接。本仓库为
-Android 8.1 增加了旧版 Wi-Fi Direct 兼容分支，但这条路径**没有在锐际实车上验证**，属于实验功能。
+Android 8.1 增加了旧版 Wi-Fi Direct 兼容分支，但这条路径**没有在目标车机实车上验证**，属于实验功能。
 
 可能的结果：
 
