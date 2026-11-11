@@ -248,9 +248,19 @@ public class FloatService extends Service {
                         | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 PixelFormat.TRANSLUCENT);
         panelParams.gravity = Gravity.TOP | Gravity.START;
-        int screenH = getResources().getDisplayMetrics().heightPixels;
-        panelParams.x = Math.max(0, ballParams.x - dp(56));
-        panelParams.y = Math.min(ballParams.y + dp(64), Math.max(0, screenH - dp(390)));
+        DisplayMetrics dm = new DisplayMetrics();
+        wm.getDefaultDisplay().getRealMetrics(dm);
+        int screenW = dm.widthPixels;
+        int screenH = dm.heightPixels;
+        int panelW = dp(170);
+        int panelH = dp(340);
+        int x = Math.min(ballParams.x - dp(56), screenW - panelW - dp(8));
+        x = Math.max(0, Math.min(x, Math.max(0, screenW - panelW - dp(8))));
+        int yBelow = ballParams.y + ballParams.height + dp(8);
+        int y = yBelow + panelH > screenH ? ballParams.y - panelH - dp(8) : yBelow;
+        y = Math.max(0, Math.min(y, Math.max(0, screenH - panelH)));
+        panelParams.x = x;
+        panelParams.y = y;
 
         wm.addView(panel, panelParams);
     }
