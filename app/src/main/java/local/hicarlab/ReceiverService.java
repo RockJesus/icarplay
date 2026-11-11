@@ -8,6 +8,13 @@ public final class ReceiverService extends Service {
     private final Handler bootHandler=new Handler(Looper.getMainLooper());
     private boolean waitingForBoot;
     private long bootDeadline;
+    private volatile boolean watchdogRunning;
+    private volatile long mainThreadPulse;
+    private Thread watchdog;
+    private final Runnable heartbeat=new Runnable(){public void run(){
+        mainThreadPulse=SystemClock.elapsedRealtime();
+        if(watchdogRunning)bootHandler.postDelayed(this,5000);
+    }};
     private final Runnable bootStart=new Runnable(){public void run(){
         if(!waitingForBoot)return;
         if(!AutoStart.enabled(ReceiverService.this)){waitingForBoot=false;stopSelf();return;}
@@ -34,6 +41,25 @@ public final class ReceiverService extends Service {
         if(android.os.Build.VERSION.SDK_INT>=29)startForeground(31,notification(false),android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);else startForeground(31,notification(false));
         engine=((LabApplication)getApplication()).engine();
         engine.setOnStopped(()->stopSelf());
+        startWatchdog();
+    }
+    private void startWatchdog(){
+        watchdogRunning=true;mainThreadPulse=SystemClock.elapsedRealtime();
+        bootHandler.post(heartbeat);
+        watchdog=new Thread(()->{
+            while(watchdogRunning){
+                try{Thread.sleep(15000);}catch(InterruptedException e){break;}
+                if(!watchdogRunning)break;
+                long gap=SystemClock.elapsedRealtime()-mainThreadPulse;
+                if(gap>60000L){
+                    SafetyGuard.returnHome(ReceiverService.this,"HiCar 服务主线程超过 60 秒无响应");
+                    stopSelf();
+                    break;
+                }
+            }
+        },"hicar-watchdog");
+        watchdog.setDaemon(true);
+        watchdog.start();
     }
     private Notification notification(boolean continuous){
         PendingIntent open=PendingIntent.getActivity(this,1,new Intent(this,continuous?VideoActivity.class:HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
@@ -63,6 +89,19 @@ public final class ReceiverService extends Service {
         try {engine.start(model, intent.getBooleanExtra("network", false),intent.getBooleanExtra("video",false),microphone);}catch(RuntimeException e){DiagnosticLog.add(this,"测试服务启动失败："+e.getClass().getSimpleName());engine.stop(true);engine.reportProblem("接收服务启动失败，请重新连接或查看诊断页。");stopSelf();}
         return START_NOT_STICKY;
     }
-    @Override public void onDestroy(){waitingForBoot=false;bootHandler.removeCallbacksAndMessages(null);if(engine!=null){if(engine.isRunning())DiagnosticLog.add(this,"服务被销毁，本轮提前结束。");engine.stop(false);}((LabApplication)getApplication()).video().close();stopForeground(true);super.onDestroy();}
+    @Override public void onTaskRemoved(Intent rootIntent){
+        waitingForBoot=false;
+        bootHandler.removeCallbacksAndMessages(null);
+        if(engine!=null)engine.stop(true);
+        stopSelf();
+        super.onTaskRemoved(rootIntent);
+    }
+    @Override public void onDestroy(){
+        watchdogRunning=false;
+        if(watchdog!=null){watchdog.interrupt();watchdog=null;}
+        waitingForBoot=false;bootHandler.removeCallbacksAndMessages(null);
+        if(engine!=null){if(engine.isRunning())DiagnosticLog.add(this,"服务被销毁，本轮提前结束。");engine.stop(false);}
+        ((LabApplication)getApplication()).video().close();stopForeground(true);super.onDestroy();
+    }
     @Override public IBinder onBind(Intent intent){return null;}
 }

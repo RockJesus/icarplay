@@ -1,6 +1,10 @@
 package local.hicarlab;
 import info.anodsplace.headunit.App;
 public class LabApplication extends App {
+    @Override public void onCreate(){
+        super.onCreate();
+        SafetyGuard.install(this);
+    }
     private ReceiverEngine engine;
     private VideoSink video;
     private final InputRouter input=new InputRouter();

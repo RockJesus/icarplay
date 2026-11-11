@@ -2,6 +2,7 @@ package local.hicarlab;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.*;
 import android.content.*;
 import android.content.pm.PackageManager;
@@ -17,6 +18,7 @@ public final class HomeActivity extends ThemeActivity {
     private Switch micSwitch;
     private Button start,stop,retry;
     private boolean pending;
+    private boolean updatingAutoStart;
     private static final int PERMISSIONS=60,ENABLE=61,DISCOVER=62,MICROPHONE=63,NOTIFICATIONS=64;
     private ReceiverEngine engine(){return ((LabApplication)getApplication()).engine();}
     private int dp(int value){return (int)(value*getResources().getDisplayMetrics().density+.5f);}
@@ -47,15 +49,38 @@ public final class HomeActivity extends ThemeActivity {
             if(!checked)engine().disableMicrophone();
             else if(engine().isActive())Toast.makeText(this,"重新连接后启用；仅在手机请求语音时采集",Toast.LENGTH_LONG).show();
         });
-        Switch autoStart=new Switch(this);autoStart.setText("开机自动接收");autoStart.setChecked(AutoStart.enabled(this));
+        Switch autoStart=new Switch(this);autoStart.setText("开机自动接收（默认关闭）");autoStart.setChecked(AutoStart.enabled(this));
         autoStart.setPadding(0,dp(16),0,dp(8));root.addView(autoStart);
-        TextView autoHelp=new TextView(this);autoHelp.setText("开机后自动等待已配对手机连接；首次请先手动连接。需要在系统中允许自启动及后台运行，保持蓝牙开启。\n自动接收不直接弹出画面，点击接收通知打开；语音功能请手动重新连接启用。休眠唤醒是否可用取决于车机系统。");autoHelp.setTextSize(14);root.addView(autoHelp);
+        TextView autoHelp=new TextView(this);autoHelp.setText("默认关闭。开启后，车机每次启动会在后台等待已配对手机连接；不会自动弹出画面。\n首次请先手动连接。需要在系统中允许自启动及后台运行，保持蓝牙开启。重复异常时安全模式会自动关闭此项。语音功能请手动重新连接启用。");autoHelp.setTextSize(14);root.addView(autoHelp);
         autoStart.setOnCheckedChangeListener((button,checked)->{
-            if(checked){String problem=AutoStart.problem(this);if(problem!=null){autoStart.setChecked(false);Toast.makeText(this,problem,Toast.LENGTH_LONG).show();return;}}
-            getSharedPreferences("ui",0).edit().putBoolean("auto_start",checked).apply();
-            if(checked&&Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=PackageManager.PERMISSION_GRANTED)
-                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},NOTIFICATIONS);
-            Toast.makeText(this,checked?"已启用，下次开机自动等待连接；请在系统中允许自启动":"已关闭开机自动接收；当前连接不受影响",Toast.LENGTH_LONG).show();
+            if(updatingAutoStart)return;
+            if(!checked){
+                AutoStart.setEnabled(this,false);
+                Toast.makeText(this,"已关闭开机自动接收；当前连接不受影响",Toast.LENGTH_LONG).show();
+                return;
+            }
+            String problem=AutoStart.problem(this);
+            if(problem!=null){
+                updatingAutoStart=true;autoStart.setChecked(false);updatingAutoStart=false;
+                Toast.makeText(this,problem,Toast.LENGTH_LONG).show();
+                return;
+            }
+            new AlertDialog.Builder(this)
+                    .setTitle("确认开启开机自动接收？")
+                    .setMessage("这是会影响车机启动体验的可选功能。开启后仅在后台等待已配对手机，不会自动弹出画面；若连续异常，安全模式会自动关闭它。请确认后再开启。")
+                    .setNegativeButton("取消",(dialog,which)->{
+                        updatingAutoStart=true;autoStart.setChecked(false);updatingAutoStart=false;
+                    })
+                    .setPositiveButton("确认开启",(dialog,which)->{
+                        AutoStart.setEnabled(this,true);
+                        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=PackageManager.PERMISSION_GRANTED)
+                            requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},NOTIFICATIONS);
+                        Toast.makeText(this,"已启用，下次开机自动等待连接；请在系统中允许自启动",Toast.LENGTH_LONG).show();
+                    })
+                    .setOnCancelListener(dialog->{
+                        updatingAutoStart=true;autoStart.setChecked(false);updatingAutoStart=false;
+                    })
+                    .show();
         });
         button(root,"试运行自动接收",()->{
             if(!AutoStart.enabled(this)){Toast.makeText(this,"请先开启“开机自动接收”",Toast.LENGTH_LONG).show();return;}

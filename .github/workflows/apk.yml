@@ -26,6 +26,9 @@ jobs:
           java-version: "21"
           cache: "gradle"
 
+      - name: Safety preflight
+        run: bash scripts/preflight-safety.sh
+
       - name: Build unsigned release
         run: |
           chmod +x ./gradlew

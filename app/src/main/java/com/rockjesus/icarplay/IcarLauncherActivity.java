@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import io.github.jqssun.airplay.MainActivity;
+import local.hicarlab.SafetyGuard;
 
 /**
  * iCarPlay 统一入口。
@@ -124,6 +125,27 @@ public class IcarLauncherActivity extends Activity {
             public void onClick(View v) { openOverlayPermission(); }
         }), wrap());
 
+        buttons.addView(makeButton("系统桌面设置（手动确认）", new View.OnClickListener() {
+            public void onClick(View v) {
+                if (HomeSafety.isDefaultHome(IcarLauncherActivity.this)) {
+                    toast("本应用当前被设为默认桌面；请在系统设置中选择原车机桌面");
+                } else {
+                    toast("当前仍使用原系统桌面；这里只打开系统桌面选择页");
+                }
+                HomeSafety.openHomeSettings(IcarLauncherActivity.this);
+            }
+        }), wrap());
+
+        if (SafetyGuard.safeMode(this)) {
+            buttons.addView(makeButton("清除安全模式（不自动恢复开机自启）", new View.OnClickListener() {
+                public void onClick(View v) {
+                    SafetyGuard.clearSafeMode(IcarLauncherActivity.this);
+                    toast("已清除安全模式标记；开机自启仍保持关闭，需要时请到 HiCar 页面手动开启");
+                    refresh();
+                }
+            }), wrap());
+        }
+
         buttons.addView(makeButton("认证与连接设置", new View.OnClickListener() {
             public void onClick(View v) {
                 startActivity(new Intent(IcarLauncherActivity.this, AuthSettingsActivity.class));
@@ -141,7 +163,9 @@ public class IcarLauncherActivity extends Activity {
         TextView note = new TextView(this);
         note.setText("\n说明：\n"
                 + "· 悬浮球由本 APK 自带，不需要第二个小白点 App；\n"
-                + "· 默认不注册开机自启，避免 SYNC+ 重启循环；\n"
+                + "· 不修改系统分区、系统设置，不申请设备管理员；不会自动替换桌面；\n"
+                + "· 默认不注册开机自启；HiCar 开机自启需在 HiCar 页面二次确认后才启用；\n"
+                + "· 连续异常会进入安全模式并自动关闭开机自启，看门狗会退回本页；\n"
                 + "· AirPlay 不需要 MFi，iOS 可以直接发现并镜像；\n"
                 + "· Android Auto 有线走 USB AOA，无线需手机开启 Headunit Server；\n"
                 + "· 华为手机走 HiCar：需手机系统自带 HiCar，首次在系统蓝牙里配对；\n"
@@ -166,12 +190,16 @@ public class IcarLauncherActivity extends Activity {
     private void refresh() {
         boolean overlay = Settings.canDrawOverlays(this);
         boolean running = prefs.getBoolean("float_running", false);
+        boolean defaultHome = HomeSafety.isDefaultHome(this);
+        boolean safeMode = SafetyGuard.safeMode(this);
         String auth = CarPlayCore.authLabel(this);
         int usb = CarPlayCore.appleUsbCount(this);
 
         statusView.setText(
                 "设备：" + Build.MANUFACTURER + " " + Build.MODEL
                         + "  ·  Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")\n"
+                        + "系统桌面：" + (defaultHome ? "⚠ 本应用当前为默认桌面（建议切回原桌面）" : "原车机桌面（推荐）") + "\n"
+                        + "安全模式：" + (safeMode ? "已触发；开机自启已关闭" : "正常") + "\n"
                         + "悬浮窗权限：" + (overlay ? "已授予" : "未授予") + "\n"
                         + "内置小白点：" + (running ? "运行中" : "未运行") + "\n"
                         + "AirPlay 服务：" + (isAirPlayServiceRunning() ? "运行中" : "未运行") + "\n"

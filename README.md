@@ -3,9 +3,9 @@
 面向 **2020 款福特锐际 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
 **一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置小白点**。
 
-> **当前版本 v0.3.0**
+> **当前版本 v0.4.0**
 >
-> 下载：[`icarplay-v0.3.0.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.3.0/icarplay-v0.3.0.apk)
+> 下载：[`icarplay-v0.4.0.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.4.0/icarplay-v0.4.0.apk)
 >
 > - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
 >   支持 iPhone / iPad / Mac 的屏幕镜像与音频，Android 7.0+ 可运行。
@@ -17,6 +17,7 @@
 > - **CarPlay：接入层已搭建**。认证后端、Apple USB 枚举、有线/无线入口、设置页已完成；
 >   **真正的 iAP2 / MFi / AirPlay 隧道尚未接入**，没有 Apple MFi 认证材料时 iPhone 不会完成配对。
 > - **内置小白点：已接入**。悬浮球由本 APK 自带，不需要第二个悬浮球 App。
+> - **安全边界：v0.4.0 起默认不抢桌面、不自启；连续异常进安全模式**，详见 [`docs/SAFETY.md`](docs/SAFETY.md)。
 
 ## 能力矩阵
 
@@ -32,11 +33,12 @@
 | CarPlay 有线入口 | ⚠️ 骨架 | USB 设备枚举 + 启动状态，协议引擎未接入 |
 | CarPlay 无线入口 | ⚠️ 骨架 | Wi-Fi 状态 + 启动状态，协议引擎未接入 |
 | CarPlay 认证后端 | ⚠️ 骨架 | 本地证书 / MFi 芯片 / 远程 MFI 三选一，仅保存与检查 |
+| 车机安全约束 | ✅ | 不写系统分区、不申请设备管理员/系统设置权限、不抢占默认桌面；开机自启默认关闭 |
 | 不需要第二个 APK | ✅ | 悬浮球、AirPlay、Android Auto、HiCar、CarPlay 入口都在同一个包里 |
 
 ## 安装（SYNC+ 车机）
 
-1. U 盘格式 **FAT32**，把 `icarplay-v0.3.0.apk` 放根目录；
+1. U 盘格式 **FAT32**，把 `icarplay-v0.4.0.apk` 放根目录；
 2. 输入法漏洞进安卓原生设置 → 存储 → U 盘 → 安装；
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
@@ -96,8 +98,9 @@ icarplay/
 │   │   ├── AndroidAutoUsbReceiver.java
 │   │   ├── CarPlayActivity.java
 │   │   ├── CarPlayCore.java
+│   │   ├── HomeSafety.java
 │   │   └── AuthSettingsActivity.java
-│   ├── src/main/java/local/hicarlab/               # Huawei HiCar 实验接收端
+│   ├── src/main/java/local/hicarlab/               # Huawei HiCar 实验接收端 + SafetyGuard
 │   ├── src/main/jniLibs/                           # HiCar 原生库（arm64-v8a / armeabi-v7a）
 │   ├── src/main/java/info/anodsplace/headunit/    # Android Auto AAP/TLS/解码/触控协议层
 │   │   └── aap/protocol/proto/                    # 离线生成的 protobuf-lite Java 类
@@ -109,7 +112,9 @@ icarplay/
 │   ├── ANDROID-AUTO.md
 │   ├── HICAR.md
 │   ├── CARPLAY.md
+│   ├── SAFETY.md
 │   └── BUILD.md
+├── scripts/preflight-safety.sh                     # 发布前车机安全检查
 ├── .github/workflows/apk.yml                       # GitHub Actions 构建
 └── README.md
 ```
@@ -121,6 +126,8 @@ CI（推荐）：
 ```bash
 gh workflow run apk.yml -R RockJesus/icarplay --ref main
 ```
+
+构建前会运行 `scripts/preflight-safety.sh`；本机也可以先执行它。
 
 本地构建需要 JDK 21、Android SDK 37、NDK `27.0.12077973`，并初始化子模块：
 
