@@ -12,6 +12,9 @@ val localProps = Properties().apply {
 }
 
 val allAbis = listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+// Release ships ARM only: the head unit is ARM, and x86_64 added ~9 MB of
+// native libraries that can never be loaded on the car.
+val releaseAbis = listOf("arm64-v8a", "armeabi-v7a")
 
 android {
     namespace = "io.github.jqssun.airplay"
@@ -33,8 +36,8 @@ android {
         applicationId = "com.rockjesus.icarplay"
         minSdk = 23
         targetSdk = 37
-        versionCode = 5
-        versionName = "0.4.0"
+        versionCode = 6
+        versionName = "0.4.1"
 
         externalNativeBuild {
             cmake {
@@ -58,7 +61,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfigs.findByName("release")?.let { signingConfig = it }
-            ndk { abiFilters += allAbis }
+            ndk { abiFilters += releaseAbis }
         }
         // debuggable build with HWASan (arm64) + UBSan in native code
         create("sanitize") {
