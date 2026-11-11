@@ -3,13 +3,13 @@
 面向 **2020 款 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
 **一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置小白点**。
 
-> **当前版本 v0.4.6**
+> **当前版本 v0.4.7**
 >
-> 下载：[`icarplay-v0.4.6.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.4.6/icarplay-v0.4.6.apk)
+> 下载：[`icarplay-v0.4.7.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.4.7/icarplay-v0.4.7.apk)
 >
 > 本版 Release 只打包 **arm64-v8a + armeabi-v7a**，去掉车机用不到的 x86_64，APK 从约 50.8 MB 降到约 41 MB。
 >
-> v0.4.6 首页是**车机一屏布局**：2×2 主功能卡 + 一行快捷操作 + 底部“返回车机主屏幕”，不再需要下拉；字号、间距和卡片列数按屏幕 dp 尺寸自适应，矮屏/高密度 1920×720 车机会自动切成 4 列一行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置小白点。
+> v0.4.7 首页是**车机一屏布局**：2×2 主功能卡 + 一行快捷操作 + 底部“返回车机主屏幕”，不再需要下拉；字号、间距和卡片列数按屏幕 dp 尺寸自适应，矮屏/高密度 1920×720 车机会自动切成 4 列一行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置小白点。
 >
 > - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
 >   支持 iPhone / iPad / Mac 的屏幕镜像与音频，Android 7.0+ 可运行。
@@ -42,7 +42,7 @@
 
 ## 安装（SYNC+ 车机）
 
-1. U 盘格式 **FAT32**，把 `icarplay-v0.4.6.apk` 放根目录；
+1. U 盘格式 **FAT32**，把 `icarplay-v0.4.7.apk` 放根目录；
 2. 输入法漏洞进安卓原生设置 → 存储 → U 盘 → 安装；
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；

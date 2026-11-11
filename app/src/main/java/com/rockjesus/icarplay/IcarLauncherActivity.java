@@ -36,7 +36,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    private static final String VERSION_LABEL = "v0.4.6";
+    private static final String VERSION_LABEL = "v0.4.7";
 
     private static final int COLOR_BG = Color.parseColor("#0E1216");
     private static final int COLOR_CARD = Color.parseColor("#161B22");
@@ -190,7 +190,7 @@ public class IcarLauncherActivity extends Activity {
 
         if (showFooter) {
             TextView footer = new TextView(this);
-            footer.setText("CarPlay 仍需 MFi 材料 · HiCar 为实验接收端 · 不修改系统分区");
+            footer.setText(VERSION_LABEL);
             footer.setTextColor(COLOR_MUTED);
             sp(footer, 9.5f);
             footer.setGravity(Gravity.CENTER);
