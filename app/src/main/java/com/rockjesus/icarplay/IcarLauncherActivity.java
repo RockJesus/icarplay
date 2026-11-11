@@ -25,18 +25,18 @@ import io.github.jqssun.airplay.MainActivity;
 import local.hicarlab.SafetyGuard;
 
 /**
- * iCarPlay 统一入口，按锐际 16:9 屏幕做成一屏布局。
+ * iCarPlay 统一入口，按车机屏幕 dp 尺寸自适应的一屏布局。
  *
  * 布局分四块：
  *  1. 顶部品牌栏
- *  2. 两行状态摘要
- *  3. 2×2 主功能卡（AirPlay / CarPlay / Android Auto / HiCar）
- *  4. 一行快捷操作（小白点 / 悬浮窗 / 认证 / 桌面）
- * 底部固定“返回锐际主屏幕”，不使用 ScrollView。
+ *  2. 主功能卡（4 列一行或 2×2）
+ *  3. 状态摘要
+ *  4. 一行快捷操作 + 返回原车机桌面
+ * 不使用 ScrollView。
  */
 public class IcarLauncherActivity extends Activity {
 
-    private static final String VERSION_LABEL = "v0.4.3";
+    private static final String VERSION_LABEL = "v0.4.4";
 
     private static final int COLOR_BG = Color.parseColor("#0E1216");
     private static final int COLOR_CARD = Color.parseColor("#161B22");
@@ -71,6 +71,15 @@ public class IcarLauncherActivity extends Activity {
         // 把高度留给状态和返回按钮；普通 16:9 或更方的屏幕仍用 2×2。
         fourAcross = heightDp < 520f;
         narrow = widthDp < 760f;
+        boolean showFooter = heightDp >= 420f;
+
+        // 给主功能卡一个明确的纵向区间，避免固定内容把 weight 空间挤成 0 后整块卡片消失。
+        int fixedEstimate = dp(10 + 8 + 34 + 92 + 38 + 42 + 32)
+                + (showFooter ? dp(18) : 0);
+        int maxCardZone = Math.max(dp(80), dm.heightPixels - fixedEstimate);
+        int preferredCardZone = Math.round(dm.heightPixels * 0.42f);
+        int cardZone = Math.min(dp(300), Math.min(preferredCardZone, maxCardZone));
+        if (cardZone < dp(90)) cardZone = dp(90);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -89,14 +98,16 @@ public class IcarLauncherActivity extends Activity {
         LinearLayout.LayoutParams statusLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         statusLp.topMargin = dp(8);
-        root.addView(statusView, statusLp);
 
         LinearLayout grid = new LinearLayout(this);
         grid.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams gridLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+                ViewGroup.LayoutParams.MATCH_PARENT, cardZone);
         gridLp.topMargin = dp(8);
         root.addView(grid, gridLp);
+
+        // 主功能卡在上、状态摘要在下：先保证四张卡有可见高度，再显示运行状态。
+        root.addView(statusView, statusLp);
 
         if (fourAcross) {
             LinearLayout row = new LinearLayout(this);
@@ -184,13 +195,15 @@ public class IcarLauncherActivity extends Activity {
         backLp.topMargin = dp(8);
         root.addView(back, backLp);
 
-        TextView footer = new TextView(this);
-        footer.setText("CarPlay 仍需 MFi 材料 · HiCar 为实验接收端 · 不修改系统分区");
-        footer.setTextColor(COLOR_MUTED);
-        sp(footer, 9.5f);
-        footer.setGravity(Gravity.CENTER);
-        footer.setPadding(0, dp(5), 0, 0);
-        root.addView(footer, wrap());
+        if (showFooter) {
+            TextView footer = new TextView(this);
+            footer.setText("CarPlay 仍需 MFi 材料 · HiCar 为实验接收端 · 不修改系统分区");
+            footer.setTextColor(COLOR_MUTED);
+            sp(footer, 9.5f);
+            footer.setGravity(Gravity.CENTER);
+            footer.setPadding(0, dp(5), 0, 0);
+            root.addView(footer, wrap());
+        }
     }
 
     private LinearLayout buildHeader() {
@@ -284,6 +297,19 @@ public class IcarLauncherActivity extends Activity {
     protected void onResume() {
         super.onResume();
         refresh();
+        PermissionOnboarding.onResume(this);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        PermissionOnboarding.onActivityResult(this, requestCode);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        PermissionOnboarding.onRequestPermissionsResult(this, requestCode);
     }
 
     @Override
@@ -308,7 +334,10 @@ public class IcarLauncherActivity extends Activity {
         boolean running = prefs.getBoolean("float_running", false);
         if (running) {
             stopService(new Intent(this, FloatService.class));
-            prefs.edit().putBoolean("float_running", false).apply();
+            prefs.edit()
+                    .putBoolean("float_running", false)
+                    .putBoolean("float_auto", false)
+                    .apply();
             refresh();
             return;
         }
@@ -317,8 +346,16 @@ public class IcarLauncherActivity extends Activity {
             openOverlayPermission();
             return;
         }
-        startService(new Intent(this, FloatService.class));
-        prefs.edit().putBoolean("float_running", true).apply();
+        Intent service = new Intent(this, FloatService.class);
+        if (Build.VERSION.SDK_INT >= 26) {
+            startForegroundService(service);
+        } else {
+            startService(service);
+        }
+        prefs.edit()
+                .putBoolean("float_running", true)
+                .putBoolean("float_auto", true)
+                .apply();
         refresh();
     }
 
