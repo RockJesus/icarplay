@@ -36,7 +36,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    private static final String VERSION_LABEL = "v0.4.8";
+    private static final String VERSION_LABEL = "v0.4.9";
 
     private static final int COLOR_BG = Color.parseColor("#0E1216");
     private static final int COLOR_CARD = Color.parseColor("#161B22");
@@ -316,7 +316,10 @@ public class IcarLauncherActivity extends Activity {
      */
     private void goCarHome() {
         if (HomeSafety.goToSystemHome(this)) {
-            finish();
+            // Keep the task (and the floating-dot foreground service) alive when
+            // returning to the factory launcher; finish() lets some head units
+            // tear down the whole task and the overlay with it.
+            moveTaskToBack(true);
             return;
         }
         toast("本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面");

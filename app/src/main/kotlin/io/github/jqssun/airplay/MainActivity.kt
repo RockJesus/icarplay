@@ -126,7 +126,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun _goCarHome() {
-        if (HomeSafety.goToSystemHome(this)) finish()
+        if (HomeSafety.goToSystemHome(this)) moveTaskToBack(true)
         else {
             Toast.makeText(this, "本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面", Toast.LENGTH_LONG).show()
             HomeSafety.openHomeSettings(this)

@@ -42,7 +42,7 @@ public final class HomeActivity extends ThemeActivity {
         root.setPadding(PageUi.dp(this,18),PageUi.dp(this,10),PageUi.dp(this,18),PageUi.dp(this,8));
         setContentView(root);
 
-        root.addView(PageUi.header(this,"HiCar 接收端","实验版 0.11.1 · v0.4.8"),PageUi.matchWrap(this));
+        root.addView(PageUi.header(this,"HiCar 接收端","实验版 0.11.1 · v0.4.9"),PageUi.matchWrap(this));
 
         TextView help=PageUi.text(this,"开启手机蓝牙和 WLAN，点“开始连接”；首次连接按手机提示输入六位码。",10.5f,PageUi.MUTED,false);
         LinearLayout.LayoutParams helpLp=PageUi.matchWrap(this);PageUi.margin(helpLp,this,0,3,0,6);root.addView(help,helpLp);
@@ -153,7 +153,7 @@ public final class HomeActivity extends ThemeActivity {
         LinearLayout.LayoutParams carHomeLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,PageUi.dp(this,38));
         PageUi.margin(carHomeLp,this,0,6,0,0);
         carHome.setOnClickListener(v->{
-            if(HomeSafety.goToSystemHome(this))finish();
+            if(HomeSafety.goToSystemHome(this))moveTaskToBack(true);
             else{Toast.makeText(this,"本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面",Toast.LENGTH_LONG).show();HomeSafety.openHomeSettings(this);}
         });
         root.addView(carHome,carHomeLp);

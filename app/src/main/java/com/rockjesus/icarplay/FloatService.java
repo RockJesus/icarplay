@@ -65,6 +65,25 @@ public class FloatService extends Service {
         prefs.edit().putBoolean("float_running", true).apply();
     }
 
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (!Settings.canDrawOverlays(this)) {
+            toast("没有悬浮窗权限，无法显示小白点");
+            return START_NOT_STICKY;
+        }
+        if (ball == null) {
+            try {
+                showBall();
+            } catch (RuntimeException e) {
+                toast("小白点显示失败：" + e.getClass().getSimpleName());
+                stopSelf();
+                return START_NOT_STICKY;
+            }
+        }
+        prefs.edit().putBoolean("float_running", true).apply();
+        return START_STICKY;
+    }
+
     private Notification buildNotification() {
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel ch = new NotificationChannel(
