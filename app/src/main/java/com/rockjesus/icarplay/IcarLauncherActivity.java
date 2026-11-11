@@ -73,14 +73,6 @@ public class IcarLauncherActivity extends Activity {
         narrow = widthDp < 760f;
         boolean showFooter = heightDp >= 420f;
 
-        // 给主功能卡一个明确的纵向区间，避免固定内容把 weight 空间挤成 0 后整块卡片消失。
-        int fixedEstimate = dp(10 + 8 + 34 + 92 + 38 + 42 + 32)
-                + (showFooter ? dp(18) : 0);
-        int maxCardZone = Math.max(dp(80), dm.heightPixels - fixedEstimate);
-        int preferredCardZone = Math.round(dm.heightPixels * 0.42f);
-        int cardZone = Math.min(dp(300), Math.min(preferredCardZone, maxCardZone));
-        if (cardZone < dp(90)) cardZone = dp(90);
-
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(COLOR_BG);
@@ -101,8 +93,9 @@ public class IcarLauncherActivity extends Activity {
 
         LinearLayout grid = new LinearLayout(this);
         grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setMinimumHeight(dp(90));
         LinearLayout.LayoutParams gridLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, cardZone);
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
         gridLp.topMargin = dp(8);
         root.addView(grid, gridLp);
 
