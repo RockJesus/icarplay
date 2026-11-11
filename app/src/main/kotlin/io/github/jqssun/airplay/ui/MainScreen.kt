@@ -95,7 +95,7 @@ fun MainScreen(
     onSurfaceDestroyed: (android.view.Surface) -> Unit,
     onPip: () -> Unit = {},
     onLocalNetwork: () -> Unit = {},
-    onCarHome: () -> Unit = {}
+    onMain: () -> Unit = {}
 ) {
     var tab by remember { mutableStateOf(Tab.OVERVIEW) }
     var fullscreen by remember { mutableStateOf(false) }
@@ -548,8 +548,8 @@ fun MainScreen(
                         .padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onCarHome, modifier = Modifier.dpadFocus()) {
-                        Text("← 返回车机屏幕", style = MaterialTheme.typography.labelLarge)
+                    TextButton(onClick = onMain, modifier = Modifier.dpadFocus()) {
+                        Text("← 返回主界面", style = MaterialTheme.typography.labelLarge)
                     }
                     Spacer(Modifier.weight(1f))
                     Text("iCarPlay", style = MaterialTheme.typography.titleSmall)

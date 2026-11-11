@@ -12,9 +12,6 @@ import android.os.Bundle
 import android.os.IBinder
 import android.util.Rational
 import android.view.WindowManager
-import android.widget.Toast
-import com.rockjesus.icarplay.HomeSafety
-import com.rockjesus.icarplay.PermissionOnboarding
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,6 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.rockjesus.icarplay.IcarLauncherActivity
 import io.github.jqssun.airplay.service.AirPlayService
 import io.github.jqssun.airplay.ui.MainScreen
 import io.github.jqssun.airplay.ui.theme.AirPlayTheme
@@ -120,21 +118,18 @@ class MainActivity : ComponentActivity() {
                     onSurfaceDestroyed = { viewModel.onSurfaceDestroyed(it) },
                     onPip = { enterPip() },
                     onLocalNetwork = ::_requestLocalNetwork,
-                    onCarHome = ::_goCarHome
+                    onMain = ::_goMain
                 )
             }
         }
     }
 
-    private fun _goCarHome() {
-        if (HomeSafety.goToSystemHome(this)) {
-            PermissionOnboarding.startFloatIfPossible(this)
-            moveTaskToBack(true)
-        }
-        else {
-            Toast.makeText(this, "本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面", Toast.LENGTH_LONG).show()
-            HomeSafety.openHomeSettings(this)
-        }
+    private fun _goMain() {
+        startActivity(
+            Intent(this, IcarLauncherActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        )
+        finish()
     }
 
     private fun _granted(permission: String) =
