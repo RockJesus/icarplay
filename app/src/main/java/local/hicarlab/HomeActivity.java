@@ -1,6 +1,6 @@
 package local.hicarlab;
 
-import com.rockjesus.icarplay.HomeSafety
+import com.rockjesus.icarplay.HomeSafety;
 import com.rockjesus.icarplay.PermissionOnboarding;
 import com.rockjesus.icarplay.PageUi;
 import android.Manifest;
