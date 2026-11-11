@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -15,7 +17,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,14 +24,28 @@ import io.github.jqssun.airplay.MainActivity;
 import local.hicarlab.SafetyGuard;
 
 /**
- * iCarPlay 统一入口。
+ * iCarPlay 统一入口，按锐际 16:9 屏幕做成一屏布局。
  *
- * 一个 APK 内包含：
- *  - AirPlay 接收（上游 UxPlay 协议栈）
- *  - CarPlay 接收入口（协议骨架 + 认证后端，真正握手待 MFi 材料）
- *  - 内置小白点（FloatService）
+ * 布局分四块：
+ *  1. 顶部品牌栏
+ *  2. 两行状态摘要
+ *  3. 2×2 主功能卡（AirPlay / CarPlay / Android Auto / HiCar）
+ *  4. 一行快捷操作（小白点 / 悬浮窗 / 认证 / 桌面）
+ * 底部固定“返回锐际主屏幕”，不使用 ScrollView。
  */
 public class IcarLauncherActivity extends Activity {
+
+    private static final String VERSION_LABEL = "v0.4.2";
+
+    private static final int COLOR_BG = Color.parseColor("#0E1216");
+    private static final int COLOR_CARD = Color.parseColor("#161B22");
+    private static final int COLOR_CARD_ALT = Color.parseColor("#1B2230");
+    private static final int COLOR_TEXT = Color.parseColor("#E6EDF3");
+    private static final int COLOR_MUTED = Color.parseColor("#8B949E");
+    private static final int COLOR_BLUE = Color.parseColor("#58A6FF");
+    private static final int COLOR_GREEN = Color.parseColor("#3FB950");
+    private static final int COLOR_RED = Color.parseColor("#F85149");
+    private static final int COLOR_BORDER = Color.parseColor("#30363D");
 
     private TextView statusView;
     private Button floatButton;
@@ -43,147 +58,230 @@ public class IcarLauncherActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.parseColor("#0E1216"));
-        int pad = dp(22);
-        root.setPadding(pad, dp(16), pad, dp(16));
+        root.setBackgroundColor(COLOR_BG);
+        root.setPadding(dp(18), dp(10), dp(18), dp(8));
+        setContentView(root);
+
+        root.addView(buildHeader(), wrap());
+
+        statusView = new TextView(this);
+        statusView.setTextColor(COLOR_TEXT);
+        statusView.setTextSize(11.5f);
+        statusView.setLineSpacing(dp(2), 1f);
+        statusView.setPadding(dp(12), dp(8), dp(12), dp(8));
+        statusView.setBackground(rounded(COLOR_CARD, COLOR_BORDER, 10));
+        LinearLayout.LayoutParams statusLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        statusLp.topMargin = dp(8);
+        root.addView(statusView, statusLp);
+
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams gridLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        gridLp.topMargin = dp(8);
+        root.addView(grid, gridLp);
+
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        grid.addView(row1, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams row2Lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        row2Lp.topMargin = dp(6);
+        grid.addView(row2, row2Lp);
+
+        addCard(row1, makeCard("AirPlay", "镜像 · 音频", COLOR_BLUE, v ->
+                startActivity(new Intent(IcarLauncherActivity.this, MainActivity.class))));
+        addCard(row1, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, v ->
+                startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class))));
+        addCard(row2, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, v ->
+                startActivity(new Intent(IcarLauncherActivity.this, AndroidAutoActivity.class))));
+        addCard(row2, makeCard("Huawei HiCar", "华为手机", COLOR_RED, v -> {
+            try {
+                startActivity(new Intent(IcarLauncherActivity.this, local.hicarlab.HomeActivity.class));
+            } catch (Throwable t) {
+                toast("HiCar 组件未就绪：" + t.getClass().getSimpleName());
+            }
+        }));
+
+        LinearLayout tools = new LinearLayout(this);
+        tools.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams toolsLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(38));
+        toolsLp.topMargin = dp(8);
+        root.addView(tools, toolsLp);
+
+        floatButton = makeToolButton("小白点：开", v -> toggleFloat());
+        tools.addView(floatButton);
+        tools.addView(makeToolButton("悬浮窗权限", v -> openOverlayPermission()));
+        tools.addView(makeToolButton("认证设置", v ->
+                startActivity(new Intent(IcarLauncherActivity.this, AuthSettingsActivity.class))));
+        tools.addView(makeToolButton("桌面设置", v -> {
+            if (HomeSafety.isDefaultHome(IcarLauncherActivity.this)) {
+                toast("本应用当前被设为默认桌面；请在系统设置中选择原车机桌面");
+            } else {
+                toast("当前仍使用原系统桌面；这里只打开系统桌面选择页");
+            }
+            HomeSafety.openHomeSettings(IcarLauncherActivity.this);
+        }));
+
+        Button back = new Button(this);
+        back.setText("←  返回锐际主屏幕");
+        back.setAllCaps(false);
+        back.setTextSize(13);
+        back.setTextColor(COLOR_TEXT);
+        back.setTypeface(null, Typeface.BOLD);
+        back.setGravity(Gravity.CENTER);
+        back.setMinHeight(0);
+        back.setMinimumHeight(0);
+        back.setPadding(dp(10), 0, dp(10), 0);
+        back.setStateListAnimator(null);
+        back.setBackground(rounded(COLOR_CARD_ALT, COLOR_BLUE, 10));
+        back.setOnClickListener(v -> goCarHome());
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(42));
+        backLp.topMargin = dp(8);
+        root.addView(back, backLp);
+
+        TextView footer = new TextView(this);
+        footer.setText("CarPlay 仍需 MFi 材料 · HiCar 为实验接收端 · 不修改系统分区");
+        footer.setTextColor(COLOR_MUTED);
+        footer.setTextSize(9.5f);
+        footer.setGravity(Gravity.CENTER);
+        footer.setPadding(0, dp(5), 0, 0);
+        root.addView(footer, wrap());
+    }
+
+    private LinearLayout buildHeader() {
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView title = new TextView(this);
         title.setText("iCarPlay");
-        title.setTextColor(Color.parseColor("#E6EDF3"));
-        title.setTextSize(22);
-        root.addView(title, wrap());
+        title.setTextColor(COLOR_TEXT);
+        title.setTextSize(20);
+        title.setTypeface(null, Typeface.BOLD);
+        header.addView(title, wrap());
 
-        TextView sub = new TextView(this);
-        sub.setText("2020 福特锐际 · SYNC+ 1.0 · Android 8.1\n"
-                + "AirPlay + Android Auto + Huawei HiCar + CarPlay 入口，一个 APK");
-        sub.setTextColor(Color.parseColor("#8B949E"));
-        sub.setTextSize(12);
-        sub.setPadding(0, dp(6), 0, dp(12));
-        root.addView(sub, wrap());
+        TextView model = new TextView(this);
+        model.setText("  2020 福特锐际 · SYNC+ 1.0");
+        model.setTextColor(COLOR_MUTED);
+        model.setTextSize(11);
+        header.addView(model, wrap());
 
-        statusView = new TextView(this);
-        statusView.setTextColor(Color.parseColor("#C9D1D9"));
-        statusView.setTextSize(13);
-        statusView.setLineSpacing(dp(4), 1f);
-        root.addView(statusView, wrap());
+        View spacer = new View(this);
+        header.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
 
-        LinearLayout buttons = new LinearLayout(this);
-        buttons.setOrientation(LinearLayout.VERTICAL);
-        buttons.setPadding(0, dp(14), 0, 0);
+        TextView version = new TextView(this);
+        version.setText(VERSION_LABEL);
+        version.setTextColor(COLOR_MUTED);
+        version.setTextSize(11);
+        header.addView(version, wrap());
 
-        buttons.addView(makeButton("AirPlay 接收（镜像 / 音频）", new View.OnClickListener() {
-            public void onClick(View v) {
-                startActivity(new Intent(IcarLauncherActivity.this, MainActivity.class));
-            }
-        }), wrap());
+        return header;
+    }
 
-        buttons.addView(makeButton("CarPlay 接收（有线 / 无线）", new View.OnClickListener() {
-            public void onClick(View v) {
-                startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class));
-            }
-        }), wrap());
+    private LinearLayout makeCard(String title, String subtitle, int accent,
+                                  View.OnClickListener listener) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER);
+        card.setPadding(dp(6), dp(4), dp(6), dp(4));
+        card.setBackground(rounded(COLOR_CARD, accent, 10));
+        card.setClickable(true);
+        card.setFocusable(true);
+        card.setOnClickListener(listener);
 
-        buttons.addView(makeButton("Android Auto 接收（USB / 无线）", new View.OnClickListener() {
-            public void onClick(View v) {
-                startActivity(new Intent(IcarLauncherActivity.this, AndroidAutoActivity.class));
-            }
-        }), wrap());
+        TextView titleView = new TextView(this);
+        titleView.setText(title);
+        titleView.setTextColor(accent);
+        titleView.setTextSize(16);
+        titleView.setTypeface(null, Typeface.BOLD);
+        titleView.setGravity(Gravity.CENTER);
+        card.addView(titleView, wrap());
 
-        buttons.addView(makeButton("Huawei HiCar 接收（华为手机）", new View.OnClickListener() {
-            public void onClick(View v) {
-                try {
-                    startActivity(new Intent(IcarLauncherActivity.this, local.hicarlab.HomeActivity.class));
-                } catch (Throwable t) {
-                    toast("HiCar 组件未就绪：" + t.getClass().getSimpleName());
-                }
-            }
-        }), wrap());
+        TextView subtitleView = new TextView(this);
+        subtitleView.setText(subtitle);
+        subtitleView.setTextColor(COLOR_MUTED);
+        subtitleView.setTextSize(10);
+        subtitleView.setGravity(Gravity.CENTER);
+        subtitleView.setPadding(0, dp(2), 0, 0);
+        card.addView(subtitleView, wrap());
 
-        floatButton = makeButton("开启内置小白点", new View.OnClickListener() {
-            public void onClick(View v) {
-                if (!Settings.canDrawOverlays(IcarLauncherActivity.this)) {
-                    toast("先授权：显示在上层 / 悬浮窗");
-                    openOverlayPermission();
-                    return;
-                }
-                startService(new Intent(IcarLauncherActivity.this, FloatService.class));
-                prefs.edit().putBoolean("float_running", true).apply();
-                refresh();
-            }
-        });
-        buttons.addView(floatButton, wrap());
+        return card;
+    }
 
-        buttons.addView(makeButton("关闭内置小白点", new View.OnClickListener() {
-            public void onClick(View v) {
-                stopService(new Intent(IcarLauncherActivity.this, FloatService.class));
-                prefs.edit().putBoolean("float_running", false).apply();
-                refresh();
-            }
-        }), wrap());
+    private void addCard(LinearLayout row, View card) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        lp.setMargins(dp(4), 0, dp(4), 0);
+        row.addView(card, lp);
+    }
 
-        buttons.addView(makeButton("授予悬浮窗权限", new View.OnClickListener() {
-            public void onClick(View v) { openOverlayPermission(); }
-        }), wrap());
-
-        buttons.addView(makeButton("系统桌面设置（手动确认）", new View.OnClickListener() {
-            public void onClick(View v) {
-                if (HomeSafety.isDefaultHome(IcarLauncherActivity.this)) {
-                    toast("本应用当前被设为默认桌面；请在系统设置中选择原车机桌面");
-                } else {
-                    toast("当前仍使用原系统桌面；这里只打开系统桌面选择页");
-                }
-                HomeSafety.openHomeSettings(IcarLauncherActivity.this);
-            }
-        }), wrap());
-
-        if (SafetyGuard.safeMode(this)) {
-            buttons.addView(makeButton("清除安全模式（不自动恢复开机自启）", new View.OnClickListener() {
-                public void onClick(View v) {
-                    SafetyGuard.clearSafeMode(IcarLauncherActivity.this);
-                    toast("已清除安全模式标记；开机自启仍保持关闭，需要时请到 HiCar 页面手动开启");
-                    refresh();
-                }
-            }), wrap());
-        }
-
-        buttons.addView(makeButton("认证与连接设置", new View.OnClickListener() {
-            public void onClick(View v) {
-                startActivity(new Intent(IcarLauncherActivity.this, AuthSettingsActivity.class));
-            }
-        }), wrap());
-
-        buttons.addView(makeButton("这个版本能做什么", new View.OnClickListener() {
-            public void onClick(View v) {
-                toast("AirPlay 与 Android Auto 已接入；Huawei HiCar 为实验接收端；CarPlay 仍需 MFi 材料。");
-            }
-        }), wrap());
-
-        root.addView(buttons, wrap());
-
-        TextView note = new TextView(this);
-        note.setText("\n说明：\n"
-                + "· 悬浮球由本 APK 自带，不需要第二个小白点 App；\n"
-                + "· 不修改系统分区、系统设置，不申请设备管理员；不会自动替换桌面；\n"
-                + "· 默认不注册开机自启；HiCar 开机自启需在 HiCar 页面二次确认后才启用；\n"
-                + "· 连续异常会进入安全模式并自动关闭开机自启，看门狗会退回本页；\n"
-                + "· AirPlay 不需要 MFi，iOS 可以直接发现并镜像；\n"
-                + "· Android Auto 有线走 USB AOA，无线需手机开启 Headunit Server；\n"
-                + "· 华为手机走 HiCar：需手机系统自带 HiCar，首次在系统蓝牙里配对；\n"
-                + "· HiCar 无线热点接口按 Android 10+ 设计，Android 8.1 上属于实验路径；\n"
-                + "· CarPlay 需要 Apple MFi 认证身份，没有材料无法完成握手。");
-        note.setTextColor(Color.parseColor("#8B949E"));
-        note.setTextSize(11);
-        root.addView(note, wrap());
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.addView(root, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        setContentView(scroll);
+    private Button makeToolButton(String text, View.OnClickListener listener) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setAllCaps(false);
+        button.setTextSize(11.5f);
+        button.setTextColor(COLOR_TEXT);
+        button.setGravity(Gravity.CENTER);
+        button.setMinHeight(0);
+        button.setMinimumHeight(0);
+        button.setPadding(dp(4), 0, dp(4), 0);
+        button.setStateListAnimator(null);
+        button.setBackground(rounded(COLOR_CARD, COLOR_BORDER, 8));
+        button.setOnClickListener(listener);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        lp.setMargins(dp(4), 0, dp(4), 0);
+        button.setLayoutParams(lp);
+        return button;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        refresh();
+    }
+
+    @Override
+    public void onBackPressed() {
+        goCarHome();
+    }
+
+    /**
+     * 返回原车机桌面。若本应用被设成默认桌面，则不去启动自己，
+     * 而是提示并打开系统桌面选择页，避免在车机上形成“返回又回到本应用”的死循环。
+     */
+    private void goCarHome() {
+        if (HomeSafety.goToSystemHome(this)) {
+            finish();
+            return;
+        }
+        toast("本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面");
+        HomeSafety.openHomeSettings(this);
+    }
+
+    private void toggleFloat() {
+        boolean running = prefs.getBoolean("float_running", false);
+        if (running) {
+            stopService(new Intent(this, FloatService.class));
+            prefs.edit().putBoolean("float_running", false).apply();
+            refresh();
+            return;
+        }
+        if (!Settings.canDrawOverlays(this)) {
+            toast("先授权：显示在上层 / 悬浮窗");
+            openOverlayPermission();
+            return;
+        }
+        startService(new Intent(this, FloatService.class));
+        prefs.edit().putBoolean("float_running", true).apply();
         refresh();
     }
 
@@ -195,20 +293,35 @@ public class IcarLauncherActivity extends Activity {
         String auth = CarPlayCore.authLabel(this);
         int usb = CarPlayCore.appleUsbCount(this);
 
-        statusView.setText(
-                "设备：" + Build.MANUFACTURER + " " + Build.MODEL
-                        + "  ·  Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")\n"
-                        + "系统桌面：" + (defaultHome ? "⚠ 本应用当前为默认桌面（建议切回原桌面）" : "原车机桌面（推荐）") + "\n"
-                        + "安全模式：" + (safeMode ? "已触发；开机自启已关闭" : "正常") + "\n"
-                        + "悬浮窗权限：" + (overlay ? "已授予" : "未授予") + "\n"
-                        + "内置小白点：" + (running ? "运行中" : "未运行") + "\n"
-                        + "AirPlay 服务：" + (isAirPlayServiceRunning() ? "运行中" : "未运行") + "\n"
-                        + "CarPlay 认证：" + auth + "\n"
-                        + "Apple USB 设备：" + (usb > 0 ? usb + " 个" : "未检测到") + "\n"
-                        + "Android Auto：" + (isAndroidAutoServiceRunning() ? "服务运行中" : "未运行") + "\n"
-                        + "Huawei HiCar：" + (isHiCarServiceRunning() ? "服务运行中" : "未运行"));
+        String desktop = defaultHome ? "⚠ 本应用为默认桌面" : "原车机桌面";
+        String safe = safeMode ? "已触发（点此清除）" : "正常";
 
-        floatButton.setText(running ? "重启内置小白点" : "开启内置小白点");
+        statusView.setText(
+                "设备  " + Build.MANUFACTURER + " " + Build.MODEL
+                        + "   ·   Android " + Build.VERSION.RELEASE
+                        + " (API " + Build.VERSION.SDK_INT + ")\n"
+                        + "桌面  " + desktop + "   ·   安全模式  " + safe
+                        + "   ·   悬浮窗  " + (overlay ? "已授予" : "未授予") + "\n"
+                        + "小白点  " + (running ? "运行中" : "未运行")
+                        + "   ·   AirPlay  " + (isAirPlayServiceRunning() ? "运行中" : "未运行")
+                        + "   ·   CarPlay  " + auth
+                        + "   ·   USB  " + (usb > 0 ? usb + " 个" : "未检测") + "\n"
+                        + "Android Auto  " + (isAndroidAutoServiceRunning() ? "运行中" : "未运行")
+                        + "   ·   Huawei HiCar  " + (isHiCarServiceRunning() ? "运行中" : "未运行"));
+
+        floatButton.setText(running ? "小白点：关" : "小白点：开");
+
+        if (safeMode) {
+            statusView.setClickable(true);
+            statusView.setOnClickListener(v -> {
+                SafetyGuard.clearSafeMode(IcarLauncherActivity.this);
+                toast("已清除安全模式；开机自启仍保持关闭");
+                refresh();
+            });
+        } else {
+            statusView.setClickable(false);
+            statusView.setOnClickListener(null);
+        }
     }
 
     @SuppressWarnings("deprecation")
@@ -265,17 +378,15 @@ public class IcarLauncherActivity extends Activity {
         }
     }
 
-    private Button makeButton(String text, View.OnClickListener l) {
-        Button b = new Button(this);
-        b.setText(text);
-        b.setAllCaps(false);
-        b.setTextSize(13);
-        b.setGravity(Gravity.CENTER);
-        b.setOnClickListener(l);
-        LinearLayout.LayoutParams lp = wrap();
-        lp.bottomMargin = dp(7);
-        b.setLayoutParams(lp);
-        return b;
+    private GradientDrawable rounded(int fill, int stroke, int radiusDp) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setShape(GradientDrawable.RECTANGLE);
+        drawable.setColor(fill);
+        drawable.setCornerRadius(dp(radiusDp));
+        if (stroke != 0) {
+            drawable.setStroke(dp(1), stroke);
+        }
+        return drawable;
     }
 
     private LinearLayout.LayoutParams wrap() {
