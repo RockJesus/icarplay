@@ -1,7 +1,7 @@
 package io.github.jqssun.airplay
 
-import info.anodsplace.headunit.App
 import dagger.hilt.android.HiltAndroidApp
+import local.hicarlab.LabApplication
 
 @HiltAndroidApp
-class AirPlayApp : App()
+class AirPlayApp : LabApplication()

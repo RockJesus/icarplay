@@ -1,0 +1,10 @@
+package local.hicarlab;
+import info.anodsplace.headunit.App;
+public class LabApplication extends App {
+    private ReceiverEngine engine;
+    private VideoSink video;
+    private final InputRouter input=new InputRouter();
+    InputRouter input(){return input;}
+    synchronized VideoSink video(){if(video==null)video=new VideoSink(this);return video;}
+    synchronized ReceiverEngine engine(){if(engine==null)engine=new ReceiverEngine(this);return engine;}
+}

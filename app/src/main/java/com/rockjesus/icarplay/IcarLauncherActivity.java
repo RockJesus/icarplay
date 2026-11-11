@@ -54,7 +54,7 @@ public class IcarLauncherActivity extends Activity {
 
         TextView sub = new TextView(this);
         sub.setText("2020 福特锐际 · SYNC+ 1.0 · Android 8.1\n"
-                + "AirPlay + Android Auto + CarPlay + 内置小白点，一个 APK");
+                + "AirPlay + Android Auto + Huawei HiCar + CarPlay 入口，一个 APK");
         sub.setTextColor(Color.parseColor("#8B949E"));
         sub.setTextSize(12);
         sub.setPadding(0, dp(6), 0, dp(12));
@@ -85,6 +85,16 @@ public class IcarLauncherActivity extends Activity {
         buttons.addView(makeButton("Android Auto 接收（USB / 无线）", new View.OnClickListener() {
             public void onClick(View v) {
                 startActivity(new Intent(IcarLauncherActivity.this, AndroidAutoActivity.class));
+            }
+        }), wrap());
+
+        buttons.addView(makeButton("Huawei HiCar 接收（华为手机）", new View.OnClickListener() {
+            public void onClick(View v) {
+                try {
+                    startActivity(new Intent(IcarLauncherActivity.this, local.hicarlab.HomeActivity.class));
+                } catch (Throwable t) {
+                    toast("HiCar 组件未就绪：" + t.getClass().getSimpleName());
+                }
             }
         }), wrap());
 
@@ -122,7 +132,7 @@ public class IcarLauncherActivity extends Activity {
 
         buttons.addView(makeButton("这个版本能做什么", new View.OnClickListener() {
             public void onClick(View v) {
-                toast("AirPlay 已接入；CarPlay 协议骨架已接入，认证材料仍需自备。");
+                toast("AirPlay 与 Android Auto 已接入；Huawei HiCar 为实验接收端；CarPlay 仍需 MFi 材料。");
             }
         }), wrap());
 
@@ -134,6 +144,8 @@ public class IcarLauncherActivity extends Activity {
                 + "· 默认不注册开机自启，避免 SYNC+ 重启循环；\n"
                 + "· AirPlay 不需要 MFi，iOS 可以直接发现并镜像；\n"
                 + "· Android Auto 有线走 USB AOA，无线需手机开启 Headunit Server；\n"
+                + "· 华为手机走 HiCar：需手机系统自带 HiCar，首次在系统蓝牙里配对；\n"
+                + "· HiCar 无线热点接口按 Android 10+ 设计，Android 8.1 上属于实验路径；\n"
                 + "· CarPlay 需要 Apple MFi 认证身份，没有材料无法完成握手。");
         note.setTextColor(Color.parseColor("#8B949E"));
         note.setTextSize(11);
@@ -165,7 +177,8 @@ public class IcarLauncherActivity extends Activity {
                         + "AirPlay 服务：" + (isAirPlayServiceRunning() ? "运行中" : "未运行") + "\n"
                         + "CarPlay 认证：" + auth + "\n"
                         + "Apple USB 设备：" + (usb > 0 ? usb + " 个" : "未检测到") + "\n"
-                        + "Android Auto：" + (isAndroidAutoServiceRunning() ? "服务运行中" : "未运行"));
+                        + "Android Auto：" + (isAndroidAutoServiceRunning() ? "服务运行中" : "未运行") + "\n"
+                        + "Huawei HiCar：" + (isHiCarServiceRunning() ? "服务运行中" : "未运行"));
 
         floatButton.setText(running ? "重启内置小白点" : "开启内置小白点");
     }
@@ -178,6 +191,20 @@ public class IcarLauncherActivity extends Activity {
             for (ActivityManager.RunningServiceInfo info : am.getRunningServices(Integer.MAX_VALUE)) {
                 if ("info.anodsplace.headunit.aap.AapService"
                         .equals(info.service.getClassName())) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) { }
+        return false;
+    }
+
+    @SuppressWarnings("deprecation")
+    private boolean isHiCarServiceRunning() {
+        try {
+            ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            if (am == null) return false;
+            for (ActivityManager.RunningServiceInfo info : am.getRunningServices(Integer.MAX_VALUE)) {
+                if ("local.hicarlab.ReceiverService".equals(info.service.getClassName())) {
                     return true;
                 }
             }
