@@ -124,6 +124,19 @@
                 android:value="floating overlay shortcut" />
         </service>
 
+        <service
+            android:name="com.rockjesus.icarplay.FloatAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true"
+            android:label="iCarPlay 小白点">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/float_accessibility_service" />
+        </service>
+
         <receiver
             android:name="com.rockjesus.icarplay.AndroidAutoUsbReceiver"
             android:exported="true">

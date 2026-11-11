@@ -32,6 +32,7 @@ public final class PermissionOnboarding {
     private static final String KEY_OVERLAY_ASKED = "permissions_overlay_asked";
     private static final String KEY_RUNTIME_ASKED = "permissions_runtime_asked";
     private static final String KEY_BATTERY_ASKED = "permissions_battery_asked";
+    private static final String KEY_A11Y_ASKED = "permissions_a11y_asked";
     private static final String KEY_FLOAT_AUTO = "float_auto";
 
     private PermissionOnboarding() {
@@ -45,6 +46,7 @@ public final class PermissionOnboarding {
     public static void onResume(Activity activity) {
         SharedPreferences p = prefs(activity);
         if (p.getBoolean(KEY_DONE, false)) {
+            maybeAskAccessibility(activity);
             startFloatIfPossible(activity);
             return;
         }
@@ -197,6 +199,42 @@ public final class PermissionOnboarding {
         Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
     }
 
+    /** 首次回到首页时，提示开启能盖住原车机桌面的无障碍悬浮层。 */
+    private static void maybeAskAccessibility(Activity activity) {
+        SharedPreferences p = prefs(activity);
+        if (p.getBoolean(KEY_A11Y_ASKED, false)) return;
+        if (!p.getBoolean(KEY_FLOAT_AUTO, true)) return;
+        if (isAccessibilityEnabled(activity)) return;
+        p.edit().putBoolean(KEY_A11Y_ASKED, true).apply();
+        new AlertDialog.Builder(activity)
+                .setTitle("让小白点显示在原车机桌面")
+                .setMessage("原车机桌面位于系统层，普通悬浮窗会被它盖住。开启 iCarPlay 无障碍服务后，小白点才能显示在车机桌面上。该服务只绘制悬浮球，不读取屏幕内容。")
+                .setPositiveButton("去开启", (d, w) -> {
+                    try {
+                        activity.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                    } catch (Throwable t) {
+                        Toast.makeText(activity, "无法打开无障碍设置", Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton("暂不", null)
+                .show();
+    }
+
+    /** 是否已在系统无障碍设置中启用 iCarPlay 小白点服务。 */
+    public static boolean isAccessibilityEnabled(Context context) {
+        try {
+            String enabled = Settings.Secure.getString(
+                    context.getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (enabled == null || enabled.length() == 0) return false;
+            ComponentName cn = new ComponentName(context, FloatAccessibilityService.class);
+            return enabled.contains(cn.flattenToString())
+                    || enabled.contains(cn.flattenToShortString());
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     /** 默认自动开启小白点；用户在首页手动关掉后不再强制拉起。 */
     public static void startFloatIfPossible(Activity activity) {
         SharedPreferences p = prefs(activity);
@@ -204,6 +242,14 @@ public final class PermissionOnboarding {
             return;
         }
         if (!p.getBoolean(KEY_FLOAT_AUTO, true)) {
+            return;
+        }
+        if (isAccessibilityEnabled(activity)) {
+            // 无障碍悬浮层已经能覆盖原车机桌面，普通悬浮窗让位，避免双球。
+            if (isFloatServiceRunning(activity)) {
+                try { activity.stopService(new Intent(activity, FloatService.class)); }
+                catch (Throwable ignored) { }
+            }
             return;
         }
         if (!Settings.canDrawOverlays(activity)) {

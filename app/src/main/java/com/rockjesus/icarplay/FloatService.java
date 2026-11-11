@@ -56,6 +56,12 @@ public class FloatService extends Service {
 
         startForeground(NOTIF_ID, buildNotification());
 
+        if (PermissionOnboarding.isAccessibilityEnabled(this)) {
+            // 无障碍层已接管，避免出现双球。
+            stopSelf();
+            return;
+        }
+
         if (!Settings.canDrawOverlays(this)) {
             toast("没有悬浮窗权限，无法显示小白点");
             stopSelf();
@@ -67,6 +73,10 @@ public class FloatService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (PermissionOnboarding.isAccessibilityEnabled(this)) {
+            stopSelf();
+            return START_NOT_STICKY;
+        }
         if (!Settings.canDrawOverlays(this)) {
             toast("没有悬浮窗权限，无法显示小白点");
             return START_NOT_STICKY;
@@ -256,7 +266,9 @@ public class FloatService extends Service {
             try { wm.removeView(ball); } catch (Exception ignored) { }
             ball = null;
         }
-        prefs.edit().putBoolean("float_running", false).apply();
+        if (!PermissionOnboarding.isAccessibilityEnabled(this)) {
+            prefs.edit().putBoolean("float_running", false).apply();
+        }
     }
 
     @Override

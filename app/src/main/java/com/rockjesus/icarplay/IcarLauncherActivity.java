@@ -36,7 +36,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    private static final String VERSION_LABEL = "v0.5.0";
+    private static final String VERSION_LABEL = "v0.5.1";
 
     private static final int COLOR_BG = Color.parseColor("#0E1216");
     private static final int COLOR_CARD = Color.parseColor("#161B22");
@@ -331,11 +331,26 @@ public class IcarLauncherActivity extends Activity {
         boolean running = prefs.getBoolean("float_running", false);
         if (running) {
             stopService(new Intent(this, FloatService.class));
+            FloatAccessibilityService.hideIfRunning();
             prefs.edit()
                     .putBoolean("float_running", false)
                     .putBoolean("float_auto", false)
                     .apply();
             refresh();
+            return;
+        }
+        boolean a11y = PermissionOnboarding.isAccessibilityEnabled(this);
+        if (a11y) {
+            prefs.edit().putBoolean("float_auto", true).apply();
+            if (FloatAccessibilityService.showIfRunning()) {
+                prefs.edit().putBoolean("float_running", true).apply();
+                refresh();
+                return;
+            }
+            toast("无障碍服务未连接，请在系统设置里重新开启 iCarPlay 小白点");
+            try {
+                startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+            } catch (Throwable ignored) { }
             return;
         }
         if (!Settings.canDrawOverlays(this)) {
@@ -376,7 +391,7 @@ public class IcarLauncherActivity extends Activity {
                         + " (API " + Build.VERSION.SDK_INT + ")\n"
                         + "桌面  " + desktop + sep + "安全模式  " + safe
                         + sep + "悬浮窗  " + (overlay ? "已授予" : "未授予") + "\n"
-                        + "小白点  " + (running ? "运行中" : "未运行")
+                        + "小白点  " + (running ? (PermissionOnboarding.isAccessibilityEnabled(this) ? "运行中·无障碍" : "运行中") : "未运行")
                         + sep + "AirPlay  " + (isAirPlayServiceRunning() ? "运行中" : "未运行")
                         + sep + "CarPlay  " + auth
                         + sep + "USB  " + (usb > 0 ? usb + " 个" : "未检测") + "\n"
