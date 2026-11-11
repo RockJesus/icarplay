@@ -1,6 +1,7 @@
 package local.hicarlab;
 
-import com.rockjesus.icarplay.HomeSafety;
+import com.rockjesus.icarplay.HomeSafety
+import com.rockjesus.icarplay.PermissionOnboarding;
 import com.rockjesus.icarplay.PageUi;
 import android.Manifest;
 import android.app.Activity;
@@ -153,7 +154,10 @@ public final class HomeActivity extends ThemeActivity {
         LinearLayout.LayoutParams carHomeLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,PageUi.dp(this,38));
         PageUi.margin(carHomeLp,this,0,6,0,0);
         carHome.setOnClickListener(v->{
-            if(HomeSafety.goToSystemHome(this))moveTaskToBack(true);
+            if(HomeSafety.goToSystemHome(this)){
+                PermissionOnboarding.startFloatIfPossible(this);
+                moveTaskToBack(true);
+            }
             else{Toast.makeText(this,"本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面",Toast.LENGTH_LONG).show();HomeSafety.openHomeSettings(this);}
         });
         root.addView(carHome,carHomeLp);

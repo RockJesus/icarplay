@@ -319,6 +319,7 @@ public class IcarLauncherActivity extends Activity {
             // Keep the task (and the floating-dot foreground service) alive when
             // returning to the factory launcher; finish() lets some head units
             // tear down the whole task and the overlay with it.
+            PermissionOnboarding.startFloatIfPossible(this);
             moveTaskToBack(true);
             return;
         }

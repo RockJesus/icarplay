@@ -14,6 +14,7 @@ import android.util.Rational
 import android.view.WindowManager
 import android.widget.Toast
 import com.rockjesus.icarplay.HomeSafety
+import com.rockjesus.icarplay.PermissionOnboarding
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -126,7 +127,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun _goCarHome() {
-        if (HomeSafety.goToSystemHome(this)) moveTaskToBack(true)
+        if (HomeSafety.goToSystemHome(this)) {
+            PermissionOnboarding.startFloatIfPossible(this)
+            moveTaskToBack(true)
+        }
         else {
             Toast.makeText(this, "本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面", Toast.LENGTH_LONG).show()
             HomeSafety.openHomeSettings(this)
