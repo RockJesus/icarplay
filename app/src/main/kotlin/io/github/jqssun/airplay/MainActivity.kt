@@ -12,6 +12,8 @@ import android.os.Bundle
 import android.os.IBinder
 import android.util.Rational
 import android.view.WindowManager
+import android.widget.Toast
+import com.rockjesus.icarplay.HomeSafety
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -116,9 +118,18 @@ class MainActivity : ComponentActivity() {
                     onSurfaceAvailable = { viewModel.onSurfaceAvailable(it) },
                     onSurfaceDestroyed = { viewModel.onSurfaceDestroyed(it) },
                     onPip = { enterPip() },
-                    onLocalNetwork = ::_requestLocalNetwork
+                    onLocalNetwork = ::_requestLocalNetwork,
+                    onCarHome = ::_goCarHome
                 )
             }
+        }
+    }
+
+    private fun _goCarHome() {
+        if (HomeSafety.goToSystemHome(this)) finish()
+        else {
+            Toast.makeText(this, "本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面", Toast.LENGTH_LONG).show()
+            HomeSafety.openHomeSettings(this)
         }
     }
 

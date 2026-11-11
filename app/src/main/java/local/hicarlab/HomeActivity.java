@@ -1,5 +1,6 @@
 package local.hicarlab;
 
+import com.rockjesus.icarplay.HomeSafety;
 import com.rockjesus.icarplay.PageUi;
 import android.Manifest;
 import android.app.Activity;
@@ -41,7 +42,7 @@ public final class HomeActivity extends ThemeActivity {
         root.setPadding(PageUi.dp(this,18),PageUi.dp(this,10),PageUi.dp(this,18),PageUi.dp(this,8));
         setContentView(root);
 
-        root.addView(PageUi.header(this,"HiCar 接收端","实验版 0.11.1 · v0.4.6"),PageUi.matchWrap(this));
+        root.addView(PageUi.header(this,"HiCar 接收端","实验版 0.11.1 · v0.4.8"),PageUi.matchWrap(this));
 
         TextView help=PageUi.text(this,"开启手机蓝牙和 WLAN，点“开始连接”；首次连接按手机提示输入六位码。",10.5f,PageUi.MUTED,false);
         LinearLayout.LayoutParams helpLp=PageUi.matchWrap(this);PageUi.margin(helpLp,this,0,3,0,6);root.addView(help,helpLp);
@@ -147,6 +148,15 @@ public final class HomeActivity extends ThemeActivity {
             try{startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName())));}
             catch(RuntimeException e){Toast.makeText(this,"请在系统设置中打开本应用详情",Toast.LENGTH_LONG).show();}
         });
+
+        Button carHome=PageUi.button(this,"← 返回车机屏幕",12f,PageUi.BLUE);
+        LinearLayout.LayoutParams carHomeLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,PageUi.dp(this,38));
+        PageUi.margin(carHomeLp,this,0,6,0,0);
+        carHome.setOnClickListener(v->{
+            if(HomeSafety.goToSystemHome(this))finish();
+            else{Toast.makeText(this,"本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面",Toast.LENGTH_LONG).show();HomeSafety.openHomeSettings(this);}
+        });
+        root.addView(carHome,carHomeLp);
 
         TextView note=PageUi.text(this,"请停车后操作。",9.5f,PageUi.MUTED,false);
         note.setGravity(android.view.Gravity.CENTER);

@@ -94,7 +94,8 @@ fun MainScreen(
     onSurfaceAvailable: (android.view.Surface) -> Unit,
     onSurfaceDestroyed: (android.view.Surface) -> Unit,
     onPip: () -> Unit = {},
-    onLocalNetwork: () -> Unit = {}
+    onLocalNetwork: () -> Unit = {},
+    onCarHome: () -> Unit = {}
 ) {
     var tab by remember { mutableStateOf(Tab.OVERVIEW) }
     var fullscreen by remember { mutableStateOf(false) }
@@ -538,12 +539,28 @@ fun MainScreen(
                 }
             }
         ) { padding ->
-            Box(modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
-                TabContent(
-                    tab, viewModel, video,
-                    onFullscreen = { fullscreen = true }, onPip = onPip, onLocalNetwork = onLocalNetwork,
-                    showAudioMode = audioOnly
-                )
+            Column(modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onCarHome, modifier = Modifier.dpadFocus()) {
+                        Text("← 返回车机屏幕", style = MaterialTheme.typography.labelLarge)
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Text("iCarPlay", style = MaterialTheme.typography.titleSmall)
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    TabContent(
+                        tab, viewModel, video,
+                        onFullscreen = { fullscreen = true }, onPip = onPip, onLocalNetwork = onLocalNetwork,
+                        showAudioMode = audioOnly
+                    )
+                }
             }
         }
     }
