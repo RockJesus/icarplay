@@ -1,5 +1,6 @@
 package local.hicarlab;
 
+import com.rockjesus.icarplay.PageUi;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -33,25 +34,72 @@ public final class HomeActivity extends ThemeActivity {
     }};
     @Override public void onCreate(Bundle state){
         super.onCreate(state);if(state!=null)pending=state.getBoolean("pending");
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);
-        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(24),dp(36),dp(24),dp(24));root.setBackgroundColor(UiTheme.background(this));scroll.addView(root);
-        TextView title=new TextView(this);title.setText("HiCar 接收端");title.setTextSize(30);title.setTextColor(UiTheme.text(this));root.addView(title);
-        TextView version=new TextView(this);version.setText("实验版 0.11.1");version.setTextSize(14);version.setPadding(0,dp(8),0,dp(32));root.addView(version);
-        status=new TextView(this);status.setTextSize(24);status.setTextColor(UiTheme.accent(this));status.setPadding(dp(18),dp(24),dp(18),dp(24));status.setBackgroundColor(UiTheme.card(this));root.addView(status);
-        detail=new TextView(this);detail.setTextSize(15);detail.setPadding(dp(18),dp(12),dp(18),dp(12));root.addView(detail);
-        TextView help=new TextView(this);help.setText("开启华为手机的蓝牙和 WLAN，点击下方开始连接。首次连接按手机提示输入接收画面中的六位码。\n\n接收时可锁屏或切换应用；结束时请点停止连接。");help.setTextSize(16);help.setPadding(0,dp(24),0,dp(20));root.addView(help);
-        micSwitch=new Switch(this);micSwitch.setText("麦克风语音实验");micSwitch.setChecked(MicrophoneSender.enabled(this));root.addView(micSwitch);
-        micStatus=new TextView(this);micStatus.setTextSize(14);micStatus.setPadding(0,dp(8),0,dp(8));root.addView(micStatus);
+        LinearLayout root=new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(PageUi.BG);
+        root.setPadding(PageUi.dp(this,18),PageUi.dp(this,10),PageUi.dp(this,18),PageUi.dp(this,8));
+        setContentView(root);
+
+        root.addView(PageUi.header(this,"HiCar 接收端","实验版 0.11.1 · v0.4.6"),PageUi.matchWrap(this));
+
+        TextView help=PageUi.text(this,"开启手机蓝牙和 WLAN，点“开始连接”；首次连接按手机提示输入六位码。",10.5f,PageUi.MUTED,false);
+        LinearLayout.LayoutParams helpLp=PageUi.matchWrap(this);PageUi.margin(helpLp,this,0,3,0,6);root.addView(help,helpLp);
+
+        LinearLayout statusCard=PageUi.card(this,PageUi.BORDER,12,8);
+        status=PageUi.text(this,"正在读取状态…",18f,PageUi.GREEN,true);
+        statusCard.addView(status,PageUi.matchWrap(this));
+        detail=PageUi.text(this,"",10.5f,PageUi.MUTED,false);
+        statusCard.addView(detail,PageUi.matchWrap(this));
+        root.addView(statusCard,PageUi.matchWrap(this));
+
+        LinearLayout grid=new LinearLayout(this);grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setMinimumHeight(PageUi.dp(this,120));
+        LinearLayout.LayoutParams gridLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f);
+        PageUi.margin(gridLp,this,0,8,0,0);root.addView(grid,gridLp);
+
+        start=PageUi.button(this,"开始连接",13f,PageUi.GREEN);
+        stop=PageUi.button(this,"停止连接",13f,PageUi.RED);
+        retry=PageUi.button(this,"重新连接",12f,PageUi.BLUE);
+        retry.setVisibility(View.GONE);
+        Button trial=PageUi.button(this,"试运行自动接收",12f,PageUi.BLUE);
+        Button diag=PageUi.button(this,"设置与诊断",12f,PageUi.BORDER);
+        Button settings=PageUi.button(this,"系统后台与通知",12f,PageUi.BORDER);
+
+        grid.addView(row(start,stop),new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f));
+        LinearLayout row2=row(retry,trial);
+        LinearLayout.LayoutParams row2Lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f);
+        PageUi.margin(row2Lp,this,0,6,0,0);grid.addView(row2,row2Lp);
+        LinearLayout row3=row(diag,settings);
+        LinearLayout.LayoutParams row3Lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f);
+        PageUi.margin(row3Lp,this,0,6,0,0);grid.addView(row3,row3Lp);
+
+        LinearLayout switchCard=PageUi.card(this,PageUi.BORDER,10,5);
+        switchCard.setOrientation(LinearLayout.HORIZONTAL);
+        micSwitch=new Switch(this);micSwitch.setText("麦克风语音");micSwitch.setTextColor(PageUi.TEXT);PageUi.textSize(micSwitch,10f);
+        micSwitch.setChecked(MicrophoneSender.enabled(this));
+        micSwitch.setPadding(0,0,PageUi.dp(this,4),0);
+        LinearLayout.LayoutParams micLp=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f);
+        switchCard.addView(micSwitch,micLp);
+        Switch autoStart=new Switch(this);autoStart.setText("开机自动接收");autoStart.setTextColor(PageUi.TEXT);PageUi.textSize(autoStart,10f);
+        autoStart.setChecked(AutoStart.enabled(this));
+        LinearLayout.LayoutParams autoLp=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f);
+        switchCard.addView(autoStart,autoLp);
+        root.addView(switchCard,PageUi.matchWrap(this));
+
+        micStatus=PageUi.text(this,"",9.5f,PageUi.MUTED,false);
+        root.addView(micStatus,PageUi.matchWrap(this));
+
+        TextView autoHelp=PageUi.text(this,"开机自动接收默认关闭；开启后只后台等待已配对手机，不会自动弹画面。重复异常时安全模式会自动关闭。",9f,PageUi.MUTED,false);
+        autoHelp.setPadding(PageUi.dp(this,8),PageUi.dp(this,3),PageUi.dp(this,8),PageUi.dp(this,3));
+        autoHelp.setBackground(PageUi.rounded(this,PageUi.CARD,PageUi.BORDER,8));
+        root.addView(autoHelp,PageUi.matchWrap(this));
+
         micSwitch.setOnCheckedChangeListener((button,checked)->{
             if(checked&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){micSwitch.setChecked(false);requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},MICROPHONE);return;}
             getSharedPreferences("ui",0).edit().putBoolean("microphone",checked).apply();
             if(!checked)engine().disableMicrophone();
             else if(engine().isActive())Toast.makeText(this,"重新连接后启用；仅在手机请求语音时采集",Toast.LENGTH_LONG).show();
         });
-        Switch autoStart=new Switch(this);autoStart.setText("开机自动接收（默认关闭）");autoStart.setChecked(AutoStart.enabled(this));
-        autoStart.setPadding(0,dp(16),0,dp(8));root.addView(autoStart);
-        TextView autoHelp=new TextView(this);autoHelp.setText("默认关闭。开启后，车机每次启动会在后台等待已配对手机连接；不会自动弹出画面。\n首次请先手动连接。需要在系统中允许自启动及后台运行，保持蓝牙开启。重复异常时安全模式会自动关闭此项。语音功能请手动重新连接启用。");autoHelp.setTextSize(14);root.addView(autoHelp);
         autoStart.setOnCheckedChangeListener((button,checked)->{
             if(updatingAutoStart)return;
             if(!checked){
@@ -82,26 +130,35 @@ public final class HomeActivity extends ThemeActivity {
                     })
                     .show();
         });
-        button(root,"试运行自动接收",()->{
+
+        trial.setOnClickListener(v->{
             if(!AutoStart.enabled(this)){Toast.makeText(this,"请先开启“开机自动接收”",Toast.LENGTH_LONG).show();return;}
             String problem=AutoStart.problem(this);if(problem!=null){Toast.makeText(this,problem,Toast.LENGTH_LONG).show();return;}
             if(engine().isActive()){Toast.makeText(this,"请先停止当前连接，再试运行自动接收",Toast.LENGTH_LONG).show();return;}
             try{startForegroundService(new Intent(this,ReceiverService.class).setAction("AUTO_START"));Toast.makeText(this,"正在试运行：等待手机连接，点击接收通知打开画面；本轮不启用麦克风",Toast.LENGTH_LONG).show();}
             catch(RuntimeException e){Toast.makeText(this,"系统未允许自动接收，请检查后台运行设置",Toast.LENGTH_LONG).show();}
         });
-        start=button(root,"开始连接",()->{if(engine().isActive())openVideo();else{pending=true;continueStart();}});
-        retry=button(root,"重新连接",()->{engine().stop(true);pending=true;continueStart();});
-        stop=button(root,"停止连接",()->{pending=false;engine().stop(true);status.setText("已停止");});
-        button(root,"外观："+UiTheme.label(this),()->UiTheme.choose(this));
-        button(root,"设置与诊断",()->startActivity(new Intent(this,MainActivity.class)));
-        button(root,"系统后台与通知设置",()->{try{startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName())));}catch(RuntimeException e){Toast.makeText(this,"请在系统设置中打开本应用详情",Toast.LENGTH_LONG).show();}});
-        TextView note=new TextView(this);note.setText("请停车后操作。");note.setTextSize(13);note.setPadding(0,dp(24),0,0);root.addView(note);
-        setContentView(scroll);
+        start.setOnClickListener(v->{if(engine().isActive())openVideo();else{pending=true;continueStart();}});
+        retry.setOnClickListener(v->{engine().stop(true);pending=true;continueStart();});
+        stop.setOnClickListener(v->{pending=false;engine().stop(true);status.setText("已停止");});
+        diag.setOnClickListener(v->startActivity(new Intent(this,MainActivity.class)));
+        settings.setOnClickListener(v->{
+            try{startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName())));}
+            catch(RuntimeException e){Toast.makeText(this,"请在系统设置中打开本应用详情",Toast.LENGTH_LONG).show();}
+        });
+
+        TextView note=PageUi.text(this,"请停车后操作。",9.5f,PageUi.MUTED,false);
+        note.setGravity(android.view.Gravity.CENTER);
+        root.addView(note,PageUi.matchWrap(this));
         if(getIntent().getBooleanExtra("retry",false)){getIntent().removeExtra("retry");handler.post(()->{pending=true;continueStart();});}
     }
-    private Button button(LinearLayout root,String title,Runnable action){
-        Button b=new Button(this);b.setText(title);b.setTextSize(18);b.setMinHeight(dp(56));
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(10);root.addView(b,p);b.setOnClickListener(v->action.run());return b;
+    private LinearLayout row(Button left,Button right){
+        LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.MATCH_PARENT,1f);
+        PageUi.margin(lp,this,4,0,4,0);row.addView(left,lp);
+        LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.MATCH_PARENT,1f);
+        PageUi.margin(rp,this,4,0,4,0);row.addView(right,rp);
+        return row;
     }
     private void message(String value){pending=false;engine().reportProblem(value);Toast.makeText(this,value,Toast.LENGTH_LONG).show();}
     private void continueStart(){

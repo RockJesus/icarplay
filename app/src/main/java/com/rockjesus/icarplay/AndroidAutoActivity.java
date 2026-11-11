@@ -123,6 +123,12 @@ public class AndroidAutoActivity extends Activity {
                 setStatus("Android Auto 已停止。");
             }
         });
+        findViewById(R.id.auto_back).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_USB_PERMISSION);

@@ -2,18 +2,19 @@ package com.rockjesus.icarplay;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-/** CarPlay 接收页：有线 / 无线入口 + 认证状态。 */
+/**
+ * CarPlay 接收页：单屏全部显示。
+ * 状态、有线/无线、认证检查、认证设置、返回都在一页，不滚动。
+ */
 public class CarPlayActivity extends Activity {
 
     private TextView statusView;
@@ -24,82 +25,74 @@ public class CarPlayActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.parseColor("#0E1216"));
-        int pad = dp(22);
-        root.setPadding(pad, dp(16), pad, dp(16));
+        root.setBackgroundColor(PageUi.BG);
+        root.setPadding(PageUi.dp(this, 18), PageUi.dp(this, 10),
+                PageUi.dp(this, 18), PageUi.dp(this, 8));
+        setContentView(root);
 
-        TextView title = new TextView(this);
-        title.setText("CarPlay 接收");
-        title.setTextColor(Color.parseColor("#E6EDF3"));
-        title.setTextSize(20);
-        root.addView(title, wrap());
+        root.addView(PageUi.header(this, "CarPlay 接收", "v0.4.6"), PageUi.matchWrap(this));
 
-        TextView sub = new TextView(this);
-        sub.setText("iPhone → SYNC+ 车机 · 有线 USB / 无线 Wi-Fi");
-        sub.setTextColor(Color.parseColor("#8B949E"));
-        sub.setTextSize(12);
-        sub.setPadding(0, dp(6), 0, dp(12));
-        root.addView(sub, wrap());
+        TextView sub = PageUi.text(this, "iPhone → 车机 · 有线 USB / 无线 Wi-Fi", 11f,
+                PageUi.MUTED, false);
+        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
+        PageUi.margin(subLp, this, 0, 3, 0, 6);
+        root.addView(sub, subLp);
 
-        statusView = new TextView(this);
-        statusView.setTextColor(Color.parseColor("#C9D1D9"));
-        statusView.setTextSize(13);
-        statusView.setLineSpacing(dp(4), 1f);
-        root.addView(statusView, wrap());
+        statusView = PageUi.text(this, "正在读取认证状态…", 11.5f, PageUi.TEXT, false);
+        statusView.setPadding(PageUi.dp(this, 12), PageUi.dp(this, 8),
+                PageUi.dp(this, 12), PageUi.dp(this, 8));
+        statusView.setBackground(PageUi.rounded(this, PageUi.CARD, PageUi.BORDER, 10));
+        root.addView(statusView, PageUi.matchWrap(this));
 
-        LinearLayout buttons = new LinearLayout(this);
-        buttons.setOrientation(LinearLayout.VERTICAL);
-        buttons.setPadding(0, dp(14), 0, 0);
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setMinimumHeight(PageUi.dp(this, 110));
+        LinearLayout.LayoutParams gridLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        PageUi.margin(gridLp, this, 0, 8, 0, 0);
+        root.addView(grid, gridLp);
 
-        buttons.addView(makeButton("有线连接（USB）", new View.OnClickListener() {
-            public void onClick(View v) {
-                toast(CarPlayCore.startWired(CarPlayActivity.this));
-            }
-        }), wrap());
+        grid.addView(row(
+                action("有线连接（USB）", PageUi.BLUE,
+                        v -> toast(CarPlayCore.startWired(CarPlayActivity.this))),
+                action("无线连接（Wi-Fi）", PageUi.GREEN,
+                        v -> toast(CarPlayCore.startWireless(CarPlayActivity.this)))
+        ), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        buttons.addView(makeButton("无线连接（Wi-Fi）", new View.OnClickListener() {
-            public void onClick(View v) {
-                toast(CarPlayCore.startWireless(CarPlayActivity.this));
-            }
-        }), wrap());
+        LinearLayout row2 = row(
+                action("检查认证材料", PageUi.MUTED,
+                        v -> {
+                            if (CarPlayCore.hasLocalIdentity(CarPlayActivity.this)) {
+                                toast("已找到 identity.pk8 + certificate.p7b");
+                            } else {
+                                toast("未找到本地证书。" + CarPlayCore.identityHint(CarPlayActivity.this));
+                            }
+                            refresh();
+                        }),
+                action("认证与连接设置", PageUi.BLUE,
+                        v -> startActivity(new Intent(CarPlayActivity.this, AuthSettingsActivity.class)))
+        );
+        LinearLayout.LayoutParams row2Lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        PageUi.margin(row2Lp, this, 0, 6, 0, 0);
+        grid.addView(row2, row2Lp);
 
-        buttons.addView(makeButton("检查认证材料", new View.OnClickListener() {
-            public void onClick(View v) {
-                if (CarPlayCore.hasLocalIdentity(CarPlayActivity.this)) {
-                    toast("已找到 identity.pk8 + certificate.p7b");
-                } else {
-                    toast("未找到本地证书。" + CarPlayCore.identityHint(CarPlayActivity.this));
-                }
-                refresh();
-            }
-        }), wrap());
+        TextView note = PageUi.text(this,
+                "CarPlay 需要 Apple MFi 认证材料；没有证书时，iPhone 不会完成配对。\n"
+                        + "当前只接入链路、认证后端和 USB 枚举，iAP2 / MFi / AirPlay 隧道尚未接通。",
+                9.5f, PageUi.MUTED, false);
+        note.setPadding(PageUi.dp(this, 10), PageUi.dp(this, 6),
+                PageUi.dp(this, 10), PageUi.dp(this, 6));
+        note.setBackground(PageUi.rounded(this, PageUi.CARD, PageUi.BORDER, 8));
+        LinearLayout.LayoutParams noteLp = PageUi.matchWrap(this);
+        PageUi.margin(noteLp, this, 0, 6, 0, 0);
+        root.addView(note, noteLp);
 
-        buttons.addView(makeButton("认证与连接设置", new View.OnClickListener() {
-            public void onClick(View v) {
-                startActivity(new Intent(CarPlayActivity.this, AuthSettingsActivity.class));
-            }
-        }), wrap());
-
-        buttons.addView(makeButton("返回主界面", new View.OnClickListener() {
-            public void onClick(View v) { finish(); }
-        }), wrap());
-
-        root.addView(buttons, wrap());
-
-        TextView note = new TextView(this);
-        note.setText("\n当前状态：\n"
-                + "· CarPlay 协议骨架已接入（链路、认证后端、USB 枚举）；\n"
-                + "· 真正的 iAP2 / MFi / AirPlay 隧道尚未接入；\n"
-                + "· 没有 Apple 认证身份时，iPhone 不会完成配对；\n"
-                + "· 本地证书需 DER 编码的 PKCS#7 证书与未加密 PKCS#8 私钥。");
-        note.setTextColor(Color.parseColor("#8B949E"));
-        note.setTextSize(11);
-        root.addView(note, wrap());
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.addView(root, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        setContentView(scroll);
+        Button back = PageUi.back(this);
+        back.setOnClickListener(v -> finish());
+        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 42);
+        PageUi.margin(backLp, this, 0, 8, 0, 0);
+        root.addView(back, backLp);
     }
 
     @Override
@@ -108,38 +101,37 @@ public class CarPlayActivity extends Activity {
         refresh();
     }
 
+    private LinearLayout row(Button left, Button right) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        PageUi.margin(lp, this, 4, 0, 4, 0);
+        row.addView(left, lp);
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        PageUi.margin(rp, this, 4, 0, 4, 0);
+        row.addView(right, rp);
+        return row;
+    }
+
+    private Button action(String title, int accent, View.OnClickListener l) {
+        Button b = PageUi.button(this, title, 15f, accent);
+        b.setOnClickListener(l);
+        b.setGravity(Gravity.CENTER);
+        return b;
+    }
+
     private void refresh() {
         boolean hasAuth = CarPlayCore.hasAuth(this);
         boolean local = CarPlayCore.hasLocalIdentity(this);
         int usb = CarPlayCore.appleUsbCount(this);
         statusView.setText(
-                "认证后端：" + CarPlayCore.authLabel(this) + "\n"
-                        + "认证可用：" + (hasAuth ? "是" : "否") + "\n"
-                        + "本地证书：" + (local ? "已找到" : "未找到") + "\n"
-                        + "Apple USB 设备：" + (usb > 0 ? usb + " 个" : "未检测到") + "\n"
+                "认证后端：" + CarPlayCore.authLabel(this)
+                        + "    认证可用：" + (hasAuth ? "是" : "否") + "\n"
+                        + "本地证书：" + (local ? "已找到" : "未找到")
+                        + "    Apple USB：" + (usb > 0 ? usb + " 个" : "未检测到") + "\n"
                         + "协议引擎：" + (hasAuth ? "待接入" : "未配置认证，未启动"));
-    }
-
-    private Button makeButton(String text, View.OnClickListener l) {
-        Button b = new Button(this);
-        b.setText(text);
-        b.setAllCaps(false);
-        b.setTextSize(13);
-        b.setGravity(Gravity.CENTER);
-        b.setOnClickListener(l);
-        LinearLayout.LayoutParams lp = wrap();
-        lp.bottomMargin = dp(7);
-        b.setLayoutParams(lp);
-        return b;
-    }
-
-    private LinearLayout.LayoutParams wrap() {
-        return new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-    }
-
-    private int dp(int v) {
-        return Math.round(v * getResources().getDisplayMetrics().density);
     }
 
     private void toast(String s) {

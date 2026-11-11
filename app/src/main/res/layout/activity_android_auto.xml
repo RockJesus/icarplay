@@ -1,86 +1,179 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="#0E1216"
-    android:fillViewport="true">
+    android:paddingLeft="18dp"
+    android:paddingTop="10dp"
+    android:paddingRight="18dp"
+    android:paddingBottom="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Android Auto 接收"
             android:textColor="#E6EDF3"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/auto_status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:lineSpacingExtra="4dp"
-            android:text="未连接。请用 USB 数据线把手机接到车机 USB 口。"
-            android:textColor="#8B949E"
-            android:textSize="13sp" />
-
-        <Button
-            android:id="@+id/auto_usb"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="18dp"
-            android:backgroundTint="#2D333B"
-            android:text="连接 USB 手机（推荐）"
-            android:textAllCaps="false"
-            android:textColor="#E6EDF3"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/auto_wifi"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#2D333B"
-            android:text="无线连接（手机 Headunit Server）"
-            android:textAllCaps="false"
-            android:textColor="#E6EDF3"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/auto_projection"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#2D333B"
-            android:text="打开投影画面"
-            android:textAllCaps="false"
-            android:textColor="#E6EDF3"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/auto_stop"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#3A2226"
-            android:text="停止 Android Auto"
-            android:textAllCaps="false"
-            android:textColor="#E6EDF3"
-            android:textSize="14sp" />
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
 
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:lineSpacingExtra="3dp"
-            android:text="说明：\n· 有线：手机需安装 Android Auto，USB 口必须支持数据；首次连接会请求 USB 权限。\n· 无线：手机 Android Auto 开发者选项里点“Start headunit server”，手机和车机连同一个 Wi-Fi，再输入手机 IP（端口 5277）。\n· 车机没有 Google 服务不影响接收端；但部分手机的 Android Auto 需要系统自带或可安装。\n· 该功能使用 AGPL-3.0 开源协议栈，详见仓库 NOTICE。"
+            android:text="v0.4.6"
             android:textColor="#8B949E"
             android:textSize="11sp" />
-
     </LinearLayout>
-</ScrollView>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="USB 有线 / 手机 Headunit Server 无线"
+        android:textColor="#8B949E"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/auto_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:padding="12dp"
+        android:lineSpacingExtra="2dp"
+        android:text="未连接。请用 USB 数据线把手机接到车机 USB 口，或在手机端启动 Headunit Server。"
+        android:textColor="#E6EDF3"
+        android:textSize="11.5sp"
+        android:background="@drawable/bg_page_card" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/auto_usb"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/bg_page_button"
+                android:stateListAnimator="@null"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:text="连接 USB 手机"
+                android:textAllCaps="false"
+                android:textColor="#E6EDF3"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/auto_wifi"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/bg_page_button"
+                android:stateListAnimator="@null"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:text="无线连接"
+                android:textAllCaps="false"
+                android:textColor="#E6EDF3"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/auto_projection"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/bg_page_button"
+                android:stateListAnimator="@null"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:text="打开投影画面"
+                android:textAllCaps="false"
+                android:textColor="#E6EDF3"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/auto_stop"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/bg_page_button_red"
+                android:stateListAnimator="@null"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:text="停止 Android Auto"
+                android:textAllCaps="false"
+                android:textColor="#E6EDF3"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:padding="9dp"
+        android:lineSpacingExtra="1dp"
+        android:text="有线：手机安装 Android Auto，USB 口必须支持数据，首次连接会请求 USB 权限。\n无线：手机开发者选项启动 Headunit Server，车机输入手机 IP，端口 5277。"
+        android:textColor="#8B949E"
+        android:textSize="9.5sp"
+        android:background="@drawable/bg_page_card" />
+
+    <Button
+        android:id="@+id/auto_back"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_page_back"
+        android:stateListAnimator="@null"
+        android:minHeight="0dp"
+        android:minWidth="0dp"
+        android:text="←  返回主界面"
+        android:textAllCaps="false"
+        android:textColor="#E6EDF3"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+</LinearLayout>
