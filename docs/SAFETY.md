@@ -12,6 +12,7 @@
 - 不申请设备管理员（`BIND_DEVICE_ADMIN` / DeviceAdminReceiver）；
 - 不申请 `WRITE_SETTINGS` / `WRITE_SECURE_SETTINGS`；
 - 不申请 `REBOOT`、`FACTORY_TEST`、`MASTER_CLEAR`、`INSTALL_PACKAGES` 等系统级权限；
+- 只申请用户可见的悬浮窗、麦克风、位置、蓝牙、通知和电池优化白名单；电池优化只是系统设置页的一次性确认，不改系统分区；
 - 不通过 `Runtime.exec` 或 `ProcessBuilder` 调特权命令；
 - 不把 `android.intent.category.HOME` 加进 Manifest，因此不会被系统当作“桌面”候选；
 - 不自动注册开机自启；HiCar 的 `BootReceiver` 在 Manifest 中默认 `android:enabled="false"`。
