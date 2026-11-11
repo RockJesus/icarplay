@@ -42,7 +42,7 @@ public final class HomeActivity extends ThemeActivity {
         root.setPadding(PageUi.dp(this,18),PageUi.dp(this,10),PageUi.dp(this,18),PageUi.dp(this,8));
         setContentView(root);
 
-        root.addView(PageUi.header(this,"HiCar 接收端","实验版 0.11.1 · v0.5.1"),PageUi.matchWrap(this));
+        root.addView(PageUi.header(this,"HiCar 接收端","实验版 0.11.1 · v0.5.2"),PageUi.matchWrap(this));
 
         TextView help=PageUi.text(this,"开启手机蓝牙和 WLAN，点“开始连接”；首次连接按手机提示输入六位码。",10.5f,PageUi.MUTED,false);
         LinearLayout.LayoutParams helpLp=PageUi.matchWrap(this);PageUi.margin(helpLp,this,0,3,0,6);root.addView(help,helpLp);

@@ -8,10 +8,12 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.util.DisplayMetrics;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.view.Gravity;
@@ -175,7 +177,29 @@ public class FloatService extends Service {
             }
         });
 
+        clampBall();
         wm.addView(ball, ballParams);
+    }
+
+    private void clampBall() {
+        if (ball == null || ballParams == null || wm == null) return;
+        try {
+            DisplayMetrics dm = new DisplayMetrics();
+            wm.getDefaultDisplay().getRealMetrics(dm);
+            int w = dm.widthPixels;
+            int h = dm.heightPixels;
+            int size = ballParams.width;
+            ballParams.x = Math.max(0, Math.min(ballParams.x, Math.max(0, w - size)));
+            ballParams.y = Math.max(0, Math.min(ballParams.y, Math.max(0, h - size)));
+            wm.updateViewLayout(ball, ballParams);
+        } catch (Throwable ignored) { }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        hidePanel();
+        clampBall();
     }
 
     private void togglePanel() {
