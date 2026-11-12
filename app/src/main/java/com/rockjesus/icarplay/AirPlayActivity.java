@@ -69,11 +69,26 @@ public class AirPlayActivity extends Activity {
         status = PageUi.text(this, "正在读取状态…", 13f, PageUi.TEXT, true);
         statusCard.addView(status, PageUi.wrap(this));
 
+        LinearLayout stepsCard = PageUi.card(this, PageUi.GOLD, 16, 10);
+        LinearLayout.LayoutParams klp = PageUi.matchWrap(this);
+        PageUi.margin(klp, this, 0, 10, 0, 0);
+        root.addView(stepsCard, klp);
+        stepsCard.addView(PageUi.text(this, "连接步骤", 10f, PageUi.GOLD, true),
+                PageUi.wrap(this));
+        stepsCard.addView(PageUi.text(this,
+                "1  手机与车机连接同一 Wi-Fi 或热点\n"
+                        + "2  打开 iPhone 控制中心的“屏幕镜像”\n"
+                        + "3  选择列表中的 iCarPlay 接收端",
+                12.5f, PageUi.MUTED, false), PageUi.wrap(this));
+
+        View spacer = new View(this);
+        root.addView(spacer, new LinearLayout.LayoutParams(1, 0, 1f));
+
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
-        PageUi.margin(blp, this, 0, 12, 0, 0);
+                ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 52));
+        PageUi.margin(blp, this, 0, 10, 0, 0);
         root.addView(buttons, blp);
 
         start = PageUi.button(this, "开始接收", 14f, PageUi.BLUE);
