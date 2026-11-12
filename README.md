@@ -7,7 +7,7 @@
 >
 > 下载：[`icarplay-v0.6.0.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.6.0/icarplay-v0.6.0.apk)
 >
-> 本版 Release 只打包 **arm64-v8a + armeabi-v7a**，去掉车机用不到的 x86_64，APK 从约 50.8 MB 降到约 41 MB。
+> 本版 Release 只打包 **arm64-v8a + armeabi-v7a**。`v0.6.0` APK 为 **27.5 MB**，相比 `v0.5.9` 的 43.8 MB 减小约 **37%**。
 >
 > 首页是**车机一屏布局**：2×2 主功能卡 + 一行快捷操作 + 底部“返回车机主屏幕”，不再需要下拉；字号、间距和卡片列数按屏幕 dp 尺寸自适应，矮屏/高密度 1920×720 车机会自动切成 4 列一行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置小白点。
 >
@@ -21,7 +21,7 @@
 >
 > - **v0.5.8 调整**：车机重启后自动恢复小白点悬浮层；只恢复悬浮球，不打开 iCarPlay 主界面，不自动启动 HiCar 接收。用户在首页手动关掉小白点后，重启不会强制拉起。
 >
-> - **v0.6.0 调整**：统一首页与二级页的深色车机 UI（渐变背景、功能图标、状态卡和统一按钮）；移除未使用的 Compose、Media3、Hilt、DataStore 依赖并启用 R8，APK 体积明显减小。
+> - **v0.6.0 调整**：统一首页与二级页的深色车机 UI（渐变背景、功能图标、状态卡和统一按钮）；移除未使用的 Compose、Hilt、DataStore 依赖，删除旧 Compose 页面并改用原生单页，同时启用 R8 与资源压缩，APK 体积明显减小。
 >
 >
 > - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
@@ -108,7 +108,7 @@
 ```
 icarplay/
 ├── app/
-│   ├── src/main/kotlin/io/github/jqssun/airplay/   # 上游 AirPlay 引擎与 Compose UI
+│   ├── src/main/kotlin/io/github/jqssun/airplay/   # 上游 AirPlay 引擎（原生单页 UI）
 │   ├── src/main/java/com/rockjesus/icarplay/       # iCarPlay 壳层
 │   │   ├── IcarLauncherActivity.java
 │   │   ├── FloatService.java
