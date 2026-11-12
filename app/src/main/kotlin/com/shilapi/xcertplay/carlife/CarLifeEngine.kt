@@ -201,6 +201,7 @@ class CarLifeEngine(
         }
 
         override fun onConnected(channel: Int) {
+            CarLifeSessionLog.log(context, "TCP", "channel $channel connected")
             if (channel == CarLife.CHANNEL_CMD) {
                 armHandshakeTimeout()
                 session?.startHandshake()

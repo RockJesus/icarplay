@@ -211,6 +211,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         scanCancel = cancel
         val lastHost = CarLifePersistence.get(this).lastWirelessHost()
             ?.let { WirelessNetwork.parseIpv4(it) }
+        CarLifeSessionLog.log(this, "SCAN", "lan=${lan.summary()} last=${lastHost?.hostAddress ?: "-"}")
         status.text = "正在 ${lan.summary()} 搜索手机…\n手机请先点 CarLife+ 的“无线连接”"
         SubnetScanner.findPhone(
             this,
@@ -222,6 +223,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
                         scanning = false
                         scanCancel = null
                         CarLifePersistence.get(this).saveLastWirelessHost(host.hostAddress)
+                        CarLifeSessionLog.log(this, "SCAN", "found=${host.hostAddress}")
                         startWirelessToHost(host, fromScan = true)
                     }
                 }
@@ -231,6 +233,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
                     if (scanning && scanEpoch == epoch) {
                         scanning = false
                         scanCancel = null
+                        CarLifeSessionLog.log(this, "SCAN", "not found")
                         status.text = "未找到手机：确认手机与车机在同一网络，且手机已点“无线连接”\n" +
                             "仍失败可点“手动 IP”输入手机地址"
                     }
@@ -247,6 +250,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
             return
         }
         CarLifePersistence.get(this).saveLastWirelessHost(host.hostAddress)
+        CarLifeSessionLog.log(this, "SCAN", "connect host=${host.hostAddress}")
         startEngine(surface, CarLifeEngine.Mode.WIRELESS, host)
     }
 
