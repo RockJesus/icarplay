@@ -29,7 +29,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import io.github.jqssun.airplay.MainActivity;
 import local.hicarlab.HomeActivity;
 
 /** 内置小白点：悬浮球 + AirPlay / Android Auto / HiCar / CarPlay 快捷面板。 */
@@ -219,7 +218,7 @@ public class FloatService extends Service {
         panel.setPadding(dp(8), dp(8), dp(8), dp(8));
 
         panel.addView(panelButton("AirPlay", new View.OnClickListener() {
-            public void onClick(View v) { open(MainActivity.class); }
+            public void onClick(View v) { open(AirPlayActivity.class); }
         }));
         panel.addView(panelButton("Android Auto", new View.OnClickListener() {
             public void onClick(View v) { open(AndroidAutoActivity.class); }

@@ -112,8 +112,21 @@ tasks.configureEach {
 }
 
 dependencies {
-    // 仅保留运行所需依赖；界面全部为原生 View，不使用 Compose / Hilt / Media3。
+    // 仅保留运行所需依赖；界面全部为原生 View，不使用 Compose / Hilt / DataStore。
     implementation("androidx.core:core:1.16.0")
+    implementation("androidx.core:core-ktx:1.16.0")
+
+    // AirPlayService 仍基于 LifecycleService + 协程状态流。
+    implementation(libs.androidx.lifecycle.service)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
+    implementation(libs.kotlinx.coroutines)
+
+    // 后台媒体通知需要 MediaSessionCompat。
+    implementation(libs.androidx.media)
+
+    // AirPlay 视频播放与本地转存（ExoPlayer / Transformer）。
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.transformer)
 
     // Android Auto AAP protobuf（生成代码已提交在 java/info/anodsplace/...）
     implementation("com.google.protobuf:protobuf-lite:3.0.1")

@@ -54,12 +54,11 @@
         android:theme="@style/Theme.AirPlayServer">
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.rockjesus.icarplay.AirPlayActivity"
             android:exported="false"
             android:screenOrientation="landscape"
-            android:supportsPictureInPicture="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
-            android:launchMode="singleTop" />
+            android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <activity
             android:name="com.rockjesus.icarplay.IcarLauncherActivity"

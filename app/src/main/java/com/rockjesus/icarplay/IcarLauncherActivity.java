@@ -22,7 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import io.github.jqssun.airplay.MainActivity;
 import local.hicarlab.SafetyGuard;
 
 /**
@@ -37,7 +36,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    private static final String VERSION_LABEL = "v0.6.0";
+    public static final String VERSION_LABEL = "v0.6.0";
 
     private static final int COLOR_BG = PageUi.BG;
     private static final int COLOR_CARD = PageUi.CARD;
@@ -132,7 +131,7 @@ public class IcarLauncherActivity extends Activity {
                     ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
             addCard(row, makeCard("AirPlay", "镜像 · 音频", COLOR_BLUE, R.drawable.ic_ui_airplay, v ->
-                    startActivity(new Intent(IcarLauncherActivity.this, MainActivity.class))));
+                    startActivity(new Intent(IcarLauncherActivity.this, AirPlayActivity.class))));
             addCard(row, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, R.drawable.ic_ui_carplay, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class))));
             addCard(row, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, R.drawable.ic_ui_auto, v ->
@@ -158,7 +157,7 @@ public class IcarLauncherActivity extends Activity {
             grid.addView(row2, row2Lp);
 
             addCard(row1, makeCard("AirPlay", "镜像 · 音频", COLOR_BLUE, R.drawable.ic_ui_airplay, v ->
-                    startActivity(new Intent(IcarLauncherActivity.this, MainActivity.class))));
+                    startActivity(new Intent(IcarLauncherActivity.this, AirPlayActivity.class))));
             addCard(row1, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, R.drawable.ic_ui_carplay, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class))));
             addCard(row2, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, R.drawable.ic_ui_auto, v ->
