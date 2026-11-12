@@ -1,15 +1,15 @@
 # iCarPlay
 
 面向 **2020 款 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
-**一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置小白点**。
+**一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口、CarLife 入口和内置小白点**。
 
-> **当前版本 v0.6.0**
+> **当前版本 v0.7.0**
 >
-> 下载：[`icarplay-v0.6.0.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.6.0/icarplay-v0.6.0.apk)
+> 下载：[`icarplay-v0.7.0.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.7.0/icarplay-v0.7.0.apk)
 >
-> 本版 Release 只打包 **arm64-v8a + armeabi-v7a**。`v0.6.0` APK 为 **27.5 MB**，相比 `v0.5.9` 的 43.8 MB 减小约 **37%**。
+> 本版 Release 只打包 **arm64-v8a + armeabi-v7a**。`v0.7.0` APK 为 **26.2 MB**；CarLife 接收端为独立 APK（约 3.2 MB），按需安装。
 >
-> 首页是**车机一屏布局**：2×2 主功能卡 + 一行快捷操作 + 底部“返回车机主屏幕”，不再需要下拉；字号、间距和卡片列数按屏幕 dp 尺寸自适应，矮屏/高密度 1920×720 车机会自动切成 4 列一行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置小白点。
+> 首页是**车机一屏布局**：5 张主功能卡 + 状态卡 + 一行快捷操作 + 底部“返回车机主屏幕”，不再需要下拉；字号、间距和卡片列数按屏幕 dp 尺寸自适应，矮屏/高密度 1920×720 车机会自动切成 5 列一行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置小白点。
 >
 > - **v0.5.4 修复**：AirPlay 接收页锁定横屏，避免从车机横屏进入后翻转成竖屏、导致预览区拉长和小白点遮住右上角按钮。
 >
@@ -22,6 +22,7 @@
 > - **v0.5.8 调整**：车机重启后自动恢复小白点悬浮层；只恢复悬浮球，不打开 iCarPlay 主界面，不自动启动 HiCar 接收。用户在首页手动关掉小白点后，重启不会强制拉起。
 >
 > - **v0.6.0 调整**：统一首页与二级页的深色车机 UI（渐变背景、功能图标、状态卡和统一按钮）；移除未使用的 Compose、Hilt、DataStore 依赖，删除旧 Compose 页面并改用原生单页，同时启用 R8 与资源压缩，APK 体积明显减小。
+> - **v0.7.0 新增**：首页加入 CarLife 卡；安装 CarLife 接收端后点卡直接进入接收页，未安装时提示先装接收端。CarLife 接收端来自百度 Apollo 开源车机端，独立 APK 安装，不和 iCarPlay 抢主界面。
 >
 >
 > - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
@@ -33,6 +34,8 @@
 >   在 SYNC+ Android 8.1 车机上属于**未验证的实验路径**，详见 [`docs/HICAR.md`](docs/HICAR.md)。
 > - **CarPlay：接入层已搭建**。认证后端、Apple USB 枚举、有线/无线入口、设置页已完成；
 >   **真正的 iAP2 / MFi / AirPlay 隧道尚未接入**，没有 Apple MFi 认证材料时 iPhone 不会完成配对。
+> - **CarLife：入口已接入，接收端独立安装**。百度 Apollo 开源 CarLife 3.0 车机端单独打包为 `carlife-vehicle.apk`；
+>   装好后 iCarPlay 首页 CarLife 卡可直接拉起，未安装时提示安装。Android 手机走 USB AOA 相对完整；iPhone 路径受 `libiPhone_ean.so` 与 usbmuxd 限制，暂不保证。
 > - **内置小白点：已接入**。悬浮球由本 APK 自带，不需要第二个悬浮球 App。
 > - **车机桌面显示**：SYNC+ 原车桌面是系统层窗口，普通悬浮窗会被它盖住；在系统「无障碍」里开启 `iCarPlay 小白点` 后，改用无障碍悬浮层，才能显示在原车机桌面上。该服务只绘制悬浮球，不读取屏幕内容。
 > - **安全边界：v0.4.0 起不抢桌面；v0.6.0 起仅小白点悬浮层开机恢复，主界面和接收服务不自动启动；连续异常进安全模式**，详见 [`docs/SAFETY.md`](docs/SAFETY.md)。
@@ -47,21 +50,23 @@
 | Android Auto 有线（USB AOA） | ✅ 代码已接入 | 手机切 AOA 配件模式，进 AAP/TLS/H.264；需 USB Host + 数据口 |
 | Android Auto 无线（Headunit Server） | ⚠️ 实验 | 手机开 Headunit Server，同一 Wi-Fi，手动输入 IP:5277 |
 | Huawei HiCar（华为手机） | ⚠️ 实验 | 来自 MIT 开源接收端；需手机原生 HiCar；上游按 Android 10+ 设计，8.1 未实车验证 |
-| 内置小白点 | ✅ | 可拖动，点按弹出 AirPlay / Android Auto / HiCar / CarPlay / 认证设置 / 系统设置 / iCarPlay主界面 / 车机主屏幕 |
+| 内置小白点 | ✅ | 可拖动，点按弹出 AirPlay / Android Auto / HiCar / CarPlay / CarLife / 认证设置 / 系统设置 / iCarPlay主界面 / 车机主屏幕 |
 | CarPlay 有线入口 | ⚠️ 骨架 | USB 设备枚举 + 启动状态，协议引擎未接入 |
 | CarPlay 无线入口 | ⚠️ 骨架 | Wi-Fi 状态 + 启动状态，协议引擎未接入 |
 | CarPlay 认证后端 | ⚠️ 骨架 | 本地证书 / MFi 芯片 / 远程 MFI 三选一，仅保存与检查 |
+| CarLife 接收 | ⚠️ 独立 APK | 百度 Apollo 开源 CarLife 3.0 车机端；iCarPlay 首页只做入口，需另装 `carlife-vehicle.apk`；Android USB AOA 优先 |
 | 车机安全约束 | ✅ | 不写系统分区、不申请设备管理员/系统设置权限、不抢占默认桌面；开机仅恢复小白点悬浮层，HiCar 开机接收仍默认关闭 |
-| 不需要第二个 APK | ✅ | 悬浮球、AirPlay、Android Auto、HiCar、CarPlay 入口都在同一个包里 |
+| 主功能一个 APK | ✅ | 悬浮球、AirPlay、Android Auto、HiCar、CarPlay 入口都在同一个包里；CarLife 接收端为可选第二个 APK |
 
 ## 安装（SYNC+ 车机）
 
-1. U 盘格式 **FAT32**，把 `icarplay-v0.6.0.apk` 放根目录；
+1. U 盘格式 **FAT32**，把 `icarplay-v0.7.0.apk`（需要 CarLife 时再放 `carlife-vehicle.apk`）放根目录；
 2. 输入法漏洞进安卓原生设置 → 存储 → U 盘 → 安装；
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
 5. 首次打开会自动弹出权限引导：允许悬浮窗，再依次允许麦克风、位置、蓝牙、通知和电池优化；小白点默认自动启动；
-6. 点悬浮球 → AirPlay 开始接收；Android Auto / HiCar 进入接收页；CarPlay 进入认证/连接页。
+6. 点悬浮球 → AirPlay 开始接收；Android Auto / HiCar / CarLife 进入对应接收页；CarPlay 进入认证/连接页。
+7. 用 CarLife 前，把接收端 `assets/bdcf` 推到车机 `/data/local/tmp/bdcf`（首次一次即可），详见 [`docs/CARLIFE.md`](docs/CARLIFE.md)。
 
 详细步骤与判读见 [`docs/INSTALL.md`](docs/INSTALL.md)。
 
@@ -95,6 +100,14 @@
 - 首次先在系统蓝牙里普通配对，再进 HiCar 页面点“开始连接”，按手机提示输入六位码；
 - 没有画面时先看诊断日志，不要反复删除系统蓝牙配对；详见
   [`docs/HICAR.md`](docs/HICAR.md)。
+
+### CarLife
+
+- 先安装 Release 里的 `carlife-vehicle.apk`，再回 iCarPlay 首页点 CarLife 卡；
+- 首次使用需把 `bdcf` 配置推到 `/data/local/tmp/bdcf`，否则接收端会停在“读取配置文件失败”；
+- **Android 手机**：手机装 CarLife 手机端，USB 数据线连接车机，选择文件传输/充电模式，接收端会走 AOA；
+- **iPhone**：开源车机端缺少 `libiPhone_ean.so` 和 usbmuxd 端口转发，当前不保证可用；
+- CarLife 与 Android Auto 都占用 USB，不能同时连接，切换前先退出另一个接收端。
 
 ### CarPlay
 
