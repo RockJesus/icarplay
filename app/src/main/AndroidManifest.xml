@@ -150,7 +150,7 @@
         </receiver>
 
         <receiver
-            android:name=".FloatBootReceiver"
+            android:name="com.rockjesus.icarplay.FloatBootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>

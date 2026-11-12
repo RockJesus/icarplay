@@ -59,6 +59,17 @@ else:
         if node.get(AND + "enabled") != "false":
             problems.append("HiCar boot receiver must be android:enabled=\"false\" by default")
 
+float_boot = [
+    n for n in root.iter("receiver")
+    if n.get(AND + "name") == "com.rockjesus.icarplay.FloatBootReceiver"
+]
+if not float_boot:
+    problems.append("FloatBootReceiver missing or not fully qualified")
+else:
+    for node in float_boot:
+        if node.get(AND + "enabled") != "true":
+            problems.append("FloatBootReceiver must be android:enabled=\"true\"")
+
 gradle_text = gradle.read_text(errors="replace")
 for needle in ("deviceAdmin", "DeviceAdminReceiver", "sharedUserId"):
     if needle in gradle_text:
