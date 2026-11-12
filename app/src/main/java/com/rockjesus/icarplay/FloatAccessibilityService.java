@@ -19,6 +19,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -134,13 +135,13 @@ public class FloatAccessibilityService extends AccessibilityService {
         bg.setStroke(dp(1), Color.parseColor("#8B949E"));
         ball.setBackground(bg);
 
-        TextView label = new TextView(this);
-        label.setText("iC");
-        label.setTextColor(Color.parseColor("#0E1216"));
-        label.setTextSize(15);
-        label.setGravity(Gravity.CENTER);
-        ball.addView(label, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(R.drawable.ic_float_ball);
+        icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+        iconParams.setMargins(dp(10), dp(10), dp(10), dp(10));
+        ball.addView(icon, iconParams);
 
         int size = dp(54);
         ballParams = new WindowManager.LayoutParams(
