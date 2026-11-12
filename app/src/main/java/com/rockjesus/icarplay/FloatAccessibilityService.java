@@ -241,7 +241,7 @@ public class FloatAccessibilityService extends AccessibilityService {
         panel.addView(panelButton("认证设置", new View.OnClickListener() {
             public void onClick(View v) { open(AuthSettingsActivity.class); }
         }));
-        panel.addView(panelButton("主界面", new View.OnClickListener() {
+        panel.addView(panelButton("iCarPlay主界面", new View.OnClickListener() {
             public void onClick(View v) { open(IcarLauncherActivity.class); }
         }));
         panel.addView(panelButton("车机主屏幕", new View.OnClickListener() {

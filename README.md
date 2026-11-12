@@ -3,9 +3,9 @@
 面向 **2020 款 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
 **一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置小白点**。
 
-> **当前版本 v0.5.6**
+> **当前版本 v0.5.7**
 >
-> 下载：[`icarplay-v0.5.6.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.5.6/icarplay-v0.5.6.apk)
+> 下载：[`icarplay-v0.5.7.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.5.7/icarplay-v0.5.7.apk)
 >
 > 本版 Release 只打包 **arm64-v8a + armeabi-v7a**，去掉车机用不到的 x86_64，APK 从约 50.8 MB 降到约 41 MB。
 >
@@ -16,6 +16,8 @@
 > - **v0.5.5 调整**：小白点快捷面板最后一项由“关闭小白点”改为“车机主屏幕”，点击直接返回原车桌面，小白点保持显示。
 >
 > - **v0.5.6 调整**：小白点改用无字母图标，图形为“车顶接收信号 + 车头轮廓”，同时表达车机与投屏接收。
+>
+> - **v0.5.7 调整**：小白点快捷面板中的“主界面”改为“iCarPlay主界面”，点击仍进入 iCarPlay 首页。
 >
 >
 > - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
@@ -50,7 +52,7 @@
 
 ## 安装（SYNC+ 车机）
 
-1. U 盘格式 **FAT32**，把 `icarplay-v0.5.6.apk` 放根目录；
+1. U 盘格式 **FAT32**，把 `icarplay-v0.5.7.apk` 放根目录；
 2. 输入法漏洞进安卓原生设置 → 存储 → U 盘 → 安装；
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
