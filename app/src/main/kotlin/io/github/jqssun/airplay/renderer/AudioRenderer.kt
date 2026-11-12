@@ -1,7 +1,7 @@
 package io.github.jqssun.airplay.renderer
 
 import io.github.jqssun.airplay.bridge.NativeBridge
-import io.github.jqssun.airplay.viewmodel.AudioDebug
+import io.github.jqssun.airplay.service.AudioDebug
 
 // wrapper around native audio engine
 class AudioRenderer {
