@@ -133,7 +133,9 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         status.textSize = 12.5f
         status.setSingleLine(false)
         status.maxLines = 2
-        status.setPadding(dp(10), 0, 0, 0)
+        status.gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        status.textAlignment = View.TEXT_ALIGNMENT_VIEW_END
+        status.setPadding(0, 0, dp(10), 0)
         top.addView(status, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         root.addView(top)
 
