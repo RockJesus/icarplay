@@ -33,8 +33,8 @@ android {
         applicationId = "com.rockjesus.icarplay"
         minSdk = 23
         targetSdk = 37
-        versionCode = 25
-        versionName = "0.6.0"
+        versionCode = 26
+        versionName = "0.6.1"
 
         externalNativeBuild {
             cmake {
@@ -107,8 +107,22 @@ tasks.register("applyUxplayPatches") {
     }
 }
 
+tasks.register("patchOpensslMirror") {
+    // The upstream openssl-cmake helper points at mirror.viaduck.org, which can
+    // return a truncated tarball from some networks. Use the canonical source.
+    doLast {
+        val f = file("src/main/cpp/third_party/openssl-cmake/cmake/BuildOpenSSL.cmake")
+        val old = "https://mirror.viaduck.org/openssl/openssl-\${OPENSSL_BUILD_VERSION}.tar.gz"
+        val neu = "https://www.openssl.org/source/openssl-\${OPENSSL_BUILD_VERSION}.tar.gz"
+        val text = f.readText()
+        if (text.contains(old)) f.writeText(text.replace(old, neu))
+    }
+}
+
 tasks.configureEach {
-    if (name.startsWith("configureCMake")) dependsOn("applyUxplayPatches")
+    if (name.startsWith("configureCMake")) {
+        dependsOn("applyUxplayPatches", "patchOpensslMirror")
+    }
 }
 
 dependencies {

@@ -3,13 +3,13 @@
 面向 **2020 款 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
 **一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置小白点**。
 
-> **当前版本 v0.6.0**
+> **当前版本 v0.6.1**
 >
-> 下载：[`icarplay-v0.6.0.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.6.0/icarplay-v0.6.0.apk)
+> 单 APK 下载：[`icarplay.apk`](https://github.com/RockJesus/icarplay/releases/latest/download/icarplay.apk)
 >
-> 本版 Release 只打包 **arm64-v8a + armeabi-v7a**。`v0.6.0` APK 为 **27.5 MB**，相比 `v0.5.9` 的 43.8 MB 减小约 **37%**。
+> 本版 Release 只打包 **arm64-v8a + armeabi-v7a**，并且只发布一个 `icarplay.apk`：CarLife+ 接收端已内嵌，不再附带第二个 APK 或 `bdcf`。
 >
-> 首页是**车机一屏布局**：2×2 主功能卡 + 一行快捷操作 + 底部“返回车机主屏幕”，不再需要下拉；字号、间距和卡片列数按屏幕 dp 尺寸自适应，矮屏/高密度 1920×720 车机会自动切成 4 列一行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置小白点。
+> 首页是**车机一屏布局**：五张主功能卡（AirPlay / CarPlay / CarLife+ / Android Auto / HiCar）+ 一行快捷操作 + 底部“返回车机主屏幕”，不再需要下拉；1920×720 矮屏自动排成一行，普通屏幕自动 3+2 两行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置小白点。
 >
 > - **v0.5.4 修复**：AirPlay 接收页锁定横屏，避免从车机横屏进入后翻转成竖屏、导致预览区拉长和小白点遮住右上角按钮。
 >
@@ -20,6 +20,8 @@
 > - **v0.5.7 调整**：小白点快捷面板中的“主界面”改为“iCarPlay主界面”，点击仍进入 iCarPlay 首页。
 >
 > - **v0.5.8 调整**：车机重启后自动恢复小白点悬浮层；只恢复悬浮球，不打开 iCarPlay 主界面，不自动启动 HiCar 接收。用户在首页手动关掉小白点后，重启不会强制拉起。
+>
+> - **v0.6.1 调整**：回退 v0.7.0 的独立 CarLife 接收端方案，把 **CarLife+ 兼容接收**直接并入 iCarPlay，首页新增第五张卡；最终只发布一个 `icarplay.apk`，不附 `carlife-vehicle.apk`、不附 `bdcf`。CarLife+ 接收核心来自 GPL-3.0 的 `FF1239/Limo-carlife`，详见 [`docs/CARLIFE-PLUS.md`](docs/CARLIFE-PLUS.md)。
 >
 > - **v0.6.0 调整**：统一首页与二级页的深色车机 UI（渐变背景、功能图标、状态卡和统一按钮）；移除未使用的 Compose、Hilt、DataStore 依赖，删除旧 Compose 页面并改用原生单页，同时启用 R8 与资源压缩，APK 体积明显减小。
 >
@@ -47,21 +49,22 @@
 | Android Auto 有线（USB AOA） | ✅ 代码已接入 | 手机切 AOA 配件模式，进 AAP/TLS/H.264；需 USB Host + 数据口 |
 | Android Auto 无线（Headunit Server） | ⚠️ 实验 | 手机开 Headunit Server，同一 Wi-Fi，手动输入 IP:5277 |
 | Huawei HiCar（华为手机） | ⚠️ 实验 | 来自 MIT 开源接收端；需手机原生 HiCar；上游按 Android 10+ 设计，8.1 未实车验证 |
+| CarLife+ 兼容接收（有线 / 无线） | ⚠️ 待实车验证 | 内嵌 GPL-3.0 接收核心，已与真实 CarLife+ 手机端联调；不是百度官方车机端 SDK，不保证无感连接/原生小程序 |
 | 内置小白点 | ✅ | 可拖动，点按弹出 AirPlay / Android Auto / HiCar / CarPlay / 认证设置 / 系统设置 / iCarPlay主界面 / 车机主屏幕 |
 | CarPlay 有线入口 | ⚠️ 骨架 | USB 设备枚举 + 启动状态，协议引擎未接入 |
 | CarPlay 无线入口 | ⚠️ 骨架 | Wi-Fi 状态 + 启动状态，协议引擎未接入 |
 | CarPlay 认证后端 | ⚠️ 骨架 | 本地证书 / MFi 芯片 / 远程 MFI 三选一，仅保存与检查 |
 | 车机安全约束 | ✅ | 不写系统分区、不申请设备管理员/系统设置权限、不抢占默认桌面；开机仅恢复小白点悬浮层，HiCar 开机接收仍默认关闭 |
-| 不需要第二个 APK | ✅ | 悬浮球、AirPlay、Android Auto、HiCar、CarPlay 入口都在同一个包里 |
+| 不需要第二个 APK | ✅ | 悬浮球、AirPlay、Android Auto、HiCar、CarPlay 入口、CarLife+ 接收都在同一个包里；不再附带 `bdcf` |
 
 ## 安装（SYNC+ 车机）
 
-1. U 盘格式 **FAT32**，把 `icarplay-v0.6.0.apk` 放根目录；
+1. U 盘格式 **FAT32**，把唯一的 `icarplay.apk` 放根目录；
 2. 输入法漏洞进安卓原生设置 → 存储 → U 盘 → 安装；
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
 5. 首次打开会自动弹出权限引导：允许悬浮窗，再依次允许麦克风、位置、蓝牙、通知和电池优化；小白点默认自动启动；
-6. 点悬浮球 → AirPlay 开始接收；Android Auto / HiCar 进入接收页；CarPlay 进入认证/连接页。
+6. 首页点 CarLife+ → 有线连接 / 无线连接；点悬浮球 → AirPlay 开始接收；Android Auto / HiCar 进入接收页；CarPlay 进入认证/连接页。
 
 详细步骤与判读见 [`docs/INSTALL.md`](docs/INSTALL.md)。
 

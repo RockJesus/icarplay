@@ -24,6 +24,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.rockjesus.icarplay.carlife.CarLifePlusActivity;
 import local.hicarlab.SafetyGuard;
 
 /**
@@ -31,14 +32,14 @@ import local.hicarlab.SafetyGuard;
  *
  * 布局分四块：
  *  1. 顶部品牌栏
- *  2. 主功能卡（4 列一行或 2×2）
+ *  2. 主功能卡（5 列一行或 3+2 两行）
  *  3. 状态摘要
  *  4. 一行快捷操作 + 返回原车机桌面
  * 不使用 ScrollView。
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.6.0";
+    public static final String VERSION_LABEL = "v0.6.1";
 
     private static final int COLOR_BG = PageUi.BG;
     private static final int COLOR_CARD = PageUi.CARD;
@@ -136,6 +137,8 @@ public class IcarLauncherActivity extends Activity {
                     startActivity(new Intent(IcarLauncherActivity.this, AirPlayActivity.class))));
             addCard(row, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, R.drawable.ic_ui_carplay, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class))));
+            addCard(row, makeCard("CarLife+", "无线 / 有线", COLOR_GOLD, R.drawable.ic_ui_carlife, v ->
+                    startActivity(new Intent(IcarLauncherActivity.this, CarLifePlusActivity.class))));
             addCard(row, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, R.drawable.ic_ui_auto, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, AndroidAutoActivity.class))));
             addCard(row, makeCard("Huawei HiCar", "华为手机", COLOR_RED, R.drawable.ic_ui_hicar, v -> {
@@ -162,6 +165,8 @@ public class IcarLauncherActivity extends Activity {
                     startActivity(new Intent(IcarLauncherActivity.this, AirPlayActivity.class))));
             addCard(row1, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, R.drawable.ic_ui_carplay, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class))));
+            addCard(row1, makeCard("CarLife+", "无线 / 有线", COLOR_GOLD, R.drawable.ic_ui_carlife, v ->
+                    startActivity(new Intent(IcarLauncherActivity.this, CarLifePlusActivity.class))));
             addCard(row2, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, R.drawable.ic_ui_auto, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, AndroidAutoActivity.class))));
             addCard(row2, makeCard("Huawei HiCar", "华为手机", COLOR_RED, R.drawable.ic_ui_hicar, v -> {
