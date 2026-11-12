@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#0E1216"
+    android:background="@drawable/bg_page_gradient"
     android:paddingLeft="18dp"
     android:paddingTop="10dp"
     android:paddingRight="18dp"
@@ -15,12 +15,18 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
+        <View
+            android:layout_width="3dp"
+            android:layout_height="20dp"
+            android:layout_marginRight="9dp"
+            android:background="#5CB8FF" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Android Auto 接收"
-            android:textColor="#E6EDF3"
-            android:textSize="20sp"
+            android:textColor="#F2F6FC"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
         <View
@@ -31,9 +37,14 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="v0.5.9"
-            android:textColor="#8B949E"
-            android:textSize="11sp" />
+            android:background="@drawable/bg_version_pill"
+            android:paddingLeft="9dp"
+            android:paddingTop="3dp"
+            android:paddingRight="9dp"
+            android:paddingBottom="3dp"
+            android:text="v0.6.0"
+            android:textColor="#93A4B8"
+            android:textSize="10sp" />
     </LinearLayout>
 
     <TextView
@@ -41,7 +52,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
         android:text="USB 有线 / 手机 Headunit Server 无线"
-        android:textColor="#8B949E"
+        android:textColor="#93A4B8"
         android:textSize="11sp" />
 
     <TextView
@@ -52,8 +63,8 @@
         android:padding="12dp"
         android:lineSpacingExtra="2dp"
         android:text="未连接。请用 USB 数据线把手机接到车机 USB 口，或在手机端启动 Headunit Server。"
-        android:textColor="#E6EDF3"
-        android:textSize="11.5sp"
+        android:textColor="#F2F6FC"
+        android:textSize="11sp"
         android:background="@drawable/bg_page_card" />
 
     <LinearLayout
@@ -84,7 +95,7 @@
                 android:paddingRight="6dp"
                 android:text="连接 USB 手机"
                 android:textAllCaps="false"
-                android:textColor="#E6EDF3"
+                android:textColor="#F2F6FC"
                 android:textSize="15sp" />
 
             <Button
@@ -102,7 +113,7 @@
                 android:paddingRight="6dp"
                 android:text="无线连接"
                 android:textAllCaps="false"
-                android:textColor="#E6EDF3"
+                android:textColor="#F2F6FC"
                 android:textSize="15sp" />
         </LinearLayout>
 
@@ -128,7 +139,7 @@
                 android:paddingRight="6dp"
                 android:text="打开投影画面"
                 android:textAllCaps="false"
-                android:textColor="#E6EDF3"
+                android:textColor="#F2F6FC"
                 android:textSize="15sp" />
 
             <Button
@@ -146,7 +157,7 @@
                 android:paddingRight="6dp"
                 android:text="停止 Android Auto"
                 android:textAllCaps="false"
-                android:textColor="#E6EDF3"
+                android:textColor="#F2F6FC"
                 android:textSize="15sp" />
         </LinearLayout>
     </LinearLayout>
@@ -158,7 +169,7 @@
         android:padding="9dp"
         android:lineSpacingExtra="1dp"
         android:text="有线：手机安装 Android Auto，USB 口必须支持数据，首次连接会请求 USB 权限。\n无线：手机开发者选项启动 Headunit Server，车机输入手机 IP，端口 5277。"
-        android:textColor="#8B949E"
+        android:textColor="#93A4B8"
         android:textSize="9.5sp"
         android:background="@drawable/bg_page_card" />
 
@@ -173,7 +184,7 @@
         android:minWidth="0dp"
         android:text="←  返回主界面"
         android:textAllCaps="false"
-        android:textColor="#E6EDF3"
+        android:textColor="#F2F6FC"
         android:textSize="13sp"
         android:textStyle="bold" />
 </LinearLayout>

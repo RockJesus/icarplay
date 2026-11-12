@@ -17,6 +17,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,17 +37,18 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    private static final String VERSION_LABEL = "v0.5.9";
+    private static final String VERSION_LABEL = "v0.6.0";
 
-    private static final int COLOR_BG = Color.parseColor("#0E1216");
-    private static final int COLOR_CARD = Color.parseColor("#161B22");
-    private static final int COLOR_CARD_ALT = Color.parseColor("#1B2230");
-    private static final int COLOR_TEXT = Color.parseColor("#E6EDF3");
-    private static final int COLOR_MUTED = Color.parseColor("#8B949E");
-    private static final int COLOR_BLUE = Color.parseColor("#58A6FF");
-    private static final int COLOR_GREEN = Color.parseColor("#3FB950");
-    private static final int COLOR_RED = Color.parseColor("#F85149");
-    private static final int COLOR_BORDER = Color.parseColor("#30363D");
+    private static final int COLOR_BG = PageUi.BG;
+    private static final int COLOR_CARD = PageUi.CARD;
+    private static final int COLOR_CARD_ALT = PageUi.CARD_ALT;
+    private static final int COLOR_TEXT = PageUi.TEXT;
+    private static final int COLOR_MUTED = PageUi.MUTED;
+    private static final int COLOR_BLUE = PageUi.BLUE;
+    private static final int COLOR_GREEN = PageUi.GREEN;
+    private static final int COLOR_RED = PageUi.RED;
+    private static final int COLOR_BORDER = PageUi.BORDER;
+    private static final int COLOR_GOLD = PageUi.GOLD;
 
     private TextView statusView;
     private Button floatButton;
@@ -75,18 +77,39 @@ public class IcarLauncherActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(COLOR_BG);
+        root.setBackground(PageUi.background(this));
         root.setPadding(dp(18), dp(10), dp(18), dp(8));
         setContentView(root);
 
         root.addView(buildHeader(), wrap());
 
+        LinearLayout statusCard = new LinearLayout(this);
+        statusCard.setOrientation(LinearLayout.VERTICAL);
+        statusCard.setPadding(dp(12), dp(7), dp(12), dp(8));
+        statusCard.setBackground(PageUi.rounded(this, PageUi.tint(PageUi.BLUE, 0.05f),
+                PageUi.tint(PageUi.BLUE, 0.24f), 12));
+        LinearLayout statusHead = new LinearLayout(this);
+        statusHead.setOrientation(LinearLayout.HORIZONTAL);
+        statusHead.setGravity(Gravity.CENTER_VERTICAL);
+        View dot = new View(this);
+        dot.setBackground(PageUi.rounded(this, COLOR_GREEN, 0, 4));
+        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(dp(7), dp(7));
+        dotLp.setMargins(0, 0, dp(6), 0);
+        statusHead.addView(dot, dotLp);
+        TextView statusLabel = new TextView(this);
+        statusLabel.setText("运行状态");
+        statusLabel.setTextColor(COLOR_MUTED);
+        sp(statusLabel, 9.5f);
+        statusLabel.setTypeface(null, Typeface.BOLD);
+        statusHead.addView(statusLabel, wrap());
+        statusCard.addView(statusHead, wrap());
+
         statusView = new TextView(this);
         statusView.setTextColor(COLOR_TEXT);
-        sp(statusView, 11.5f);
-        statusView.setLineSpacing(dp(2), 1f);
-        statusView.setPadding(dp(12), dp(8), dp(12), dp(8));
-        statusView.setBackground(rounded(COLOR_CARD, COLOR_BORDER, 10));
+        sp(statusView, 10.8f);
+        statusView.setLineSpacing(dp(1.5f), 1f);
+        statusView.setPadding(0, dp(3), 0, 0);
+        statusCard.addView(statusView, wrap());
         LinearLayout.LayoutParams statusLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         statusLp.topMargin = dp(8);
@@ -100,7 +123,7 @@ public class IcarLauncherActivity extends Activity {
         root.addView(grid, gridLp);
 
         // 主功能卡在上、状态摘要在下：先保证四张卡有可见高度，再显示运行状态。
-        root.addView(statusView, statusLp);
+        root.addView(statusCard, statusLp);
 
         if (fourAcross) {
             LinearLayout row = new LinearLayout(this);
@@ -108,13 +131,13 @@ public class IcarLauncherActivity extends Activity {
             grid.addView(row, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-            addCard(row, makeCard("AirPlay", "镜像 · 音频", COLOR_BLUE, v ->
+            addCard(row, makeCard("AirPlay", "镜像 · 音频", COLOR_BLUE, R.drawable.ic_ui_airplay, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, MainActivity.class))));
-            addCard(row, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, v ->
+            addCard(row, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, R.drawable.ic_ui_carplay, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class))));
-            addCard(row, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, v ->
+            addCard(row, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, R.drawable.ic_ui_auto, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, AndroidAutoActivity.class))));
-            addCard(row, makeCard("Huawei HiCar", "华为手机", COLOR_RED, v -> {
+            addCard(row, makeCard("Huawei HiCar", "华为手机", COLOR_RED, R.drawable.ic_ui_hicar, v -> {
                 try {
                     startActivity(new Intent(IcarLauncherActivity.this, local.hicarlab.HomeActivity.class));
                 } catch (Throwable t) {
@@ -134,13 +157,13 @@ public class IcarLauncherActivity extends Activity {
             row2Lp.topMargin = dp(6);
             grid.addView(row2, row2Lp);
 
-            addCard(row1, makeCard("AirPlay", "镜像 · 音频", COLOR_BLUE, v ->
+            addCard(row1, makeCard("AirPlay", "镜像 · 音频", COLOR_BLUE, R.drawable.ic_ui_airplay, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, MainActivity.class))));
-            addCard(row1, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, v ->
+            addCard(row1, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, R.drawable.ic_ui_carplay, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class))));
-            addCard(row2, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, v ->
+            addCard(row2, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, R.drawable.ic_ui_auto, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, AndroidAutoActivity.class))));
-            addCard(row2, makeCard("Huawei HiCar", "华为手机", COLOR_RED, v -> {
+            addCard(row2, makeCard("Huawei HiCar", "华为手机", COLOR_RED, R.drawable.ic_ui_hicar, v -> {
                 try {
                     startActivity(new Intent(IcarLauncherActivity.this, local.hicarlab.HomeActivity.class));
                 } catch (Throwable t) {
@@ -181,7 +204,7 @@ public class IcarLauncherActivity extends Activity {
         back.setMinimumHeight(0);
         back.setPadding(dp(10), 0, dp(10), 0);
         back.setStateListAnimator(null);
-        back.setBackground(rounded(COLOR_CARD_ALT, COLOR_BLUE, 10));
+        back.setBackground(PageUi.rounded(this, PageUi.tint(COLOR_BLUE, 0.14f), COLOR_BLUE, 12));
         back.setOnClickListener(v -> goCarHome());
         LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(42));
@@ -204,18 +227,26 @@ public class IcarLauncherActivity extends Activity {
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
 
+        View accent = new View(this);
+        accent.setBackground(PageUi.rounded(this, COLOR_BLUE, 0, 3));
+        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(dp(3), dp(26));
+        alp.setMargins(0, 0, dp(9), 0);
+        header.addView(accent, alp);
+
+        LinearLayout brand = new LinearLayout(this);
+        brand.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(this);
         title.setText("iCarPlay");
         title.setTextColor(COLOR_TEXT);
-        sp(title, 20f);
+        sp(title, 23f);
         title.setTypeface(null, Typeface.BOLD);
-        header.addView(title, wrap());
-
+        brand.addView(title, wrap());
         TextView model = new TextView(this);
-        model.setText(narrow ? "  SYNC+" : "  SYNC+ 1.0 车机");
+        model.setText(narrow ? "SYNC+ 车载互联" : "SYNC+ 1.0 · 车载互联中枢");
         model.setTextColor(COLOR_MUTED);
-        sp(model, 11f);
-        header.addView(model, wrap());
+        sp(model, 9.5f);
+        brand.addView(model, wrap());
+        header.addView(brand, wrap());
 
         View spacer = new View(this);
         header.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
@@ -223,35 +254,47 @@ public class IcarLauncherActivity extends Activity {
         TextView version = new TextView(this);
         version.setText(VERSION_LABEL);
         version.setTextColor(COLOR_MUTED);
-        sp(version, 11f);
+        sp(version, 10f);
+        version.setPadding(dp(9), dp(3), dp(9), dp(3));
+        version.setBackground(PageUi.rounded(this, COLOR_CARD_ALT, COLOR_BORDER, 20));
         header.addView(version, wrap());
 
         return header;
     }
 
-    private LinearLayout makeCard(String title, String subtitle, int accent,
+    private LinearLayout makeCard(String title, String subtitle, int accent, int iconRes,
                                   View.OnClickListener listener) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setGravity(Gravity.CENTER);
-        card.setPadding(dp(6), dp(4), dp(6), dp(4));
-        card.setBackground(rounded(COLOR_CARD, accent, 10));
+        card.setPadding(dp(8), dp(8), dp(8), dp(8));
+        card.setBackground(PageUi.rounded(this, PageUi.tint(accent, 0.11f),
+                PageUi.tint(accent, 0.46f), 14));
+        card.setElevation(dp(1));
         card.setClickable(true);
         card.setFocusable(true);
         card.setOnClickListener(listener);
 
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(iconRes);
+        icon.setColorFilter(accent);
+        card.addView(icon, new LinearLayout.LayoutParams(dp(24), dp(24)));
+
         TextView titleView = new TextView(this);
         titleView.setText(title);
-        titleView.setTextColor(accent);
-        sp(titleView, 16f);
+        titleView.setTextColor(COLOR_TEXT);
+        sp(titleView, 15.5f);
         titleView.setTypeface(null, Typeface.BOLD);
         titleView.setGravity(Gravity.CENTER);
-        card.addView(titleView, wrap());
+        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        titleLp.topMargin = dp(5);
+        card.addView(titleView, titleLp);
 
         TextView subtitleView = new TextView(this);
         subtitleView.setText(subtitle);
-        subtitleView.setTextColor(COLOR_MUTED);
-        sp(subtitleView, 10f);
+        subtitleView.setTextColor(accent);
+        sp(subtitleView, 9.5f);
         subtitleView.setGravity(Gravity.CENTER);
         subtitleView.setPadding(0, dp(2), 0, 0);
         card.addView(subtitleView, wrap());
@@ -277,7 +320,8 @@ public class IcarLauncherActivity extends Activity {
         button.setMinimumHeight(0);
         button.setPadding(dp(4), 0, dp(4), 0);
         button.setStateListAnimator(null);
-        button.setBackground(rounded(COLOR_CARD, COLOR_BORDER, 8));
+        button.setBackground(PageUi.rounded(this, PageUi.tint(COLOR_BORDER, 0.05f),
+                PageUi.tint(COLOR_BORDER, 0.55f), 12));
         button.setOnClickListener(listener);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
@@ -487,7 +531,7 @@ public class IcarLauncherActivity extends Activity {
         view.setTextSize(TypedValue.COMPLEX_UNIT_SP, baseSp * uiScale);
     }
 
-    private int dp(int v) {
+    private int dp(float v) {
         return Math.round(v * getResources().getDisplayMetrics().density * uiScale);
     }
 

@@ -6,6 +6,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -17,15 +18,17 @@ import android.widget.TextView;
  */
 public final class PageUi {
 
-    public static final int BG = Color.parseColor("#0E1216");
-    public static final int CARD = Color.parseColor("#161B22");
-    public static final int CARD_ALT = Color.parseColor("#1B2230");
-    public static final int TEXT = Color.parseColor("#E6EDF3");
-    public static final int MUTED = Color.parseColor("#8B949E");
-    public static final int BLUE = Color.parseColor("#58A6FF");
-    public static final int GREEN = Color.parseColor("#3FB950");
-    public static final int RED = Color.parseColor("#F85149");
-    public static final int BORDER = Color.parseColor("#30363D");
+    public static final int BG = Color.parseColor("#0A0F17");
+    public static final int BG_MID = Color.parseColor("#111C2B");
+    public static final int CARD = Color.parseColor("#121A25");
+    public static final int CARD_ALT = Color.parseColor("#182537");
+    public static final int TEXT = Color.parseColor("#F2F6FC");
+    public static final int MUTED = Color.parseColor("#93A4B8");
+    public static final int BLUE = Color.parseColor("#5CB8FF");
+    public static final int GREEN = Color.parseColor("#3DD68C");
+    public static final int RED = Color.parseColor("#FF6B6B");
+    public static final int BORDER = Color.parseColor("#27364A");
+    public static final int GOLD = Color.parseColor("#F5C451");
 
     private PageUi() {
     }
@@ -71,11 +74,32 @@ public final class PageUi {
         return d;
     }
 
+    /** 页面背景：深色纵向渐变，避免大面积纯黑。 */
+    public static GradientDrawable background(Context c) {
+        GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{Color.parseColor("#0B111B"), BG_MID, Color.parseColor("#080C12")});
+        d.setShape(GradientDrawable.RECTANGLE);
+        return d;
+    }
+
+    public static void applyBackground(View view) {
+        view.setBackground(background(view.getContext()));
+    }
+
+    /** 半透明强调色，用于功能卡片的轻量着色。 */
+    public static int tint(int accent, float ratio) {
+        int r = (int) (Color.red(accent) * ratio + Color.red(CARD) * (1f - ratio));
+        int g = (int) (Color.green(accent) * ratio + Color.green(CARD) * (1f - ratio));
+        int b = (int) (Color.blue(accent) * ratio + Color.blue(CARD) * (1f - ratio));
+        return Color.rgb(r, g, b);
+    }
+
     public static LinearLayout card(Context c, int accent, int paddingX, int paddingY) {
         LinearLayout box = new LinearLayout(c);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(c, paddingX), dp(c, paddingY), dp(c, paddingX), dp(c, paddingY));
-        box.setBackground(rounded(c, CARD, accent, 10));
+        box.setBackground(rounded(c, tint(accent, 0.10f), tint(accent, 0.42f), 14));
+        box.setElevation(dp(c, 1));
         return box;
     }
 
@@ -88,9 +112,9 @@ public final class PageUi {
         b.setGravity(Gravity.CENTER);
         b.setMinHeight(0);
         b.setMinimumHeight(0);
-        b.setPadding(dp(c, 6), 0, dp(c, 6), 0);
+        b.setPadding(dp(c, 8), 0, dp(c, 8), 0);
         b.setStateListAnimator(null);
-        b.setBackground(rounded(c, CARD, accent, 8));
+        b.setBackground(rounded(c, tint(accent, 0.08f), tint(accent, 0.38f), 12));
         return b;
     }
 
@@ -118,20 +142,29 @@ public final class PageUi {
         lp.setMargins(dp(c, left), dp(c, top), dp(c, right), dp(c, bottom));
     }
 
-    /** 顶部标题栏：标题 + 右侧版本号。 */
+    /** 顶部标题栏：强调竖条 + 标题 + 右侧版本胶囊。 */
     public static LinearLayout header(Context c, String title, String version) {
         LinearLayout header = new LinearLayout(c);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView t = text(c, title, 20f, TEXT, true);
+        View accent = new View(c);
+        accent.setBackground(rounded(c, BLUE, 0, 3));
+        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(dp(c, 3), dp(c, 20));
+        alp.setMargins(0, 0, dp(c, 9), 0);
+        header.addView(accent, alp);
+
+        TextView t = text(c, title, 22f, TEXT, true);
         header.addView(t, wrap(c));
 
-        android.view.View spacer = new android.view.View(c);
+        View spacer = new View(c);
         header.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
 
         if (version != null && !version.isEmpty()) {
-            header.addView(text(c, version, 11f, MUTED, false), wrap(c));
+            TextView pill = text(c, version, 10f, MUTED, false);
+            pill.setPadding(dp(c, 9), dp(c, 3), dp(c, 9), dp(c, 3));
+            pill.setBackground(rounded(c, CARD_ALT, BORDER, 20));
+            header.addView(pill, wrap(c));
         }
         return header;
     }
@@ -140,7 +173,7 @@ public final class PageUi {
     public static Button back(Context c) {
         Button b = button(c, "←  返回主界面", 13f, BLUE);
         b.setTypeface(null, Typeface.BOLD);
-        b.setBackground(rounded(c, CARD_ALT, BLUE, 10));
+        b.setBackground(rounded(c, tint(BLUE, 0.14f), BLUE, 12));
         return b;
     }
 }

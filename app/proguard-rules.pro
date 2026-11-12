@@ -6,3 +6,11 @@
 
 # Keep NativeBridge native methods
 -keep class io.github.jqssun.airplay.bridge.NativeBridge { *; }
+
+
+# HiCar HUKS JNI entry points are resolved by name.
+-keep class local.hicarlab.NativeAuth { *; }
+-keepclasseswithmembernames class * { native <methods>; }
+
+# Manifest receivers/services are kept by AGP; keep reflective page lookups safe.
+-keep class local.hicarlab.** { *; }

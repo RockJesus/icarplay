@@ -1,8 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
 }
 
 import java.util.Properties
@@ -36,8 +33,8 @@ android {
         applicationId = "com.rockjesus.icarplay"
         minSdk = 23
         targetSdk = 37
-        versionCode = 24
-        versionName = "0.5.9"
+        versionCode = 25
+        versionName = "0.6.0"
 
         externalNativeBuild {
             cmake {
@@ -58,7 +55,8 @@ android {
             ndk { abiFilters += allAbis }
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfigs.findByName("release")?.let { signingConfig = it }
             ndk { abiFilters += releaseAbis }
@@ -88,7 +86,6 @@ android {
     }
 
     buildFeatures {
-        compose = true
         prefab = true
     }
 }
@@ -115,32 +112,12 @@ tasks.configureEach {
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.lifecycle.runtime)
-    implementation(libs.androidx.lifecycle.service)
-    implementation(libs.androidx.lifecycle.viewmodel)
-    implementation(libs.androidx.datastore.prefs)
-    implementation(libs.androidx.media)
-    implementation(libs.media3.exoplayer)
-    implementation(libs.media3.exoplayer.hls)
-    implementation(libs.media3.ui.compose.material3)
-    implementation(libs.media3.transformer)
-    implementation(libs.kotlinx.coroutines)
-    implementation(libs.oboe)
+    // 仅保留运行所需依赖；界面全部为原生 View，不使用 Compose / Hilt / Media3。
+    implementation("androidx.core:core:1.16.0")
 
-    // Android Auto AAP protobuf (generated sources committed under java/info/anodsplace/...)
+    // Android Auto AAP protobuf（生成代码已提交在 java/info/anodsplace/...）
     implementation("com.google.protobuf:protobuf-lite:3.0.1")
 
-    implementation(platform(libs.compose.bom))
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.graphics)
-    implementation(libs.compose.ui.tooling.preview)
-    implementation(libs.compose.material3)
-    implementation(libs.compose.material.icons)
-    debugImplementation(libs.compose.ui.tooling)
-
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
+    // UxPlay 音频输出，CMake 通过 prefab 引入
+    implementation(libs.oboe)
 }
