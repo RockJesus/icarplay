@@ -3,9 +3,9 @@
 面向 **2020 款 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
 **一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置小白点**。
 
-> **当前版本 v0.5.7**
+> **当前版本 v0.5.8**
 >
-> 下载：[`icarplay-v0.5.7.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.5.7/icarplay-v0.5.7.apk)
+> 下载：[`icarplay-v0.5.8.apk`](https://github.com/RockJesus/icarplay/releases/download/v0.5.8/icarplay-v0.5.8.apk)
 >
 > 本版 Release 只打包 **arm64-v8a + armeabi-v7a**，去掉车机用不到的 x86_64，APK 从约 50.8 MB 降到约 41 MB。
 >
@@ -19,6 +19,8 @@
 >
 > - **v0.5.7 调整**：小白点快捷面板中的“主界面”改为“iCarPlay主界面”，点击仍进入 iCarPlay 首页。
 >
+> - **v0.5.8 调整**：车机重启后自动恢复小白点悬浮层；只恢复悬浮球，不打开 iCarPlay 主界面，不自动启动 HiCar 接收。用户在首页手动关掉小白点后，重启不会强制拉起。
+>
 >
 > - **AirPlay：已接入**。基于 GPLv3 的 UxPlay / `jqssun/android-airplay-server` 协议栈，
 >   支持 iPhone / iPad / Mac 的屏幕镜像与音频，Android 7.0+ 可运行。
@@ -31,7 +33,7 @@
 >   **真正的 iAP2 / MFi / AirPlay 隧道尚未接入**，没有 Apple MFi 认证材料时 iPhone 不会完成配对。
 > - **内置小白点：已接入**。悬浮球由本 APK 自带，不需要第二个悬浮球 App。
 > - **车机桌面显示**：SYNC+ 原车桌面是系统层窗口，普通悬浮窗会被它盖住；在系统「无障碍」里开启 `iCarPlay 小白点` 后，改用无障碍悬浮层，才能显示在原车机桌面上。该服务只绘制悬浮球，不读取屏幕内容。
-> - **安全边界：v0.4.0 起默认不抢桌面、不自启；连续异常进安全模式**，详见 [`docs/SAFETY.md`](docs/SAFETY.md)。
+> - **安全边界：v0.4.0 起不抢桌面；v0.5.8 起仅小白点悬浮层开机恢复，主界面和接收服务不自动启动；连续异常进安全模式**，详见 [`docs/SAFETY.md`](docs/SAFETY.md)。
 
 ## 能力矩阵
 
@@ -47,12 +49,12 @@
 | CarPlay 有线入口 | ⚠️ 骨架 | USB 设备枚举 + 启动状态，协议引擎未接入 |
 | CarPlay 无线入口 | ⚠️ 骨架 | Wi-Fi 状态 + 启动状态，协议引擎未接入 |
 | CarPlay 认证后端 | ⚠️ 骨架 | 本地证书 / MFi 芯片 / 远程 MFI 三选一，仅保存与检查 |
-| 车机安全约束 | ✅ | 不写系统分区、不申请设备管理员/系统设置权限、不抢占默认桌面；开机自启默认关闭 |
+| 车机安全约束 | ✅ | 不写系统分区、不申请设备管理员/系统设置权限、不抢占默认桌面；开机仅恢复小白点悬浮层，HiCar 开机接收仍默认关闭 |
 | 不需要第二个 APK | ✅ | 悬浮球、AirPlay、Android Auto、HiCar、CarPlay 入口都在同一个包里 |
 
 ## 安装（SYNC+ 车机）
 
-1. U 盘格式 **FAT32**，把 `icarplay-v0.5.7.apk` 放根目录；
+1. U 盘格式 **FAT32**，把 `icarplay-v0.5.8.apk` 放根目录；
 2. 输入法漏洞进安卓原生设置 → 存储 → U 盘 → 安装；
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
@@ -170,5 +172,5 @@ git submodule update --init --recursive
 ## 风险
 
 - SYNC+ 有签名白名单，自签名包可能直接装不上；
-- 车机默认不自启，避免 Wi-Fi Direct 导致的重启循环；
+- 主界面和接收服务默认不自启，仅小白点悬浮层开机恢复，避免 Wi-Fi Direct 导致的重启循环；
 - AirPlay 长期稳定性、音频通道、1920×720 适配仍需实车验证。

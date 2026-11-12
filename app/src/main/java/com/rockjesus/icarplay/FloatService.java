@@ -60,8 +60,8 @@ public class FloatService extends Service {
 
         startForeground(NOTIF_ID, buildNotification());
 
-        if (PermissionOnboarding.isAccessibilityEnabled(this)) {
-            // 无障碍层已接管，避免出现双球。
+        if (FloatAccessibilityService.isRunning()) {
+            // 无障碍层已实际接管，避免出现双球；仅“已勾选”但尚未连接时允许普通层兜底。
             stopSelf();
             return;
         }
@@ -77,7 +77,7 @@ public class FloatService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (PermissionOnboarding.isAccessibilityEnabled(this)) {
+        if (FloatAccessibilityService.isRunning()) {
             stopSelf();
             return START_NOT_STICKY;
         }

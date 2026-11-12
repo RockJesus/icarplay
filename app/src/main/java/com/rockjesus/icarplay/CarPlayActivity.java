@@ -30,7 +30,7 @@ public class CarPlayActivity extends Activity {
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
         setContentView(root);
 
-        root.addView(PageUi.header(this, "CarPlay 接收", "v0.5.7"), PageUi.matchWrap(this));
+        root.addView(PageUi.header(this, "CarPlay 接收", "v0.5.8"), PageUi.matchWrap(this));
 
         TextView sub = PageUi.text(this, "iPhone → 车机 · 有线 USB / 无线 Wi-Fi", 11f,
                 PageUi.MUTED, false);

@@ -246,8 +246,8 @@ public final class PermissionOnboarding {
         if (!p.getBoolean(KEY_FLOAT_AUTO, true)) {
             return;
         }
-        if (isAccessibilityEnabled(activity)) {
-            // 无障碍悬浮层已经能覆盖原车机桌面，普通悬浮窗让位，避免双球。
+        if (isAccessibilityEnabled(activity) && FloatAccessibilityService.isRunning()) {
+            // 无障碍悬浮层已经实际接管，普通悬浮窗让位，避免双球。
             if (isFloatServiceRunning(activity)) {
                 try { activity.stopService(new Intent(activity, FloatService.class)); }
                 catch (Throwable ignored) { }
@@ -270,6 +270,28 @@ public final class PermissionOnboarding {
         } catch (Throwable t) {
             Toast.makeText(activity, "小白点启动失败：" + t.getClass().getSimpleName(),
                     Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * 开机恢复小白点。只在用户完成首次引导且未手动关闭小白点时启动普通悬浮层。
+     * 无障碍层若已真正连接，会将普通层让位；若尚未重新绑定，则先由普通层兜底。
+     */
+    public static void startFloatOnBoot(Context context) {
+        SharedPreferences p = prefs(context);
+        if (!p.getBoolean(KEY_DONE, false)) return;
+        if (!p.getBoolean(KEY_FLOAT_AUTO, true)) return;
+        if (!Settings.canDrawOverlays(context)) return;
+        if (isFloatServiceRunning(context)) return;
+        Intent service = new Intent(context, FloatService.class).setAction("BOOT_START");
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                context.startForegroundService(service);
+            } else {
+                context.startService(service);
+            }
+        } catch (Throwable ignored) {
+            // 部分 ROM 会限制开机后台启动；失败时保持系统原样，不重试、不崩溃。
         }
     }
 

@@ -15,7 +15,8 @@
 - 只申请用户可见的悬浮窗、麦克风、位置、蓝牙、通知和电池优化白名单；电池优化只是系统设置页的一次性确认，不改系统分区；
 - 不通过 `Runtime.exec` 或 `ProcessBuilder` 调特权命令；
 - 不把 `android.intent.category.HOME` 加进 Manifest，因此不会被系统当作“桌面”候选；
-- 不自动注册开机自启；HiCar 的 `BootReceiver` 在 Manifest 中默认 `android:enabled="false"`。
+- 不自动打开主界面、不自动启动 HiCar 接收；仅小白点悬浮层在用户完成首次引导且未手动关闭时开机恢复。
+- HiCar 的 `local.hicarlab.BootReceiver` 在 Manifest 中仍默认 `android:enabled="false"`。
 
 `bash scripts/preflight-safety.sh` 会在 CI 构建前检查上述条件，任何一项不满足都会让构建失败。
 
@@ -29,12 +30,13 @@
 
 这些情况通常可以通过卸载 APK、关闭悬浮窗或切回原桌面恢复。
 
-## v0.5.7 的防护措施（自 v0.4.0 引入）
+## v0.5.8 的防护措施（自 v0.4.0 引入）
 
 | 约束 | 实现 |
 |---|---|
 | 不抢占默认桌面 | Manifest 只保留 `LAUNCHER`，没有 `HOME` / `LEANBACK_LAUNCHER`；主界面只提供“系统桌面设置（手动确认）”入口 |
-| 开机自启默认关闭 | `local.hicarlab.BootReceiver` 默认 `enabled=false`；HiCar 页面开启时弹窗二次确认，确认后才启用组件 |
+| 开机只恢复小白点 | `FloatBootReceiver` 只启动悬浮层，不打开 Activity；用户手动关掉小白点后 `float_auto=false`，重启不再拉起 |
+| HiCar 开机接收默认关闭 | `local.hicarlab.BootReceiver` 默认 `enabled=false`；HiCar 页面开启时弹窗二次确认，确认后才启用组件 |
 | 崩溃隔离 | 全局 `UncaughtExceptionHandler` 记录崩溃；5 分钟内连续两次崩溃进入安全模式并关闭开机自启 |
 | 看门狗 | HiCar 服务主线程 60 秒无响应时停止服务并回到主界面；全局主线程 90 秒无响应时打开主界面、关闭自启并结束本应用进程 |
 | 热点退出释放 | 停止连接、服务销毁、任务被移除时关闭本地热点 / `removeGroup`，不保留持久热点配置 |
@@ -45,7 +47,7 @@
 
 1. **停车、挂 P 挡**，不要在行驶中测试；
 2. 先确认车机仍能进入安卓原生设置；
-3. 从 U 盘安装 `icarplay-v0.5.7.apk`，不要把它设为默认桌面；
+3. 从 U 盘安装 `icarplay-v0.5.8.apk`，不要把它设为默认桌面；
 4. 打开主界面，先只测试 AirPlay / Android Auto；
 5. 华为 HiCar 单独测试，首次在系统蓝牙里完成六位码配对；
 6. 若出现异常，先在原生设置里卸载 APK；不要反复断电重启；

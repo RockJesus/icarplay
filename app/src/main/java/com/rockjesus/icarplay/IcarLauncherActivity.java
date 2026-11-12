@@ -36,7 +36,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    private static final String VERSION_LABEL = "v0.5.7";
+    private static final String VERSION_LABEL = "v0.5.8";
 
     private static final int COLOR_BG = Color.parseColor("#0E1216");
     private static final int COLOR_CARD = Color.parseColor("#161B22");
