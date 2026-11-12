@@ -17,9 +17,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -51,6 +54,8 @@ public class AndroidAutoActivity extends Activity {
     private static final int REQ_PERMISSIONS = 41;
 
     private TextView status;
+    private TextView statusPill;
+    private TextView lanView;
     private UsbManager usbManager;
     private boolean waitingForAccessory;
 
@@ -93,42 +98,89 @@ public class AndroidAutoActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_android_auto);
-
-        status = findViewById(R.id.auto_status);
         usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
 
-        findViewById(R.id.auto_usb).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                chooseUsbDevice();
-            }
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackground(PageUi.background(this));
+        root.setPadding(PageUi.dp(this, 18), PageUi.dp(this, 10),
+                PageUi.dp(this, 18), PageUi.dp(this, 8));
+        setContentView(root);
+
+        LinearLayout top = new LinearLayout(this);
+        top.setOrientation(LinearLayout.HORIZONTAL);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.addView(PageUi.header(this, "Android Auto 接收", IcarLauncherActivity.VERSION_LABEL),
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        statusPill = PageUi.statusPill(this, "待连接", PageUi.GREEN);
+        top.addView(statusPill, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        root.addView(top, PageUi.matchWrap(this));
+
+        TextView sub = PageUi.text(this, "USB 有线 / 手机 Headunit Server 无线", 11f,
+                PageUi.MUTED, false);
+        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
+        PageUi.margin(subLp, this, 0, 3, 0, 7);
+        root.addView(sub, subLp);
+
+        LinearLayout statusCard = PageUi.card(this, PageUi.GREEN, 14, 9);
+        root.addView(statusCard, PageUi.matchWrap(this));
+        statusCard.addView(PageUi.text(this, "连接状态", 8.5f, PageUi.GREEN, true),
+                PageUi.wrap(this));
+        status = PageUi.text(this, "未连接。请用 USB 数据线把手机接到车机 USB 口，或在手机端启动 Headunit Server。",
+                12.5f, PageUi.TEXT, false);
+        status.setPadding(0, PageUi.dp(this, 3), 0, PageUi.dp(this, 5));
+        statusCard.addView(status, PageUi.matchWrap(this));
+
+        LinearLayout netRow = new LinearLayout(this);
+        netRow.setOrientation(LinearLayout.HORIZONTAL);
+        netRow.setGravity(Gravity.CENTER_VERTICAL);
+        TextView netLabel = PageUi.text(this, "本机网络", 8.5f, PageUi.GOLD, true);
+        netRow.addView(netLabel, PageUi.wrap(this));
+        lanView = PageUi.text(this, PageUi.localNetwork(this), 9.5f, PageUi.MUTED, false);
+        lanView.setPadding(PageUi.dp(this, 8), 0, 0, 0);
+        netRow.addView(lanView, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        statusCard.addView(netRow, PageUi.matchWrap(this));
+
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setMinimumHeight(PageUi.dp(this, 96));
+        LinearLayout.LayoutParams gridLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        PageUi.margin(gridLp, this, 0, 8, 0, 0);
+        root.addView(grid, gridLp);
+
+        Button usb = PageUi.button(this, "连接 USB 手机", 14f, PageUi.BLUE);
+        usb.setOnClickListener(v -> chooseUsbDevice());
+        Button wifi = PageUi.button(this, "无线连接", 14f, PageUi.GREEN);
+        wifi.setOnClickListener(v -> showWifiDialog());
+        Button projection = PageUi.button(this, "打开投影画面", 14f, PageUi.CYAN);
+        projection.setOnClickListener(v -> openProjection());
+        Button stop = PageUi.button(this, "停止 Android Auto", 14f, PageUi.RED);
+        stop.setOnClickListener(v -> {
+            stopService(new Intent(AndroidAutoActivity.this, AapService.class));
+            setStatus("Android Auto 已停止。");
         });
-        findViewById(R.id.auto_wifi).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showWifiDialog();
-            }
-        });
-        findViewById(R.id.auto_projection).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openProjection();
-            }
-        });
-        findViewById(R.id.auto_stop).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stopService(new Intent(AndroidAutoActivity.this, AapService.class));
-                setStatus("Android Auto 已停止。");
-            }
-        });
-        findViewById(R.id.auto_back).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        grid.addView(row(usb, wifi), rowLp(0));
+        grid.addView(row(projection, stop), rowLp(6));
+
+        TextView note = PageUi.text(this,
+                "有线：手机安装 Android Auto，USB 口必须支持数据，首次连接会请求 USB 权限。\n"
+                        + "无线：手机开发者选项启动 Headunit Server，车机输入手机 IP，端口 5277。",
+                9.5f, PageUi.MUTED, false);
+        note.setPadding(PageUi.dp(this, 10), PageUi.dp(this, 6),
+                PageUi.dp(this, 10), PageUi.dp(this, 6));
+        note.setBackground(PageUi.rounded(this, PageUi.CARD, PageUi.BORDER, 8));
+        LinearLayout.LayoutParams noteLp = PageUi.matchWrap(this);
+        PageUi.margin(noteLp, this, 0, 6, 0, 0);
+        root.addView(note, noteLp);
+
+        Button back = PageUi.back(this);
+        back.setOnClickListener(v -> finish());
+        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 44);
+        PageUi.margin(backLp, this, 0, 8, 0, 0);
+        root.addView(back, backLp);
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_USB_PERMISSION);
@@ -142,6 +194,27 @@ public class AndroidAutoActivity extends Activity {
         refreshStatus();
     }
 
+    private LinearLayout.LayoutParams rowLp(float top) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        PageUi.margin(lp, this, 0, top, 0, 0);
+        return lp;
+    }
+
+    private LinearLayout row(Button left, Button right) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        PageUi.margin(lp, this, 4, 0, 4, 0);
+        row.addView(left, lp);
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        PageUi.margin(rp, this, 4, 0, 4, 0);
+        row.addView(right, rp);
+        return row;
+    }
+
     @Override
     protected void onDestroy() {
         try {
@@ -152,6 +225,7 @@ public class AndroidAutoActivity extends Activity {
     }
 
     private void refreshStatus() {
+        if (lanView != null) lanView.setText(PageUi.localNetwork(this));
         if (App.provide(this).getTransport().isAlive()) {
             setStatus("Android Auto 协议通道已连接。可以打开投影画面。");
             return;
@@ -321,6 +395,15 @@ public class AndroidAutoActivity extends Activity {
 
     private void setStatus(String text) {
         if (status != null) status.setText(text);
+        if (statusPill == null) return;
+        boolean connected = text.contains("已连接") || text.contains("已识别");
+        boolean error = text.contains("失败") || text.contains("拒绝") || text.contains("无法");
+        int accent = connected ? PageUi.GREEN : (error ? PageUi.RED : PageUi.GOLD);
+        statusPill.setText(connected ? "已连接" : (error ? "异常" : "进行中"));
+        statusPill.setTextColor(accent);
+        statusPill.setBackground(PageUi.rounded(this,
+                PageUi.blend(PageUi.CARD, accent, 0.16f),
+                PageUi.blend(PageUi.BORDER, accent, 0.55f), 20));
     }
 
     private void toast(String text) {

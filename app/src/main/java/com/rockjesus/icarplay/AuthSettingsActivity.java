@@ -27,12 +27,13 @@ public class AuthSettingsActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(PageUi.BG);
+        root.setBackground(PageUi.background(this));
         root.setPadding(PageUi.dp(this, 18), PageUi.dp(this, 10),
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
         setContentView(root);
 
-        root.addView(PageUi.header(this, "认证与连接设置", "v0.6.0"), PageUi.matchWrap(this));
+        root.addView(PageUi.header(this, "认证与连接设置",
+                IcarLauncherActivity.VERSION_LABEL), PageUi.matchWrap(this));
 
         TextView sub = PageUi.text(this,
                 "CarPlay 能不能连取决于认证后端；有没有声音取决于音频通道。",

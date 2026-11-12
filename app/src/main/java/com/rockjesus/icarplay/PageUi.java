@@ -4,31 +4,38 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.shilapi.xcertplay.carlife.WirelessNetwork;
+
 /**
- * 统一二级页的单屏 UI：与首页同一套配色、圆角和缩放规则。
- * 所有页面不放进 ScrollView，靠 weight + 最小高度把内容压进一屏。
+ * 统一车机 UI：深色玻璃面板、强调色描边、统一的缩放和不滚动单屏规则。
+ * 所有页面共用同一套色板和尺寸计算，避免首页与二级页各写一套样式。
  */
 public final class PageUi {
 
-    public static final int BG = Color.parseColor("#0A0F17");
-    public static final int BG_MID = Color.parseColor("#111C2B");
-    public static final int CARD = Color.parseColor("#121A25");
-    public static final int CARD_ALT = Color.parseColor("#182537");
-    public static final int TEXT = Color.parseColor("#F2F6FC");
-    public static final int MUTED = Color.parseColor("#93A4B8");
-    public static final int BLUE = Color.parseColor("#5CB8FF");
-    public static final int GREEN = Color.parseColor("#3DD68C");
-    public static final int RED = Color.parseColor("#FF6B6B");
-    public static final int BORDER = Color.parseColor("#27364A");
-    public static final int GOLD = Color.parseColor("#F5C451");
+    public static final int BG = Color.parseColor("#070C14");
+    public static final int BG_MID = Color.parseColor("#0D1926");
+    public static final int CARD = Color.parseColor("#101B28");
+    public static final int CARD_ALT = Color.parseColor("#162638");
+    public static final int TEXT = Color.parseColor("#F4F8FF");
+    public static final int MUTED = Color.parseColor("#91A5BC");
+    public static final int BLUE = Color.parseColor("#4DA8FF");
+    public static final int GREEN = Color.parseColor("#3DDC97");
+    public static final int RED = Color.parseColor("#FF737D");
+    public static final int BORDER = Color.parseColor("#24374D");
+    public static final int GOLD = Color.parseColor("#FFC857");
+    public static final int CYAN = Color.parseColor("#45D9D9");
+    public static final int PURPLE = Color.parseColor("#A78BFA");
 
     private PageUi() {
     }
@@ -94,13 +101,72 @@ public final class PageUi {
         return Color.rgb(r, g, b);
     }
 
+    /** 深色玻璃面板：自上而下的细腻渐变 + 强调色描边。 */
+    public static GradientDrawable surface(Context c, int accent, float radiusDp) {
+        int top = blend(CARD_ALT, accent, 0.13f);
+        int bottom = blend(CARD, accent, 0.04f);
+        GradientDrawable d = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM, new int[]{top, bottom});
+        d.setShape(GradientDrawable.RECTANGLE);
+        d.setCornerRadius(dp(c, radiusDp));
+        d.setStroke(dp(c, 1), blend(BORDER, accent, 0.34f));
+        return d;
+    }
+
+    /** 可点击面板的按下反馈，避免所有卡片看起来都是静态图片。 */
+    public static StateListDrawable surfaceState(Context c, int accent, float radiusDp) {
+        StateListDrawable s = new StateListDrawable();
+        GradientDrawable pressed = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{blend(CARD_ALT, accent, 0.26f), blend(CARD_ALT, accent, 0.10f)});
+        pressed.setCornerRadius(dp(c, radiusDp));
+        pressed.setStroke(dp(c, 1), blend(BORDER, accent, 0.65f));
+        s.addState(new int[]{android.R.attr.state_pressed}, pressed);
+        s.addState(new int[]{}, surface(c, accent, radiusDp));
+        return s;
+    }
+
+    public static int blend(int base, int accent, float ratio) {
+        float r = ratio < 0 ? 0 : Math.min(1, ratio);
+        int red = (int) (Color.red(accent) * r + Color.red(base) * (1f - r));
+        int green = (int) (Color.green(accent) * r + Color.green(base) * (1f - r));
+        int blue = (int) (Color.blue(accent) * r + Color.blue(base) * (1f - r));
+        return Color.rgb(red, green, blue);
+    }
+
     public static LinearLayout card(Context c, int accent, int paddingX, int paddingY) {
         LinearLayout box = new LinearLayout(c);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(c, paddingX), dp(c, paddingY), dp(c, paddingX), dp(c, paddingY));
-        box.setBackground(rounded(c, tint(accent, 0.10f), tint(accent, 0.42f), 14));
+        box.setBackground(surface(c, accent, 14));
         box.setElevation(dp(c, 1));
         return box;
+    }
+
+    /** 小号状态胶囊，用于“运行中 / 待连接 / 未配置”。 */
+    public static TextView statusPill(Context c, String label, int accent) {
+        TextView pill = text(c, label, 9.5f, accent, true);
+        pill.setGravity(Gravity.CENTER);
+        pill.setPadding(dp(c, 8), dp(c, 2), dp(c, 8), dp(c, 2));
+        pill.setBackground(rounded(c, blend(CARD, accent, 0.16f),
+                blend(BORDER, accent, 0.55f), 20));
+        return pill;
+    }
+
+    /** 方形图标底座，二级页和首页共用。 */
+    public static FrameLayout iconBadge(Context c, int iconRes, int accent, float sizeDp) {
+        FrameLayout badge = new FrameLayout(c);
+        badge.setBackground(rounded(c, blend(CARD_ALT, accent, 0.18f),
+                blend(BORDER, accent, 0.42f), 12));
+        ImageView icon = new ImageView(c);
+        icon.setImageResource(iconRes);
+        icon.setColorFilter(accent);
+        int p = dp(c, sizeDp * 0.22f);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        lp.setMargins(p, p, p, p);
+        badge.addView(icon, lp);
+        return badge;
     }
 
     public static Button button(Context c, String label, float size, int accent) {
@@ -114,8 +180,25 @@ public final class PageUi {
         b.setMinimumHeight(0);
         b.setPadding(dp(c, 8), 0, dp(c, 8), 0);
         b.setStateListAnimator(null);
-        b.setBackground(rounded(c, tint(accent, 0.08f), tint(accent, 0.38f), 12));
+        StateListDrawable bg = new StateListDrawable();
+        GradientDrawable pressed = rounded(c, blend(CARD_ALT, accent, 0.30f), accent, 12);
+        bg.addState(new int[]{android.R.attr.state_pressed}, pressed);
+        bg.addState(new int[]{android.R.attr.state_enabled},
+                rounded(c, blend(CARD, accent, 0.10f), blend(BORDER, accent, 0.42f), 12));
+        bg.addState(new int[]{}, rounded(c, blend(BG_MID, accent, 0.05f),
+                blend(BORDER, accent, 0.25f), 12));
+        b.setBackground(bg);
         return b;
+    }
+
+    /** 本机当前 Wi‑Fi / 有线 IPv4，用于在页面上直接告诉用户“填哪个网段”。 */
+    public static String localNetwork(Context c) {
+        try {
+            String value = WirelessNetwork.INSTANCE.describe(c);
+            return value == null || value.isEmpty() ? "未连接网络" : value;
+        } catch (Throwable ignored) {
+            return "未连接网络";
+        }
     }
 
     public static LinearLayout.LayoutParams matchWrap(Context c) {

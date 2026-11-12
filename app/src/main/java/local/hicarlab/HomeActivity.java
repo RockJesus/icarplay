@@ -38,16 +38,17 @@ public final class HomeActivity extends ThemeActivity {
         super.onCreate(state);if(state!=null)pending=state.getBoolean("pending");
         LinearLayout root=new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(PageUi.BG);
+        root.setBackground(PageUi.background(this));
         root.setPadding(PageUi.dp(this,18),PageUi.dp(this,10),PageUi.dp(this,18),PageUi.dp(this,8));
         setContentView(root);
 
-        root.addView(PageUi.header(this,"HiCar 接收端","实验版 0.11.1 · v0.6.0"),PageUi.matchWrap(this));
+        root.addView(PageUi.header(this,"HiCar 接收端",IcarLauncherActivity.VERSION_LABEL),PageUi.matchWrap(this));
 
-        TextView help=PageUi.text(this,"开启手机蓝牙和 WLAN，点“开始连接”；首次连接按手机提示输入六位码。",10.5f,PageUi.MUTED,false);
+        TextView help=PageUi.text(this,"开启手机蓝牙和 WLAN，点“开始连接”；首次连接按手机提示输入六位码。\n"
+                +PageUi.localNetwork(this),10.5f,PageUi.MUTED,false);
         LinearLayout.LayoutParams helpLp=PageUi.matchWrap(this);PageUi.margin(helpLp,this,0,3,0,6);root.addView(help,helpLp);
 
-        LinearLayout statusCard=PageUi.card(this,PageUi.BORDER,12,8);
+        LinearLayout statusCard=PageUi.card(this,PageUi.GREEN,12,8);
         status=PageUi.text(this,"正在读取状态…",18f,PageUi.GREEN,true);
         statusCard.addView(status,PageUi.matchWrap(this));
         detail=PageUi.text(this,"",10.5f,PageUi.MUTED,false);
@@ -75,23 +76,20 @@ public final class HomeActivity extends ThemeActivity {
         LinearLayout.LayoutParams row3Lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f);
         PageUi.margin(row3Lp,this,0,6,0,0);grid.addView(row3,row3Lp);
 
-        LinearLayout switchCard=PageUi.card(this,PageUi.BORDER,10,5);
-        switchCard.setOrientation(LinearLayout.HORIZONTAL);
-        micSwitch=new Switch(this);micSwitch.setText("麦克风语音");micSwitch.setTextColor(PageUi.TEXT);PageUi.textSize(micSwitch,10f);
+        LinearLayout switchCard=PageUi.card(this,PageUi.BORDER,10,4);
+        switchCard.setOrientation(LinearLayout.VERTICAL);
+        micSwitch=new Switch(this);micSwitch.setText("麦克风语音（仅在 HiCar 请求时采集）");micSwitch.setTextColor(PageUi.TEXT);PageUi.textSize(micSwitch,10f);
         micSwitch.setChecked(MicrophoneSender.enabled(this));
-        micSwitch.setPadding(0,0,PageUi.dp(this,4),0);
-        LinearLayout.LayoutParams micLp=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f);
-        switchCard.addView(micSwitch,micLp);
-        Switch autoStart=new Switch(this);autoStart.setText("开机自动接收");autoStart.setTextColor(PageUi.TEXT);PageUi.textSize(autoStart,10f);
+        switchCard.addView(micSwitch,PageUi.matchWrap(this));
+        Switch autoStart=new Switch(this);autoStart.setText("开机自动接收（后台等待，不自动弹画面）");autoStart.setTextColor(PageUi.TEXT);PageUi.textSize(autoStart,10f);
         autoStart.setChecked(AutoStart.enabled(this));
-        LinearLayout.LayoutParams autoLp=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f);
-        switchCard.addView(autoStart,autoLp);
+        switchCard.addView(autoStart,PageUi.matchWrap(this));
         root.addView(switchCard,PageUi.matchWrap(this));
 
         micStatus=PageUi.text(this,"",9.5f,PageUi.MUTED,false);
         root.addView(micStatus,PageUi.matchWrap(this));
 
-        TextView autoHelp=PageUi.text(this,"开机自动接收默认关闭；开启后只后台等待已配对手机，不会自动弹画面。重复异常时安全模式会自动关闭。",9f,PageUi.MUTED,false);
+        TextView autoHelp=PageUi.text(this,"开机自动接收默认关闭；开启后只后台等待已配对手机，不会自动弹画面。重复异常时安全模式会自动关闭。请停车后操作。",9f,PageUi.MUTED,false);
         autoHelp.setPadding(PageUi.dp(this,8),PageUi.dp(this,3),PageUi.dp(this,8),PageUi.dp(this,3));
         autoHelp.setBackground(PageUi.rounded(this,PageUi.CARD,PageUi.BORDER,8));
         root.addView(autoHelp,PageUi.matchWrap(this));
@@ -159,9 +157,6 @@ public final class HomeActivity extends ThemeActivity {
         });
         root.addView(carHome,carHomeLp);
 
-        TextView note=PageUi.text(this,"请停车后操作。",9.5f,PageUi.MUTED,false);
-        note.setGravity(android.view.Gravity.CENTER);
-        root.addView(note,PageUi.matchWrap(this));
         if(getIntent().getBooleanExtra("retry",false)){getIntent().removeExtra("retry");handler.post(()->{pending=true;continueStart();});}
     }
     private LinearLayout row(Button left,Button right){

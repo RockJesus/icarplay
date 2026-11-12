@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.SurfaceTexture
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -18,16 +19,19 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.diplay.carlife.core.CarLife
 import com.diplay.carlife.core.CarLifeMessages
+import com.rockjesus.icarplay.PageUi
 import com.shilapi.xcertplay.carlife.CarLifeEngine
 import com.shilapi.xcertplay.carlife.CarLifePersistence
 import com.shilapi.xcertplay.carlife.CarLifeSessionLog
 import com.shilapi.xcertplay.carlife.SubnetScanner
 import com.shilapi.xcertplay.carlife.WirelessNetwork
+import io.github.jqssun.airplay.R
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -46,6 +50,8 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
     private lateinit var video: TextureView
     private lateinit var status: TextView
     private lateinit var connectBar: LinearLayout
+    private lateinit var idlePanel: LinearLayout
+    private lateinit var statusDot: View
 
     private val main = Handler(Looper.getMainLooper())
     private var engine: CarLifeEngine? = null
@@ -106,53 +112,134 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         val top = LinearLayout(this)
         top.orientation = LinearLayout.HORIZONTAL
         top.gravity = Gravity.CENTER_VERTICAL
-        top.setPadding(dp(10), dp(6), dp(10), dp(6))
-        top.setBackgroundColor(0xCC000000.toInt())
+        top.setPadding(dp(10), dp(7), dp(10), dp(7))
+        top.background = GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            intArrayOf(0xE6070C14.toInt(), 0xD90D1926.toInt()),
+        ).apply {
+            cornerRadius = dp(12).toFloat()
+            setStroke(dp(1), 0x553B5876)
+        }
         top.layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
             Gravity.TOP,
-        )
+        ).apply {
+            marginStart = dp(10)
+            marginEnd = dp(10)
+            topMargin = dp(10)
+        }
 
         val back = Button(this)
         back.text = "← iCarPlay"
         back.setTextColor(Color.WHITE)
-        back.textSize = 13f
+        back.textSize = 12.5f
         back.setAllCaps(false)
-        back.setPadding(dp(12), 0, dp(12), 0)
+        back.setPadding(dp(10), 0, dp(10), 0)
         back.minWidth = 0
         back.minimumWidth = 0
         back.minHeight = 0
         back.minimumHeight = 0
-        back.setBackgroundColor(0x33FFFFFF)
+        back.setBackground(PageUi.rounded(this, 0x2EFFFFFF, 0x55FFFFFF, 10f))
         back.setOnClickListener { finish() }
-        top.addView(back, LinearLayout.LayoutParams(dp(108), dp(36)))
+        top.addView(back, LinearLayout.LayoutParams(dp(112), dp(36)))
+
+        statusDot = View(this)
+        statusDot.setBackground(PageUi.rounded(this, PageUi.GREEN, 0, 4f))
+        top.addView(statusDot, LinearLayout.LayoutParams(dp(8), dp(8)).apply {
+            marginStart = dp(8)
+            marginEnd = dp(7)
+        })
 
         status = TextView(this)
-        status.setTextColor(0xFFE6E6E6.toInt())
+        status.setTextColor(0xFFEAF4FF.toInt())
         status.textSize = 12.5f
         status.setSingleLine(false)
         status.maxLines = 2
-        status.gravity = Gravity.END or Gravity.CENTER_VERTICAL
-        status.textAlignment = View.TEXT_ALIGNMENT_VIEW_END
-        status.setPadding(0, 0, dp(10), 0)
+        status.gravity = Gravity.START or Gravity.CENTER_VERTICAL
+        status.textAlignment = View.TEXT_ALIGNMENT_VIEW_START
+        status.setPadding(0, 0, dp(8), 0)
         top.addView(status, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+
+        val log = Button(this)
+        log.text = "日志"
+        log.setTextColor(PageUi.BLUE)
+        log.textSize = 12f
+        log.setAllCaps(false)
+        log.setPadding(dp(10), 0, dp(10), 0)
+        log.minWidth = 0
+        log.minimumWidth = 0
+        log.minHeight = 0
+        log.minimumHeight = 0
+        log.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.CARD, PageUi.BLUE, 0.16f),
+            PageUi.blend(PageUi.BORDER, PageUi.BLUE, 0.55f), 10f))
+        log.setOnClickListener { showLogDialog() }
+        top.addView(log, LinearLayout.LayoutParams(dp(56), dp(36)))
         root.addView(top)
+
+        idlePanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(24), dp(20), dp(24), dp(20))
+            background = PageUi.surface(this@CarLifePlusActivity, PageUi.GOLD, 18f)
+        }
+        val idleIcon = ImageView(this)
+        idleIcon.setImageResource(R.drawable.ic_ui_carlife)
+        idleIcon.colorFilter = android.graphics.PorterDuffColorFilter(PageUi.GOLD, android.graphics.PorterDuff.Mode.SRC_IN)
+        idlePanel.addView(idleIcon, LinearLayout.LayoutParams(dp(44), dp(44)))
+        idlePanel.addView(TextView(this).apply {
+            text = "CarLife+ 接收端"
+            setTextColor(PageUi.TEXT)
+            textSize = 22f
+            gravity = Gravity.CENTER
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setPadding(0, dp(6), 0, 0)
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        idlePanel.addView(TextView(this).apply {
+            text = "有线 USB  ·  无线同一局域网"
+            setTextColor(PageUi.GOLD)
+            textSize = 11f
+            gravity = Gravity.CENTER
+            setPadding(0, dp(2), 0, dp(10))
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        idlePanel.addView(TextView(this).apply {
+            text = "手机打开 CarLife+，用数据线连接后点“有线连接”；\n无线时让手机与车机处于同一 Wi‑Fi，再点“无线连接”。"
+            setTextColor(PageUi.MUTED)
+            textSize = 12.5f
+            gravity = Gravity.CENTER
+            setLineSpacing(dp(2).toFloat(), 1f)
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        root.addView(idlePanel, FrameLayout.LayoutParams(
+            dp(420), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER,
+        ).apply {
+            marginStart = dp(24)
+            marginEnd = dp(24)
+        })
 
         connectBar = LinearLayout(this)
         connectBar.orientation = LinearLayout.HORIZONTAL
         connectBar.gravity = Gravity.CENTER
         connectBar.setPadding(dp(8), dp(6), dp(8), dp(8))
-        connectBar.setBackgroundColor(0xCC000000.toInt())
+        connectBar.background = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(0x990A111B.toInt(), 0xE6070C14.toInt()),
+        ).apply {
+            cornerRadius = dp(12).toFloat()
+            setStroke(dp(1), 0x443B5876)
+        }
         connectBar.layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
             Gravity.BOTTOM,
-        )
-        connectBar.addView(barButton("有线连接") { startWired() })
-        connectBar.addView(barButton("无线连接") { startWireless() })
-        connectBar.addView(barButton("手动 IP") { showManualConnectDialog() })
-        connectBar.addView(barButton("停止") { stopEngine() })
+        ).apply {
+            marginStart = dp(10)
+            marginEnd = dp(10)
+            bottomMargin = dp(10)
+        }
+        connectBar.addView(barButton("有线连接", PageUi.BLUE) { startWired() })
+        connectBar.addView(barButton("无线连接", PageUi.GREEN) { startWireless() })
+        connectBar.addView(barButton("手动 IP", PageUi.GOLD) { showManualConnectDialog() })
+        connectBar.addView(barButton("停止", PageUi.RED) { stopEngine() })
         root.addView(connectBar)
 
         status.setOnLongClickListener {
@@ -162,10 +249,10 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         status.text = "请用 USB 连接手机，打开 CarLife+ 后点“有线连接”\n${WirelessNetwork.describe(this)}"
     }
 
-    private fun barButton(label: String, action: () -> Unit): Button {
+    private fun barButton(label: String, accent: Int, action: () -> Unit): Button {
         val b = Button(this)
         b.text = label
-        b.setTextColor(Color.WHITE)
+        b.setTextColor(PageUi.TEXT)
         b.textSize = 13f
         b.setAllCaps(false)
         b.setPadding(dp(10), 0, dp(10), 0)
@@ -173,9 +260,10 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         b.minimumWidth = 0
         b.minHeight = 0
         b.minimumHeight = 0
-        b.setBackgroundColor(0x2EFFFFFF)
+        b.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.CARD, accent, 0.12f),
+            PageUi.blend(PageUi.BORDER, accent, 0.55f), 10f))
         b.setOnClickListener { action() }
-        val lp = LinearLayout.LayoutParams(0, dp(38), 1f)
+        val lp = LinearLayout.LayoutParams(0, dp(40), 1f)
         lp.setMargins(dp(4), 0, dp(4), 0)
         b.layoutParams = lp
         return b
@@ -265,6 +353,9 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         val e = CarLifeEngine(applicationContext, surface, this)
         engine = e
         e.start(mode, host)
+        idlePanel.visibility = View.GONE
+        setEngineActive(true)
+        statusDot.setBackground(PageUi.rounded(this, PageUi.GOLD, 0, 4f))
         status.text = if (mode == CarLifeEngine.Mode.WIRED) {
             "正在等待手机（USB）…"
         } else {
@@ -277,7 +368,17 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         cancelScan()
         engine?.stop()
         engine = null
+        idlePanel.visibility = View.VISIBLE
+        setEngineActive(false)
+        statusDot.setBackground(PageUi.rounded(this, PageUi.GOLD, 0, 4f))
         status.text = "已停止。可重新连接手机"
+    }
+
+    private fun setEngineActive(active: Boolean, label: String = "") {
+        getSharedPreferences("icarplay", Context.MODE_PRIVATE).edit()
+            .putBoolean("carlife_active", active)
+            .putString("carlife_state", label)
+            .apply()
     }
 
     /** Invalidates every in-flight scan callback, then stops the worker pool. */
@@ -422,6 +523,11 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
                 }
                 else -> state + (detail?.let { " · $it" } ?: "")
             }
+            val active = state != "stopped" && state != "disconnected"
+            setEngineActive(active, state)
+            statusDot.setBackground(PageUi.rounded(this,
+                if (active) PageUi.GREEN else PageUi.GOLD, 0, 4f))
+            idlePanel.visibility = if (active) View.GONE else View.VISIBLE
         }
     }
 
@@ -447,6 +553,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         pendingStart = null
         engine?.stop()
         engine = null
+        setEngineActive(false)
         super.onDestroy()
     }
 
