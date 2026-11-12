@@ -234,11 +234,8 @@ public class FloatService extends Service {
         panel.addView(panelButton("主界面", new View.OnClickListener() {
             public void onClick(View v) { open(IcarLauncherActivity.class); }
         }));
-        panel.addView(panelButton("关闭小白点", new View.OnClickListener() {
-            public void onClick(View v) {
-                prefs.edit().putBoolean("float_running", false).apply();
-                stopSelf();
-            }
+        panel.addView(panelButton("车机主屏幕", new View.OnClickListener() {
+            public void onClick(View v) { goCarHome(); }
         }));
 
         panelParams = new WindowManager.LayoutParams(
@@ -283,6 +280,13 @@ public class FloatService extends Service {
         Intent i = new Intent(this, cls);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(i);
+    }
+
+    private void goCarHome() {
+        hidePanel();
+        if (HomeSafety.goToSystemHome(this)) return;
+        toast("本应用当前是默认桌面；请先在“桌面设置”切回原车机桌面");
+        HomeSafety.openHomeSettings(this);
     }
 
     private void hidePanel() {
