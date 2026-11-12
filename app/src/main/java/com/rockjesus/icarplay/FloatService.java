@@ -233,6 +233,9 @@ public class FloatService extends Service {
         panel.addView(panelButton("认证设置", new View.OnClickListener() {
             public void onClick(View v) { open(AuthSettingsActivity.class); }
         }));
+        panel.addView(panelButton("系统设置", new View.OnClickListener() {
+            public void onClick(View v) { openSystemSettings(); }
+        }));
         panel.addView(panelButton("iCarPlay主界面", new View.OnClickListener() {
             public void onClick(View v) { open(IcarLauncherActivity.class); }
         }));
@@ -252,7 +255,10 @@ public class FloatService extends Service {
         int screenW = dm.widthPixels;
         int screenH = dm.heightPixels;
         int panelW = dp(170);
-        int panelH = dp(340);
+        panel.measure(
+                View.MeasureSpec.makeMeasureSpec(panelW, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int panelH = panel.getMeasuredHeight();
         int x = Math.min(ballParams.x - dp(56), screenW - panelW - dp(8));
         x = Math.max(0, Math.min(x, Math.max(0, screenW - panelW - dp(8))));
         int yBelow = ballParams.y + ballParams.height + dp(8);
@@ -282,6 +288,16 @@ public class FloatService extends Service {
         Intent i = new Intent(this, cls);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(i);
+    }
+
+    private void openSystemSettings() {
+        hidePanel();
+        try {
+            startActivity(new Intent(Settings.ACTION_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (Throwable t) {
+            toast("无法打开系统设置");
+        }
     }
 
     private void goCarHome() {
