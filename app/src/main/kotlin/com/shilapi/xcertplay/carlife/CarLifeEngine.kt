@@ -127,6 +127,9 @@ class CarLifeEngine(
         panelSizeRequested = usePanelSize
         if (running) return
         running = true
+        encoderProposed = false
+        featureConfigSent = false
+        gnssSubscribed = false
         CarLifeSessionLog.newSession(context)
         mode = newMode
         lastMode = newMode
@@ -199,6 +202,7 @@ class CarLifeEngine(
 
         override fun onConnected(channel: Int) {
             if (channel == CarLife.CHANNEL_CMD) {
+                armHandshakeTimeout()
                 session?.startHandshake()
                 uiListener.onEngineState("connected")
             }
@@ -208,6 +212,7 @@ class CarLifeEngine(
             // Wireless drops (phone-side resets, wifi hiccups) recover exactly
             // like the wired path - without this the projection dies on the
             // first phone-side reset.
+            disarmHandshakeTimeout()
             releaseVideo()
             releaseAudio()
             // Dereference before closing: the surviving channels must not keep
@@ -282,6 +287,7 @@ class CarLifeEngine(
     }
 
     override fun onClosed(reason: String) {
+        disarmHandshakeTimeout()
         releaseVideo()
         releaseAudio()
         // Same as the TCP path: the session must not outlive its transport.
@@ -323,6 +329,11 @@ class CarLifeEngine(
 
     override fun onState(state: AoaTransport.State, detail: String?) {
         emitState(state.name.lowercase(), detail)
+        when (state) {
+            AoaTransport.State.CONNECTED -> armHandshakeTimeout()
+            AoaTransport.State.CLOSED -> disarmHandshakeTimeout()
+            else -> Unit
+        }
     }
 
     // ---- CarLifeSession.Listener ----
@@ -330,7 +341,10 @@ class CarLifeEngine(
     override fun onPhase(phase: CarLifeSession.Phase) {
         emitState("phase:${phase.name.lowercase()}")
         when (phase) {
-            CarLifeSession.Phase.ENCODER_INIT -> armStreamWatchdog()
+            CarLifeSession.Phase.ENCODER_INIT -> {
+                disarmHandshakeTimeout()
+                armStreamWatchdog()
+            }
             else -> Unit
         }
     }
@@ -344,6 +358,24 @@ class CarLifeEngine(
      */
     private val watchdog = android.os.Handler(android.os.Looper.getMainLooper())
 
+    /** Wireless CMD can connect to a stale host and then go silent forever. */
+    private val handshakeTimeout = Runnable {
+        if (!running) return@Runnable
+        val phase = session?.phase?.name ?: "IDLE"
+        CarLifeSessionLog.log(context, "ENGINE", "handshake timeout at $phase")
+        emitState("reconnecting", "握手超时（$phase）")
+        session?.close("handshake timeout at $phase")
+    }
+
+    private fun armHandshakeTimeout() {
+        watchdog.removeCallbacks(handshakeTimeout)
+        watchdog.postDelayed(handshakeTimeout, HANDSHAKE_TIMEOUT_MS)
+    }
+
+    private fun disarmHandshakeTimeout() {
+        watchdog.removeCallbacks(handshakeTimeout)
+    }
+
     @Volatile
     private var videoPacketsSinceArm = 0L
 
@@ -354,13 +386,21 @@ class CarLifeEngine(
     @Volatile
     private var decodedSinceArm = 0L
 
-    // Feature-config exchange state: whether the phone's request was answered
-    // in the current session, and the proactive fallback for phones that
-    // never send one (older CarLife builds verified with the proactive flow).
+    /**
+     * Verified CarLife+ flow: the phone does NOT send FEATURE_CONFIG_REQUEST;
+     * the HU owns FOCUS_UI and the encoder proposal. Propose exactly once per
+     * session so a later (CarWith-style) request cannot send a second encoder
+     * init and confuse the phone.
+     */
     @Volatile
-    private var featureConfigExchanged = false
+    private var encoderProposed = false
 
-    private var featureFallback: Runnable? = null
+    @Volatile
+    private var featureConfigSent = false
+
+    /** GNSS subscription is sent only after the first frame is negotiated. */
+    @Volatile
+    private var gnssSubscribed = false
 
     /**
      * Consecutive empty watchdog windows tolerated before killing the session.
@@ -435,58 +475,48 @@ class CarLifeEngine(
     }
 
     override fun onAuthenResponse(response: com.diplay.carlife.core.CarLifeMessages.AuthenResponse) {
-        // Strict 4-step order, then BT identity and the GNSS subscription.
-        // Feature config and the encoder proposal are NOT sent here: the
-        // CarWith phone runs its own FeatureConfigManager transaction and a
-        // response arriving before its request stalls it forever ("Wait for
-        // Feature Config Stop" observed live 2026-10-24 — three sessions, no
-        // video). Respond to the phone's request when it comes
-        // (onFeatureConfigRequest); phones that never ask fall back after
-        // FEATURE_CONFIG_FALLBACK_MS.
+        // Verified against a real CarLife+ phone (2026-10-06): result → feature
+        // answer → encoder proposal, immediately. The phone never asks for
+        // FEATURE_CONFIG_REQUEST on its own, and any message inserted before
+        // the encoder proposal (notably HU_BT_OOB_INFO carrying a real adapter
+        // MAC) made it halt at ENCODER_INIT. Keep this path minimal.
         session?.sendAuthenResult(true)
-        val btAddress = try {
-            android.bluetooth.BluetoothAdapter.getDefaultAdapter()?.address ?: ""
-        } catch (e: SecurityException) {
-            ""
+        if (!encoderProposed) {
+            encoderProposed = true
+            session?.sendFeatureConfigResponse(
+                listOf(CarLifeMessages.FeatureConfig(CarLife.FEATURE_FOCUS_UI, 1)),
+            )
+            featureConfigSent = true
+            proposeVideoEncoder()
         }
-        if (btAddress.isNotEmpty()) {
-            session?.sendHuBtOobInfo(btAddress, android.os.Build.MODEL)
-        }
-        // Subscribe to the phone's GNSS module (0 = GPS, flag 1 = GCJ-02): the
-        // phone then streams CAR_GPS, giving the instruments a real speed.
-        session?.sendCarDataSubscribe(listOf(CarLifeMessages.VehicleInfo(MODULE_GPS_DATA, 1, 0)))
-        session?.sendCarDataSubscribeStart(MODULE_GPS_DATA)
-        featureConfigExchanged = false
-        featureFallback = Runnable {
-            if (!featureConfigExchanged && running) {
-                Log.w("CarLifeLog", "no feature config request; falling back to proactive init")
-                proposeVideoEncoder()
-            }
-        }
-        reconnectHandler.postDelayed(featureFallback!!, FEATURE_CONFIG_FALLBACK_MS)
     }
 
     override fun onFeatureConfigRequest(configs: List<CarLifeMessages.FeatureConfig>) {
-        // Echo every requested key as supported; VOICE_MIC follows the mic
-        // preference, FOCUS_UI is always on. Then propose the canvas — this
-        // is the reference phase 6, only valid after the exchange completes.
-        val answers = LinkedHashMap<String, Int>()
-        for (c in configs) {
-            answers[c.key] = when (c.key) {
-                CarLife.FEATURE_VOICE_MIC ->
-                    if (CarLifePersistence.get(context).micUplink()) {
-                        CarLife.MIC_STATUS_USE_MOBILE_MIC
-                    } else {
-                        CarLife.MIC_STATUS_USE_VEHICLE_MIC
-                    }
-                else -> 1
+        // CarWith-style phones run their own FeatureConfigManager transaction.
+        // If the verified CarLife+ path already answered, do not send a second
+        // response or a second encoder init; only fill in the richer answer
+        // when this request is the first thing we see.
+        if (!featureConfigSent) {
+            val answers = LinkedHashMap<String, Int>()
+            for (c in configs) {
+                answers[c.key] = when (c.key) {
+                    CarLife.FEATURE_VOICE_MIC ->
+                        if (CarLifePersistence.get(context).micUplink()) {
+                            CarLife.MIC_STATUS_USE_MOBILE_MIC
+                        } else {
+                            CarLife.MIC_STATUS_USE_VEHICLE_MIC
+                        }
+                    else -> 1
+                }
             }
+            answers[CarLife.FEATURE_FOCUS_UI] = 1
+            session?.sendFeatureConfigResponse(answers.map { CarLifeMessages.FeatureConfig(it.key, it.value) })
+            featureConfigSent = true
         }
-        answers[CarLife.FEATURE_FOCUS_UI] = 1
-        session?.sendFeatureConfigResponse(answers.map { CarLifeMessages.FeatureConfig(it.key, it.value) })
-        featureConfigExchanged = true
-        featureFallback?.let { reconnectHandler.removeCallbacks(it) }
-        proposeVideoEncoder()
+        if (!encoderProposed) {
+            encoderProposed = true
+            proposeVideoEncoder()
+        }
     }
 
     /** Phase 6: propose the canvas to the phone. */
@@ -529,6 +559,19 @@ class CarLifeEngine(
         uiListener.onEncoderSize(info.width, info.height)
         setupDecoder()
         session?.sendVideoEncoderStart()
+        // GNSS is optional instrumentation, not part of the verified CarLife+
+        // handshake. Send it only after the encoder is running so it can never
+        // sit between auth and VIDEO_ENCODER_INIT_DONE on a strict phone.
+        if (!gnssSubscribed) {
+            gnssSubscribed = true
+            val current = session
+            reconnectHandler.postDelayed({
+                if (running && session === current) {
+                    current?.sendCarDataSubscribe(listOf(CarLifeMessages.VehicleInfo(MODULE_GPS_DATA, 1, 0)))
+                    current?.sendCarDataSubscribeStart(MODULE_GPS_DATA)
+                }
+            }, 1_000L)
+        }
     }
 
     override fun onVideoData(timestamp: Long, h264: ByteArray) {
@@ -652,6 +695,7 @@ class CarLifeEngine(
     override fun onBackground() = Unit
 
     override fun onDisconnect(reason: String) {
+        disarmHandshakeTimeout()
         stopMic()
         releaseVideo()
         releaseAudio()
@@ -911,7 +955,7 @@ class CarLifeEngine(
         /** Encoder-init / video-flow watchdog window (live-testing: stalls). */
         private const val STREAM_WATCHDOG_MS = 12_000L
 
-        /** How long to wait for the phone's feature-config request before the proactive fallback. */
-        private const val FEATURE_CONFIG_FALLBACK_MS = 2_500L
+        /** No version/auth/encoder phase this long means the wireless socket is dead. */
+        private const val HANDSHAKE_TIMEOUT_MS = 20_000L
     }
 }

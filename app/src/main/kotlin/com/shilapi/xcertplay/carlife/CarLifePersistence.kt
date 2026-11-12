@@ -106,6 +106,15 @@ class CarLifePersistence private constructor(private val prefs: SharedPreference
         prefs.edit().putString(KEY_LAST_PHONE, v).apply()
     }
 
+    /** Last wireless host that actually accepted CMD 7240, for instant reconnect. */
+    fun lastWirelessHost(): String? = prefs.getString(KEY_LAST_WIRELESS_HOST, null)
+
+    fun saveLastWirelessHost(v: String?) {
+        val editor = prefs.edit()
+        if (v.isNullOrBlank()) editor.remove(KEY_LAST_WIRELESS_HOST) else editor.putString(KEY_LAST_WIRELESS_HOST, v)
+        editor.apply()
+    }
+
     /** Drop the remembered phone so the next session re-detects it. */
     fun clearLastPhone() {
         prefs.edit().remove(KEY_LAST_PHONE).apply()
@@ -167,6 +176,7 @@ class CarLifePersistence private constructor(private val prefs: SharedPreference
         private const val KEY_DEMO_DATA = "demo_data"
         private const val KEY_ACCENT = "accent"
         private const val KEY_LAST_PHONE = "last_phone"
+        private const val KEY_LAST_WIRELESS_HOST = "last_wireless_host"
         private const val KEY_TTS_VOLUME = "tts_volume"
         private const val KEY_TURN_X = "turn_card_x"
         private const val KEY_TURN_Y = "turn_card_y"

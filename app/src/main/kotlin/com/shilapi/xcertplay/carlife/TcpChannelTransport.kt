@@ -152,7 +152,14 @@ class TcpChannelTransport(
         try {
             val socket = Socket()
             socket.tcpNoDelay = true
-            socket.soTimeout = 0
+            // CMD and VIDEO carry a heartbeat/steady frame flow; a dead Wi-Fi
+            // link otherwise blocks read() forever. TOUCH is write-only and
+            // audio channels can legitimately stay silent for minutes, so they
+            // keep the no-timeout behaviour.
+            socket.soTimeout = when (channel.id) {
+                CarLife.CHANNEL_CMD, CarLife.CHANNEL_VIDEO -> READ_TIMEOUT_MS
+                else -> 0
+            }
             socket.connect(InetSocketAddress(host, channel.port), CONNECT_TIMEOUT_MS)
             // Match the working desktop client: a 1 MB kernel receive window keeps
             // large H.264 I-frames (up to ~314 KB) from being dropped/desynced.
@@ -297,6 +304,7 @@ class TcpChannelTransport(
 
     companion object {
         private const val CONNECT_TIMEOUT_MS = 10_000
+        private const val READ_TIMEOUT_MS = 20_000
         private const val RETRY_BACKOFF_START_MS = 1_000L
         private const val RETRY_BACKOFF_MAX_MS = 5_000L
 

@@ -3,7 +3,7 @@
 面向 **2020 款 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
 **一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置小白点**。
 
-> **当前版本 v0.6.1**
+> **当前版本 v0.6.2**
 >
 > 单 APK 下载：[`icarplay.apk`](https://github.com/RockJesus/icarplay/releases/latest/download/icarplay.apk)
 >
@@ -20,6 +20,8 @@
 > - **v0.5.7 调整**：小白点快捷面板中的“主界面”改为“iCarPlay主界面”，点击仍进入 iCarPlay 首页。
 >
 > - **v0.5.8 调整**：车机重启后自动恢复小白点悬浮层；只恢复悬浮球，不打开 iCarPlay 主界面，不自动启动 HiCar 接收。用户在首页手动关掉小白点后，重启不会强制拉起。
+>
+> - **v0.6.2 调整**：CarLife+ 按真实手机实测时序收敛——认证后立即回 FeatureConfig + 编码器提议，移除会导致手机停在 `ENCODER_INIT` 的 `HU_BT_OOB_INFO`，GNSS 订阅延后到首帧协商之后；无线只扫描 Wi‑Fi/有线 LAN，两轮探测、优先复用上次手机 IP，并新增“手动 IP”和车机端会话日志。
 >
 > - **v0.6.1 调整**：回退 v0.7.0 的独立 CarLife 接收端方案，把 **CarLife+ 兼容接收**直接并入 iCarPlay，首页新增第五张卡；最终只发布一个 `icarplay.apk`，不附 `carlife-vehicle.apk`、不附 `bdcf`。CarLife+ 接收核心来自 GPL-3.0 的 `FF1239/Limo-carlife`，详见 [`docs/CARLIFE-PLUS.md`](docs/CARLIFE-PLUS.md)。
 >
@@ -49,7 +51,7 @@
 | Android Auto 有线（USB AOA） | ✅ 代码已接入 | 手机切 AOA 配件模式，进 AAP/TLS/H.264；需 USB Host + 数据口 |
 | Android Auto 无线（Headunit Server） | ⚠️ 实验 | 手机开 Headunit Server，同一 Wi-Fi，手动输入 IP:5277 |
 | Huawei HiCar（华为手机） | ⚠️ 实验 | 来自 MIT 开源接收端；需手机原生 HiCar；上游按 Android 10+ 设计，8.1 未实车验证 |
-| CarLife+ 兼容接收（有线 / 无线） | ⚠️ 待实车验证 | 内嵌 GPL-3.0 接收核心，已与真实 CarLife+ 手机端联调；不是百度官方车机端 SDK，不保证无感连接/原生小程序 |
+| CarLife+ 兼容接收（有线 / 无线） | ⚠️ 待真机复测 | 内嵌 GPL-3.0 接收核心；v0.6.2 按真实 CarLife+ 时序修正握手，并增强无线发现/重连；不是百度官方车机端 SDK，不保证无感连接/原生小程序 |
 | 内置小白点 | ✅ | 可拖动，点按弹出 AirPlay / Android Auto / HiCar / CarPlay / 认证设置 / 系统设置 / iCarPlay主界面 / 车机主屏幕 |
 | CarPlay 有线入口 | ⚠️ 骨架 | USB 设备枚举 + 启动状态，协议引擎未接入 |
 | CarPlay 无线入口 | ⚠️ 骨架 | Wi-Fi 状态 + 启动状态，协议引擎未接入 |

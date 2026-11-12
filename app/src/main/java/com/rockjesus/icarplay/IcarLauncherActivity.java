@@ -39,7 +39,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.6.1";
+    public static final String VERSION_LABEL = "v0.6.2";
 
     private static final int COLOR_BG = PageUi.BG;
     private static final int COLOR_CARD = PageUi.CARD;

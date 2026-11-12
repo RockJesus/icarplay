@@ -1,12 +1,14 @@
 package com.rockjesus.icarplay.carlife
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.SurfaceTexture
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.Surface
@@ -14,14 +16,20 @@ import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import com.diplay.carlife.core.CarLife
 import com.diplay.carlife.core.CarLifeMessages
 import com.shilapi.xcertplay.carlife.CarLifeEngine
+import com.shilapi.xcertplay.carlife.CarLifePersistence
+import com.shilapi.xcertplay.carlife.CarLifeSessionLog
 import com.shilapi.xcertplay.carlife.SubnetScanner
+import com.shilapi.xcertplay.carlife.WirelessNetwork
 import java.net.InetAddress
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Single-APK CarLife+ receiver page.
@@ -43,6 +51,8 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
     private var engine: CarLifeEngine? = null
     private var pendingStart: CarLifeEngine.Mode? = null
     private var scanning = false
+    private var scanCancel: AtomicBoolean? = null
+    private var scanEpoch = 0
     private var phoneWidth = CarLife.DEFAULT_VIDEO_WIDTH
     private var phoneHeight = CarLife.DEFAULT_VIDEO_HEIGHT
 
@@ -139,10 +149,15 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         )
         connectBar.addView(barButton("有线连接") { startWired() })
         connectBar.addView(barButton("无线连接") { startWireless() })
+        connectBar.addView(barButton("手动 IP") { showManualConnectDialog() })
         connectBar.addView(barButton("停止") { stopEngine() })
         root.addView(connectBar)
 
-        status.text = "请用 USB 连接手机，打开 CarLife+ 后点“有线连接”"
+        status.setOnLongClickListener {
+            showLogDialog()
+            true
+        }
+        status.text = "请用 USB 连接手机，打开 CarLife+ 后点“有线连接”\n${WirelessNetwork.describe(this)}"
     }
 
     private fun barButton(label: String, action: () -> Unit): Button {
@@ -169,6 +184,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
             status.text = "CarLife+ 已在连接中；如需切换请先点“停止”"
             return
         }
+        cancelScan()
         val surface = video.surfaceTexture?.let { Surface(it) }
         if (surface == null) {
             pendingStart = CarLifeEngine.Mode.WIRED
@@ -184,28 +200,54 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
             return
         }
         if (scanning) return
+        val lan = WirelessNetwork.active(this)
+        if (lan == null) {
+            status.text = "未连接 Wi-Fi 或有线网络：请先让车机接入手机所在网络"
+            return
+        }
         scanning = true
-        status.text = "正在同一 WiFi 下搜索手机（手机请先点 CarLife+ 的无线连接）…"
-        SubnetScanner.findPhone({ host ->
-            main.post {
-                if (scanning) {
-                    scanning = false
-                    val surface = video.surfaceTexture?.let { Surface(it) }
-                    if (surface != null) {
-                        startEngine(surface, CarLifeEngine.Mode.WIRELESS, host)
-                    } else {
-                        status.text = "画面未就绪，请重试"
+        val epoch = ++scanEpoch
+        val cancel = AtomicBoolean(false)
+        scanCancel = cancel
+        val lastHost = CarLifePersistence.get(this).lastWirelessHost()
+            ?.let { WirelessNetwork.parseIpv4(it) }
+        status.text = "正在 ${lan.summary()} 搜索手机…\n手机请先点 CarLife+ 的“无线连接”"
+        SubnetScanner.findPhone(
+            this,
+            lastHost,
+            cancel,
+            onFound = { host ->
+                main.post {
+                    if (scanning && scanEpoch == epoch) {
+                        scanning = false
+                        scanCancel = null
+                        CarLifePersistence.get(this).saveLastWirelessHost(host.hostAddress)
+                        startWirelessToHost(host, fromScan = true)
                     }
                 }
-            }
-        }, {
-            main.post {
-                if (scanning) {
-                    scanning = false
-                    status.text = "未找到手机：确认手机与车机在同一 WiFi，且手机已点“无线连接”"
+            },
+            onDone = {
+                main.post {
+                    if (scanning && scanEpoch == epoch) {
+                        scanning = false
+                        scanCancel = null
+                        status.text = "未找到手机：确认手机与车机在同一网络，且手机已点“无线连接”\n" +
+                            "仍失败可点“手动 IP”输入手机地址"
+                    }
                 }
-            }
-        })
+            },
+        )
+    }
+
+    private fun startWirelessToHost(host: InetAddress, fromScan: Boolean = false) {
+        if (!fromScan) cancelScan()
+        val surface = video.surfaceTexture?.let { Surface(it) }
+        if (surface == null) {
+            status.text = "画面未就绪，请重试"
+            return
+        }
+        CarLifePersistence.get(this).saveLastWirelessHost(host.hostAddress)
+        startEngine(surface, CarLifeEngine.Mode.WIRELESS, host)
     }
 
     private fun startEngine(
@@ -226,9 +268,96 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
 
     private fun stopEngine() {
         pendingStart = null
+        cancelScan()
         engine?.stop()
         engine = null
         status.text = "已停止。可重新连接手机"
+    }
+
+    /** Invalidates every in-flight scan callback, then stops the worker pool. */
+    private fun cancelScan() {
+        scanEpoch++
+        scanning = false
+        scanCancel?.set(true)
+        scanCancel = null
+    }
+
+    private fun showManualConnectDialog() {
+        if (engine != null) {
+            status.text = "CarLife+ 已在连接中；如需切换请先点“停止”"
+            return
+        }
+        val density = resources.displayMetrics.density
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding((18 * density).toInt(), (8 * density).toInt(), (18 * density).toInt(), 0)
+        }
+        val hintView = TextView(this).apply {
+            text = "${WirelessNetwork.describe(this@CarLifePlusActivity)}\n" +
+                "输入手机 CarLife+ 无线页显示的 IPv4 地址"
+            textSize = 12.5f
+            setTextColor(0xFF9AA4B2.toInt())
+        }
+        box.addView(hintView)
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            setSingleLine(true)
+            hint = "例如 192.168.43.1"
+            setText(CarLifePersistence.get(this@CarLifePlusActivity).lastWirelessHost().orEmpty())
+        }
+        box.addView(input, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply { topMargin = (10 * density).toInt() })
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("手动连接 CarLife+")
+            .setView(box)
+            .setPositiveButton("连接", null)
+            .setNeutralButton("最近日志", null)
+            .setNegativeButton("取消", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val host = WirelessNetwork.parseIpv4(input.text.toString())
+                if (host == null) {
+                    input.error = "请输入有效的 IPv4 地址，例如 192.168.43.1"
+                } else {
+                    dialog.dismiss()
+                    startWirelessToHost(host)
+                }
+            }
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                dialog.dismiss()
+                showLogDialog()
+            }
+        }
+        dialog.show()
+    }
+
+    /** On-screen tail of the session log: no adb needed during a drive test. */
+    private fun showLogDialog() {
+        val density = resources.displayMetrics.density
+        val file = CarLifeSessionLog.currentFile()
+        val text = runCatching { file?.readLines()?.takeLast(80)?.joinToString("\n") }
+            .getOrNull().orEmpty()
+        val body = if (text.isBlank()) {
+            "本次会话还没有日志。\n\n日志目录：\n${file?.parent ?: "未创建"}"
+        } else {
+            "日志文件：${file?.absolutePath}\n\n$text"
+        }
+        val view = TextView(this).apply {
+            setTextIsSelectable(true)
+            textSize = 11f
+            setPadding((16 * density).toInt(), (10 * density).toInt(), (16 * density).toInt(), 10)
+            setText(body)
+        }
+        val scroll = ScrollView(this).apply { addView(view) }
+        AlertDialog.Builder(this)
+            .setTitle("CarLife+ 连接日志")
+            .setView(scroll)
+            .setPositiveButton("关闭", null)
+            .show()
     }
 
     private fun onVideoTouch(v: View, event: MotionEvent): Boolean {
@@ -308,7 +437,8 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
     }
 
     override fun onDestroy() {
-        scanning = false
+        cancelScan()
+        pendingStart = null
         engine?.stop()
         engine = null
         super.onDestroy()
