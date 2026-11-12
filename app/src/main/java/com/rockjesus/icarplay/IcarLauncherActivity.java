@@ -38,7 +38,10 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.6.0";
+    private static final String CARLIFE_PACKAGE = "com.baidu.carlifevehicle";
+    private static final String CARLIFE_ACTIVITY = "com.baidu.carlifevehicle.CarlifeActivity";
+
+    public static final String VERSION_LABEL = "v0.7.0";
 
     private static final int COLOR_BG = PageUi.BG;
     private static final int COLOR_CARD = PageUi.CARD;
@@ -145,6 +148,7 @@ public class IcarLauncherActivity extends Activity {
                     toast("HiCar 组件未就绪：" + t.getClass().getSimpleName());
                 }
             }));
+            addCard(row, makeCard("CarLife", isCarlifeInstalled() ? "USB 有线" : "需安装接收端", COLOR_GOLD, R.drawable.ic_ui_carlife, v -> openCarLife()));
         } else {
             LinearLayout row1 = new LinearLayout(this);
             row1.setOrientation(LinearLayout.HORIZONTAL);
@@ -162,6 +166,7 @@ public class IcarLauncherActivity extends Activity {
                     startActivity(new Intent(IcarLauncherActivity.this, AirPlayActivity.class))));
             addCard(row1, makeCard("CarPlay", "有线 / 无线", COLOR_TEXT, R.drawable.ic_ui_carplay, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, CarPlayActivity.class))));
+            addCard(row1, makeCard("CarLife", isCarlifeInstalled() ? "USB 有线" : "需安装接收端", COLOR_GOLD, R.drawable.ic_ui_carlife, v -> openCarLife()));
             addCard(row2, makeCard("Android Auto", "USB / 无线", COLOR_GREEN, R.drawable.ic_ui_auto, v ->
                     startActivity(new Intent(IcarLauncherActivity.this, AndroidAutoActivity.class))));
             addCard(row2, makeCard("Huawei HiCar", "华为手机", COLOR_RED, R.drawable.ic_ui_hicar, v -> {
@@ -414,6 +419,26 @@ public class IcarLauncherActivity extends Activity {
                 .putBoolean("float_auto", true)
                 .apply();
         refresh();
+    }
+
+    private boolean isCarlifeInstalled() {
+        try {
+            getPackageManager().getPackageInfo(CARLIFE_PACKAGE, 0);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void openCarLife() {
+        try {
+            Intent intent = new Intent();
+            intent.setClassName(CARLIFE_PACKAGE, CARLIFE_ACTIVITY);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Throwable t) {
+            toast("未安装 CarLife 接收端，请先安装随版本发布的 CarLife APK");
+        }
     }
 
     private void refresh() {
