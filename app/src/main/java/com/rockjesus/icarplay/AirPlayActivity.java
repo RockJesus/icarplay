@@ -120,6 +120,14 @@ public class AirPlayActivity extends Activity {
         copy.setOnClickListener(v -> copyNetwork());
         netRow.addView(copy, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, PageUi.dp(this, 30)));
+
+        Button guideBtn = PageUi.button(this, "热点直连向导", 9.5f, PageUi.BLUE);
+        guideBtn.setPadding(PageUi.dp(this, 10), 0, PageUi.dp(this, 10), 0);
+        guideBtn.setOnClickListener(v -> showHotspotGuide());
+        LinearLayout.LayoutParams guideLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, PageUi.dp(this, 30));
+        guideLp.setMargins(PageUi.dp(this, 6), 0, 0, 0);
+        netRow.addView(guideBtn, guideLp);
         networkCard.addView(netRow, PageUi.matchWrap(this));
         TextView netValue = PageUi.text(this, PageUi.localNetwork(this), 11f, PageUi.TEXT, false);
         netValue.setPadding(0, PageUi.dp(this, 2), 0, 0);
@@ -188,6 +196,49 @@ public class AirPlayActivity extends Activity {
         }
     }
 
+    /** 没有外置路由器时，用手机热点把车机拉进同一网段的向导。 */
+    private void showHotspotGuide() {
+        String ssid = "未连接";
+        String band = "";
+        try {
+            android.net.wifi.WifiManager wm = (android.net.wifi.WifiManager)
+                    getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            android.net.wifi.WifiInfo info = wm == null ? null : wm.getConnectionInfo();
+            if (info != null) {
+                String s = info.getSSID();
+                if (s != null) s = s.replace("\"", "");
+                if (s != null && !s.contains("<unknown")) ssid = s;
+                int freq = info.getFrequency();
+                if (freq >= 4900) band = " · 5GHz";
+                else if (freq >= 2400) band = " · 2.4GHz";
+            }
+        } catch (Exception ignored) {
+        }
+        String message = "当前车机连接：" + ssid + band
+                + "\n" + PageUi.localNetwork(this)
+                + "\n\n方案 A（推荐，不需要路由器）："
+                + "\n① iPhone「设置 → 个人热点」打开热点；想走 5GHz 就关掉“最大兼容性”"
+                + "\n② 车机 Wi‑Fi 加入这个热点（车机不联网也能投屏）"
+                + "\n③ 回到本页点“开始接收”，iPhone 控制中心点“屏幕镜像”"
+                + "\n\n方案 B：车机自建热点 → iPhone 连车机；"
+                + "在“连接中心 → 开启车机热点”里操作。"
+                + "\n\n提示：热点不提供外网时 AirPlay 仍可用；"
+                + "若 iPhone 列表里没有车机，检查热点的 AP 隔离，或让两台设备都重连一次。";
+        new android.app.AlertDialog.Builder(this,
+                android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle("热点直连向导")
+                .setMessage(message)
+                .setPositiveButton("打开 Wi‑Fi 设置", (d, w) -> {
+                    try {
+                        startActivity(new android.content.Intent(
+                                android.provider.Settings.ACTION_WIFI_SETTINGS));
+                    } catch (Exception ignored) {
+                    }
+                })
+                .setNegativeButton("知道了", null)
+                .show();
+    }
+
     private void refreshState() {
         if (status == null) return;
         if (service == null) {
@@ -220,7 +271,8 @@ public class AirPlayActivity extends Activity {
                 PageUi.blend(PageUi.CARD, running ? PageUi.GREEN : PageUi.BLUE, 0.16f),
                 PageUi.blend(PageUi.BORDER, running ? PageUi.GREEN : PageUi.BLUE, 0.55f), 20));
         devicesValue.setText(String.valueOf(count));
-        videoValue.setText(resolution.isEmpty() ? (running ? "等待画面" : "待连接") : resolution);
+        videoValue.setText(count > 0 && !resolution.isEmpty()
+                ? resolution : (running ? "等待画面" : "待连接"));
         networkValue.setText(PageUi.localNetwork(this));
         start.setEnabled(!running);
         stop.setEnabled(running);

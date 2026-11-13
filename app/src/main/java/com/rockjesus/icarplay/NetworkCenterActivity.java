@@ -86,6 +86,10 @@ public class NetworkCenterActivity extends Activity {
     private TextView btValue;
     private TextView hicarValue;
     private TextView usbValue;
+    private TextView capClient;
+    private TextView capAp;
+    private TextView capP2p;
+    private TextView cap5g;
     private boolean hicarScanned;
     private boolean hicarFramework;
 
@@ -161,6 +165,22 @@ public class NetworkCenterActivity extends Activity {
         addMetricRow(statusCard, "本机 IP", ipValue, "网关", gatewayValue);
         addMetricRow(statusCard, "DNS", dnsValue, "热点 / Wi‑Fi Direct", hotspotValue);
         addMetricRow(statusCard, "AirPlay 接收", airplayValue, "本机端口", portValue);
+
+        LinearLayout capsRow = new LinearLayout(this);
+        capsRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams capsLp = PageUi.matchWrap(this);
+        PageUi.margin(capsLp, this, 0, 6, 0, 0);
+        statusCard.addView(capsRow, capsLp);
+        capClient = capPill(capsRow, "客户端", PageUi.BLUE);
+        capAp = capPill(capsRow, "自建热点", PageUi.PURPLE);
+        capP2p = capPill(capsRow, "P2P", PageUi.CYAN);
+        cap5g = capPill(capsRow, "5GHz", PageUi.GOLD);
+        View.OnClickListener capsTap = v -> showWifiCapDialog();
+        capsRow.setOnClickListener(capsTap);
+        capClient.setOnClickListener(capsTap);
+        capAp.setOnClickListener(capsTap);
+        capP2p.setOnClickListener(capsTap);
+        cap5g.setOnClickListener(capsTap);
 
         LinearLayout peripheral = PageUi.card(this, PageUi.PURPLE, 12, 8);
         LinearLayout.LayoutParams peripheralLp = new LinearLayout.LayoutParams(
@@ -324,6 +344,7 @@ public class NetworkCenterActivity extends Activity {
         refreshBluetooth();
         refreshHiCar();
         refreshUsb();
+        updateCaps();
 
         int accent = connected ? PageUi.GREEN : PageUi.RED;
         statusPill.setText(connected ? "已连接" : "未连接");
@@ -337,6 +358,88 @@ public class NetworkCenterActivity extends Activity {
         if (value == 0) return "—";
         return String.format(Locale.US, "%d.%d.%d.%d",
                 value & 0xff, (value >> 8) & 0xff, (value >> 16) & 0xff, (value >> 24) & 0xff);
+    }
+
+    /** 无线能力小标签（客户端 / 自建热点 / P2P / 5GHz），点击查看推荐方案。 */
+    private TextView capPill(LinearLayout row, String label, int accent) {
+        TextView v = PageUi.text(this, label + " —", 8f, accent, true);
+        v.setGravity(Gravity.CENTER);
+        v.setPadding(0, PageUi.dp(this, 2), 0, PageUi.dp(this, 2));
+        v.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.CARD, accent, 0.10f),
+                PageUi.blend(PageUi.BORDER, accent, 0.30f), 8));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        lp.setMargins(PageUi.dp(this, 2), 0, PageUi.dp(this, 2), 0);
+        row.addView(v, lp);
+        return v;
+    }
+
+    /** 5GHz 频段能力：系统未声明时返回 null，交给界面显示“未声明”。 */
+    private Boolean fiveGhzSupport() {
+        if (wifi == null) return null;
+        try {
+            Method m = wifi.getClass().getMethod("is5GHzBandSupported");
+            Object result = m.invoke(wifi);
+            return result instanceof Boolean ? (Boolean) result : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private void updateCaps() {
+        if (capClient == null) return;
+        boolean on = wifi != null && wifi.isWifiEnabled();
+        capClient.setText("客户端 " + (on ? "开" : "关"));
+        capClient.setTextColor(on ? PageUi.GREEN : PageUi.MUTED);
+
+        boolean ap = Build.VERSION.SDK_INT >= 26;
+        capAp.setText("自建热点 " + (ap ? "可试" : "不支持"));
+        capAp.setTextColor(ap ? PageUi.GOLD : PageUi.MUTED);
+
+        boolean p2p = getPackageManager()
+                .hasSystemFeature("android.hardware.wifi.direct");
+        capP2p.setText("P2P " + (p2p ? "支持" : "无"));
+        capP2p.setTextColor(p2p ? PageUi.CYAN : PageUi.MUTED);
+
+        Boolean five = fiveGhzSupport();
+        cap5g.setText("5GHz " + (five == null ? "未声明" : (five ? "支持" : "不支持")));
+        cap5g.setTextColor(five != null && five ? PageUi.GOLD : PageUi.MUTED);
+    }
+
+    /** 车机 Wi‑Fi 能力体检：回答“没有外置路由器时能怎么连”。 */
+    private void showWifiCapDialog() {
+        boolean on = wifi != null && wifi.isWifiEnabled();
+        WifiInfo info = wifi == null ? null : wifi.getConnectionInfo();
+        String ssid = info == null ? null : info.getSSID();
+        if (ssid != null) ssid = ssid.replace("\"", "");
+        if (ssid == null || ssid.contains("<unknown")) ssid = "未连接";
+        boolean ap = Build.VERSION.SDK_INT >= 26;
+        boolean p2p = getPackageManager()
+                .hasSystemFeature("android.hardware.wifi.direct");
+        Boolean five = fiveGhzSupport();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("客户端（加入手机热点）：").append(on ? "已开启" : "已关闭");
+        if (on) sb.append("，当前 ").append(ssid);
+        sb.append("\n自建热点（应用内 AP）：")
+                .append(ap ? "接口可试，但要看 Wi‑Fi 驱动是否支持 AP 模式" : "当前版本不支持");
+        sb.append("\nWi‑Fi Direct（P2P）：")
+                .append(p2p ? "系统声明支持，可做无路由器直连" : "未声明，按不支持处理");
+        sb.append("\n5GHz：")
+                .append(five == null ? "系统未声明，以实际扫描到的频段为准"
+                        : (five ? "支持" : "不支持"));
+        sb.append("\n\n没有外置路由器时的推荐顺序：")
+                .append("\n① 手机开个人热点 → 车机加入（所有车机都能用）")
+                .append("\n② 车机自建热点 → iPhone 连车机（需驱动支持 AP）")
+                .append("\n③ 有线兜底：USB 数据线（CarPlay / HiCar 有线）")
+                .append("\n\nAirPlay 只要求两台设备在同一网段，外网不是必要条件；")
+                .append("热点若开了 AP 隔离，iPhone 会搜不到车机。");
+        dialogBuilder()
+                .setTitle("无线能力与推荐方案")
+                .setMessage(sb.toString())
+                .setPositiveButton("打开 Wi‑Fi 设置", (d, w) -> openWifiSettings())
+                .setNegativeButton("知道了", null)
+                .show();
     }
 
     private boolean isApEnabled() {
@@ -449,6 +552,16 @@ public class NetworkCenterActivity extends Activity {
             report.append("\n• Wi‑Fi：").append(wifiOn ? "已开启" : "已关闭");
             if (gateway != null && !"—".equals(gateway)) report.append("，网关 ").append(gateway);
 
+            boolean apCap = Build.VERSION.SDK_INT >= 26;
+            boolean p2pCap = getPackageManager()
+                    .hasSystemFeature("android.hardware.wifi.direct");
+            Boolean five = fiveGhzSupport();
+            report.append("\n• 无线能力：客户端 ").append(wifiOn ? "可用" : "关闭")
+                    .append("，自建热点 ").append(apCap ? "可试" : "不支持")
+                    .append("，P2P ").append(p2pCap ? "支持" : "不支持")
+                    .append("，5GHz ")
+                    .append(five == null ? "未声明" : (five ? "支持" : "不支持"));
+
             long pingRtt = -1;
             boolean gatewayOk = false;
             if (gateway != null && !"—".equals(gateway)) {
@@ -499,6 +612,8 @@ public class NetworkCenterActivity extends Activity {
                 report.append("局域网正常、外网不通；AirPlay 不依赖外网，可继续投屏。若 iPhone 搜不到，检查 AP 隔离。");
             } else if (allCore) {
                 report.append("链路正常。若 iPhone 仍搜不到车机，重点检查热点/路由器的 AP 隔离或客户端隔离。");
+                report.append("\n无线方案：手机开个人热点、车机加入即可投屏，不需要外置路由器；")
+                        .append(apCap ? "也可试车机自建热点让 iPhone 连。" : "车机端自建热点不可用，用手机热点。");
             }
 
             String text = report.toString();
