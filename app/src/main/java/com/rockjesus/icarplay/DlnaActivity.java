@@ -41,6 +41,17 @@ public class DlnaActivity extends Activity {
     private TextView addressValue;
     private TextView trackLabel;
     private LinearLayout stageCard;
+    private LinearLayout trackCard;
+    private TextView guideText;
+    private LinearLayout guideHead;
+
+    private static final String GUIDE_FULL =
+            "1  手机与车机连同一 Wi‑Fi，点下面“启动接收”\n"
+                    + "2  手机投送：音乐 App 选“投送到设备”，相册选“投屏 / Cast”，视频 App 选“投屏”\n"
+                    + "3  音频走车机音响；视频 / 图片显示在本页“投送画面”，音量用方向盘或车机音量键";
+
+    private static final String GUIDE_COMPACT =
+            "投送已连上：相册/视频 App 选“投屏 · Cast”换画面，音量用方向盘或车机音量键";
     private SurfaceView stageVideo;
     private ImageView stageImage;
     private TextView stageHint;
@@ -131,7 +142,7 @@ public class DlnaActivity extends Activity {
         stage.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.BG, PageUi.CYAN, 0.10f),
                 PageUi.blend(PageUi.BORDER, PageUi.CYAN, 0.30f), 10));
         LinearLayout.LayoutParams stageLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 150f));
+                ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 100f));
         PageUi.margin(stageLp, this, 0, 5, 0, 0);
         stageCard.addView(stage, stageLp);
 
@@ -150,22 +161,30 @@ public class DlnaActivity extends Activity {
 
         stageCard.setVisibility(View.GONE);
 
-        LinearLayout trackCard = PageUi.card(this, PageUi.BLUE, 14, 8);
+        trackCard = PageUi.card(this, PageUi.BLUE, 14, 7);
         LinearLayout.LayoutParams tlp = PageUi.matchWrap(this);
         PageUi.margin(tlp, this, 0, 8, 0, 0);
         content.addView(trackCard, tlp);
+        LinearLayout trackRow = new LinearLayout(this);
+        trackRow.setOrientation(LinearLayout.HORIZONTAL);
+        trackRow.setGravity(Gravity.CENTER_VERTICAL);
         trackLabel = PageUi.text(this, "正在投送", 9f, PageUi.BLUE, true);
-        trackCard.addView(trackLabel, PageUi.wrap(this));
-        trackValue = PageUi.text(this, "还没有收到投送", 12f, PageUi.MUTED, false);
-        trackValue.setPadding(0, PageUi.dp(this, 3), 0, 0);
-        trackValue.setMaxLines(2);
-        trackCard.addView(trackValue, PageUi.matchWrap(this));
+        trackRow.addView(trackLabel, PageUi.wrap(this));
+        trackValue = PageUi.text(this, "还没有收到投送", 10.5f, PageUi.MUTED, false);
+        trackValue.setSingleLine(true);
+        trackValue.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        trackValue.setGravity(Gravity.RIGHT);
+        LinearLayout.LayoutParams trLp = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        PageUi.margin(trLp, this, 8, 0, 0, 0);
+        trackRow.addView(trackValue, trLp);
+        trackCard.addView(trackRow, PageUi.matchWrap(this));
 
         LinearLayout guideCard = PageUi.card(this, PageUi.GOLD, 14, 8);
         LinearLayout.LayoutParams glp = PageUi.matchWrap(this);
         PageUi.margin(glp, this, 0, 8, 0, 0);
         content.addView(guideCard, glp);
-        LinearLayout guideHead = new LinearLayout(this);
+        guideHead = new LinearLayout(this);
         guideHead.setOrientation(LinearLayout.HORIZONTAL);
         guideHead.setGravity(Gravity.CENTER_VERTICAL);
         guideHead.addView(PageUi.text(this, "怎么用", 9f, PageUi.GOLD, true),
@@ -174,13 +193,9 @@ public class DlnaActivity extends Activity {
         PageUi.mono(addressValue);
         guideHead.addView(addressValue, PageUi.wrap(this));
         guideCard.addView(guideHead, PageUi.matchWrap(this));
-        TextView guide = PageUi.text(this,
-                "1  手机与车机连同一 Wi‑Fi，点下面“启动接收”\n"
-                        + "2  手机投送：音乐 App 选“投送到设备”，相册选“投屏 / Cast”，视频 App 选“投屏”\n"
-                        + "3  音频走车机音响；视频 / 图片显示在本页“投送画面”，音量用方向盘或车机音量键",
-                11f, PageUi.MUTED, false);
-        guide.setPadding(0, PageUi.dp(this, 3), 0, 0);
-        guideCard.addView(guide, PageUi.matchWrap(this));
+        guideText = PageUi.text(this, GUIDE_FULL, 11f, PageUi.MUTED, false);
+        guideText.setPadding(0, PageUi.dp(this, 3), 0, 0);
+        guideCard.addView(guideText, PageUi.matchWrap(this));
 
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
@@ -247,7 +262,9 @@ public class DlnaActivity extends Activity {
         if (stageCard == null) return;
         boolean video = DlnaRenderer.KIND_VIDEO.equals(kind);
         boolean image = DlnaRenderer.KIND_IMAGE.equals(kind);
-        stageCard.setVisibility(video || image ? View.VISIBLE : View.GONE);
+        boolean casting = (video || image) && hasLiveMedia();
+        stageCard.setVisibility(casting ? View.VISIBLE : View.GONE);
+        syncCompact(casting);
         if (!video && !image) return;
         if (video) {
             stageImage.setVisibility(View.GONE);
@@ -259,6 +276,25 @@ public class DlnaActivity extends Activity {
             stageImage.setVisibility(View.VISIBLE);
         }
         if (trackLabel != null) trackLabel.setText(video ? "正在播放视频" : "正在显示图片");
+    }
+
+    private boolean hasLiveMedia() {
+        try {
+            return !renderer(this).getCurrentUri().isEmpty();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** 出画面时收起“正在投送”行、把说明压成一行，保证状态 + 画面 + 说明同屏。 */
+    private void syncCompact(boolean casting) {
+        if (trackCard != null) trackCard.setVisibility(casting ? View.GONE : View.VISIBLE);
+        if (guideHead != null) guideHead.setVisibility(casting ? View.GONE : View.VISIBLE);
+        if (guideText != null) {
+            guideText.setText(casting ? GUIDE_COMPACT : GUIDE_FULL);
+            guideText.setTextSize(casting ? 10.5f : 11f);
+            guideText.setPadding(0, casting ? 0 : PageUi.dp(this, 3), 0, 0);
+        }
     }
 
     private void applyImage(Bitmap bitmap, String title) {
@@ -380,13 +416,17 @@ public class DlnaActivity extends Activity {
         if (trackLabel != null) {
             boolean video = DlnaRenderer.KIND_VIDEO.equals(kind);
             boolean image = DlnaRenderer.KIND_IMAGE.equals(kind);
-            trackLabel.setText(video ? "正在播放视频" : image ? "正在显示图片" : "正在投送");
-            if (stageCard != null && (video || image)) {
-                stageCard.setVisibility(View.VISIBLE);
-            } else if (stageCard != null) {
-                stageCard.setVisibility(View.GONE);
-                stageHint.setVisibility(View.VISIBLE);
+            boolean casting = (video || image) && !r.getCurrentUri().isEmpty();
+            trackLabel.setText(casting ? (video ? "正在播放视频" : "正在显示图片") : "正在投送");
+            if (stageCard != null) {
+                stageCard.setVisibility(casting ? View.VISIBLE : View.GONE);
             }
+            if (!casting && stageHint != null) {
+                stageHint.setVisibility(View.VISIBLE);
+                stageHint.setText("投送视频或图片时，这里显示画面");
+                if (stageImage != null) stageImage.setImageDrawable(null);
+            }
+            syncCompact(casting);
         }
         addressValue.setText(running ? "http://" + hostOf(r.location()) : "未启动");
         start.setEnabled(!running);
