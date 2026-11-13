@@ -37,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.7.2";
+    public static final String VERSION_LABEL = "v0.7.3";
 
     private TextView statusView;
     private View statusDot;
@@ -524,8 +524,7 @@ public class IcarLauncherActivity extends Activity {
         statusView.setText(line1);
         statusView.append("\n" + device + "  ·  " + floatState);
 
-        setPill(airplayState, airplayRunning ? "运行中" : "待启动",
-                airplayRunning ? PageUi.GREEN : PageUi.BLUE);
+        setPill(airplayState, airplayRunning ? "待连接" : "待启动", PageUi.BLUE);
         boolean carplayReady = CarPlayCore.hasAuth(this) || CarPlayCore.hasLocalIdentity(this);
         setPill(carplayState, carplayReady ? "已配置" : (auth.equals("未配置") ? "未配置" : auth),
                 carplayReady ? PageUi.GREEN : PageUi.RED);

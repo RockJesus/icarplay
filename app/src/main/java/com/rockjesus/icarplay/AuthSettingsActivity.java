@@ -39,6 +39,7 @@ public class AuthSettingsActivity extends Activity {
         TextView sub = PageUi.text(this,
                 "CarPlay 能不能连取决于认证后端；有没有声音取决于音频通道。",
                 10.5f, PageUi.MUTED, false);
+        sub.setGravity(Gravity.CENTER_HORIZONTAL);
         LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
         PageUi.margin(subLp, this, 0, 3, 0, 6);
         root.addView(sub, subLp);

@@ -350,27 +350,26 @@ public final class PageUi {
         lp.setMargins(dp(c, left), dp(c, top), dp(c, right), dp(c, bottom));
     }
 
-    /** 顶部标题栏：紫青渐变标题 + 右侧等宽版本胶囊。 */
-    public static LinearLayout header(Context c, String title, String version) {
-        LinearLayout header = new LinearLayout(c);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
+    /** 顶部标题栏：与首页一致，紫青渐变标题居中，版本胶囊固定在右上角。 */
+    public static FrameLayout header(Context c, String title, String version) {
+        FrameLayout header = new FrameLayout(c);
 
-        TextView t = text(c, title, 22f, TEXT, true);
+        TextView t = text(c, title, 24f, TEXT, true);
         display(t);
         gradientText(t, TITLE_GRADIENT);
-        header.addView(t, wrap(c));
-
-        View spacer = new View(c);
-        header.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
+        header.addView(t, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL));
 
         if (version != null && !version.isEmpty()) {
-            TextView pill = text(c, version, 9.5f, CYAN, true);
+            TextView pill = text(c, version, 10f, CYAN, true);
             mono(pill);
-            pill.setPadding(dp(c, 9), dp(c, 3), dp(c, 9), dp(c, 3));
+            pill.setPadding(dp(c, 10), dp(c, 4), dp(c, 10), dp(c, 4));
             pill.setBackground(rounded(c, blend(CARD, PURPLE, 0.16f),
                     blend(PURPLE, CYAN, 0.45f), 20));
-            header.addView(pill, wrap(c));
+            header.addView(pill, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                    Gravity.END | Gravity.CENTER_VERTICAL));
         }
         return header;
     }

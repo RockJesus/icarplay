@@ -37,19 +37,12 @@ public class CarPlayActivity extends Activity {
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
         setContentView(root);
 
-        LinearLayout headerRow = new LinearLayout(this);
-        headerRow.setOrientation(LinearLayout.HORIZONTAL);
-        headerRow.setGravity(Gravity.CENTER_VERTICAL);
-        headerRow.addView(PageUi.header(this, "CarPlay 接收",
-                IcarLauncherActivity.VERSION_LABEL), new LinearLayout.LayoutParams(
-                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        statusBadge = PageUi.statusPill(this, "未配置", PageUi.RED);
-        headerRow.addView(statusBadge, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        root.addView(headerRow, PageUi.matchWrap(this));
+        root.addView(PageUi.header(this, "CarPlay 接收", IcarLauncherActivity.VERSION_LABEL),
+                PageUi.matchWrap(this));
 
         TextView sub = PageUi.text(this, "iPhone → 车机 · 有线 USB / 无线 Wi‑Fi", 11f,
                 PageUi.MUTED, false);
+        sub.setGravity(Gravity.CENTER_HORIZONTAL);
         LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
         PageUi.margin(subLp, this, 0, 3, 0, 7);
         root.addView(sub, subLp);
@@ -57,8 +50,14 @@ public class CarPlayActivity extends Activity {
         LinearLayout metrics = PageUi.card(this, PageUi.BLUE, 10, 9);
         LinearLayout.LayoutParams metricsLp = PageUi.matchWrap(this);
         root.addView(metrics, metricsLp);
-        metrics.addView(PageUi.text(this, "认证与链路状态", 9f, PageUi.BLUE, true),
-                PageUi.wrap(this));
+        LinearLayout metricsHead = new LinearLayout(this);
+        metricsHead.setOrientation(LinearLayout.HORIZONTAL);
+        metricsHead.setGravity(Gravity.CENTER_VERTICAL);
+        metricsHead.addView(PageUi.text(this, "认证与链路状态", 9f, PageUi.BLUE, true),
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        statusBadge = PageUi.statusPill(this, "未配置", PageUi.RED);
+        metricsHead.addView(statusBadge, PageUi.wrap(this));
+        metrics.addView(metricsHead, PageUi.matchWrap(this));
 
         LinearLayout m1 = metricRow();
         authValue = metric(m1, "认证后端", "读取中…", PageUi.BLUE);

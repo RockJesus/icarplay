@@ -107,26 +107,26 @@ public class AndroidAutoActivity extends Activity {
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
         setContentView(root);
 
-        LinearLayout top = new LinearLayout(this);
-        top.setOrientation(LinearLayout.HORIZONTAL);
-        top.setGravity(Gravity.CENTER_VERTICAL);
-        top.addView(PageUi.header(this, "Android Auto 接收", IcarLauncherActivity.VERSION_LABEL),
-                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        statusPill = PageUi.statusPill(this, "待连接", PageUi.GREEN);
-        top.addView(statusPill, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        root.addView(top, PageUi.matchWrap(this));
+        root.addView(PageUi.header(this, "Android Auto 接收", IcarLauncherActivity.VERSION_LABEL),
+                PageUi.matchWrap(this));
 
         TextView sub = PageUi.text(this, "USB 有线 / 手机 Headunit Server 无线", 11f,
                 PageUi.MUTED, false);
+        sub.setGravity(Gravity.CENTER_HORIZONTAL);
         LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
         PageUi.margin(subLp, this, 0, 3, 0, 7);
         root.addView(sub, subLp);
 
         LinearLayout statusCard = PageUi.card(this, PageUi.GREEN, 14, 9);
         root.addView(statusCard, PageUi.matchWrap(this));
-        statusCard.addView(PageUi.text(this, "连接状态", 8.5f, PageUi.GREEN, true),
-                PageUi.wrap(this));
+        LinearLayout statusHead = new LinearLayout(this);
+        statusHead.setOrientation(LinearLayout.HORIZONTAL);
+        statusHead.setGravity(Gravity.CENTER_VERTICAL);
+        statusHead.addView(PageUi.text(this, "连接状态", 8.5f, PageUi.GREEN, true),
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        statusPill = PageUi.statusPill(this, "待连接", PageUi.GREEN);
+        statusHead.addView(statusPill, PageUi.wrap(this));
+        statusCard.addView(statusHead, PageUi.matchWrap(this));
         status = PageUi.text(this, "未连接。请用 USB 数据线把手机接到车机 USB 口，或在手机端启动 Headunit Server。",
                 12.5f, PageUi.TEXT, false);
         status.setPadding(0, PageUi.dp(this, 3), 0, PageUi.dp(this, 5));
