@@ -8,6 +8,8 @@ import android.provider.Settings;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Insets;
+import android.graphics.Rect;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.util.DisplayMetrics;
@@ -15,7 +17,9 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.view.WindowMetrics;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -51,6 +55,7 @@ public class FloatAccessibilityService extends AccessibilityService {
     private int startX, startY;
     private boolean dragging;
     private int screenW, screenH;
+    private int safeL, safeT, safeR, safeB;
 
     @Override
     public void onCreate() {
@@ -200,19 +205,50 @@ public class FloatAccessibilityService extends AccessibilityService {
         if (ballParams == null) return;
         if (screenW <= 0 || screenH <= 0) updateScreenSize();
         int size = Math.max(0, ballParams.width);
-        int margin = dp(8);
-        ballParams.x = Math.max(margin, Math.min(ballParams.x,
-                Math.max(margin, screenW - size - margin)));
-        ballParams.y = Math.max(margin, Math.min(ballParams.y,
-                Math.max(margin, screenH - size - margin)));
+        int margin = dp(10);
+        int left = Math.max(0, safeL);
+        int top = Math.max(0, safeT);
+        int right = safeR > 0 ? safeR : screenW;
+        int bottom = safeB > 0 ? safeB : screenH;
+        if (right <= left || bottom <= top) return;
+        // LayoutParams 的 y 原点在状态栏内侧，实际窗口 y = params.y + top inset。
+        // 可用高度必须先扣掉 top，否则球会被状态栏高度顶出屏幕底部。
+        int usableW = right - left;
+        int usableH = bottom - top;
+        int maxX = Math.max(margin, usableW - size - margin);
+        int maxY = Math.max(margin, usableH - size - margin);
+        ballParams.x = Math.max(margin, Math.min(ballParams.x, maxX));
+        ballParams.y = Math.max(margin, Math.min(ballParams.y, maxY));
     }
 
     private void updateScreenSize() {
+        // 不用 getRealMetrics：部分车机/模拟器会返回物理竖屏尺寸（如 900×1600），
+        // 与实际 1600×900 的显示区不一致，导致悬浮球能拖到屏幕外。
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                WindowMetrics wmMetrics = wm.getCurrentWindowMetrics();
+                Rect bounds = wmMetrics.getBounds();
+                WindowInsets insets = wmMetrics.getWindowInsets();
+                Insets bars = insets.getInsetsIgnoringVisibility(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                screenW = bounds.width();
+                screenH = bounds.height();
+                safeL = bars.left;
+                safeT = bars.top;
+                safeR = screenW - bars.right;
+                safeB = screenH - bars.bottom;
+                return;
+            }
+        } catch (Throwable ignored) { }
         try {
             DisplayMetrics dm = new DisplayMetrics();
-            wm.getDefaultDisplay().getRealMetrics(dm);
+            wm.getDefaultDisplay().getMetrics(dm);
             screenW = dm.widthPixels;
             screenH = dm.heightPixels;
+            safeL = 0;
+            safeT = 0;
+            safeR = screenW;
+            safeB = screenH;
         } catch (Throwable ignored) { }
     }
 

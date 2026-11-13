@@ -37,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.7.1";
+    public static final String VERSION_LABEL = "v0.7.2";
 
     private TextView statusView;
     private View statusDot;
@@ -51,7 +51,6 @@ public class IcarLauncherActivity extends Activity {
     private TextView hicarState;
 
     private float uiScale = 1f;
-    private boolean narrow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +62,6 @@ public class IcarLauncherActivity extends Activity {
         float heightDp = dm.heightPixels / dm.density;
         float rawScale = Math.min(widthDp / 1000f, heightDp / 560f);
         uiScale = Math.max(0.9f, Math.min(1.45f, rawScale));
-        narrow = widthDp < 760f;
         boolean fiveAcross = dm.widthPixels >= 1100
                 && (dm.widthPixels / (float) dm.heightPixels) >= 1.5f;
 
@@ -160,6 +158,20 @@ public class IcarLauncherActivity extends Activity {
         backLp.topMargin = dp(8);
         root.addView(back, backLp);
 
+        startAirPlayByDefault();
+    }
+
+    /** 首页启动时默认拉起 AirPlay 接收服务；失败不影响其余入口。 */
+    private void startAirPlayByDefault() {
+        try {
+            Intent intent = new Intent(this, io.github.jqssun.airplay.service.AirPlayService.class);
+            intent.setAction(io.github.jqssun.airplay.service.AirPlayService.ACTION_START_SERVER);
+            if (Build.VERSION.SDK_INT >= 26) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+        } catch (Throwable ignored) { }
     }
 
     private View buildHeader() {
@@ -169,8 +181,6 @@ public class IcarLauncherActivity extends Activity {
         brand.setOrientation(LinearLayout.HORIZONTAL);
         brand.setGravity(Gravity.CENTER_VERTICAL);
 
-        LinearLayout titles = new LinearLayout(this);
-        titles.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(this);
         title.setText("iCarPlay");
         title.setTextColor(PageUi.TEXT);
@@ -178,19 +188,12 @@ public class IcarLauncherActivity extends Activity {
         title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         title.setLetterSpacing(0.02f);
         PageUi.gradientText(title, PageUi.TITLE_GRADIENT);
-        titles.addView(title, wrap());
-        TextView model = new TextView(this);
-        model.setText(narrow ? "SYNC+ 车载互联" : "SYNC+ 车载互联中枢 · 5 种投屏方式");
-        model.setTextColor(PageUi.MUTED);
-        sp(model, 9.5f);
-        model.setLetterSpacing(0.04f);
-        titles.addView(model, wrap());
-        brand.addView(titles, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        brand.addView(title, wrap());
 
+        // 标题固定在顶部正中，版本胶囊留在右上角。
         header.addView(brand, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.START | Gravity.CENTER_VERTICAL));
+                Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL));
 
         TextView version = new TextView(this);
         version.setText(VERSION_LABEL);
@@ -202,7 +205,7 @@ public class IcarLauncherActivity extends Activity {
                 PageUi.blend(PageUi.PURPLE, PageUi.CYAN, 0.45f), 20));
         header.addView(version, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.END | Gravity.TOP));
+                Gravity.END | Gravity.CENTER_VERTICAL));
 
         return header;
     }
