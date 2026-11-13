@@ -115,6 +115,13 @@
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <activity
+            android:name="com.rockjesus.icarplay.WirelessGuideActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <activity
             android:name="com.rockjesus.icarplay.DlnaActivity"
             android:exported="false"
             android:screenOrientation="landscape"

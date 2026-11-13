@@ -5,22 +5,28 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.view.Gravity;
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * DLNA 音频接收页：手机把歌“投送”到车机，车机当音箱放。
- * 只接收同一局域网内主动推过来的音频流，不扫描别人的设备。
+ * DLNA 投送接收页：手机把歌、视频、图片“投送”到车机，车机当音箱 + 副屏用。
+ * 只接收同一局域网内主动推过来的媒体，不扫描别人的设备。
  */
 public class DlnaActivity extends Activity {
 
@@ -33,6 +39,11 @@ public class DlnaActivity extends Activity {
     private TextView trackValue;
     private TextView progressValue;
     private TextView addressValue;
+    private TextView trackLabel;
+    private LinearLayout stageCard;
+    private SurfaceView stageVideo;
+    private ImageView stageImage;
+    private TextView stageHint;
     private Button start;
     private Button stop;
 
@@ -62,10 +73,10 @@ public class DlnaActivity extends Activity {
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setContentView(root);
 
-        root.addView(PageUi.header(this, "DLNA 音频接收", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "DLNA 投送接收", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
 
-        TextView sub = PageUi.text(this, "安卓手机 / 电脑把音乐投送到车机 · 同一局域网",
+        TextView sub = PageUi.text(this, "安卓手机 / 电脑把音乐 · 视频 · 图片投送到车机 · 同一局域网",
                 10.5f, PageUi.MUTED, false);
         sub.setGravity(Gravity.CENTER_HORIZONTAL);
         LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
@@ -104,12 +115,48 @@ public class DlnaActivity extends Activity {
         portValue = metric(metrics, "控制端口", "—", PageUi.BLUE);
         progressValue = metric(metrics, "播放进度", "—", PageUi.GOLD);
 
+        stageCard = PageUi.card(this, PageUi.CYAN, 12, 8);
+        LinearLayout.LayoutParams slp = PageUi.matchWrap(this);
+        PageUi.margin(slp, this, 0, 8, 0, 0);
+        content.addView(stageCard, slp);
+        LinearLayout stageHead = new LinearLayout(this);
+        stageHead.setOrientation(LinearLayout.HORIZONTAL);
+        stageHead.setGravity(Gravity.CENTER_VERTICAL);
+        stageHead.addView(PageUi.text(this, "投送画面", 9f, PageUi.CYAN, true),
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        stageHead.addView(PageUi.statusPill(this, "视频 / 图片", PageUi.CYAN), PageUi.wrap(this));
+        stageCard.addView(stageHead, PageUi.matchWrap(this));
+
+        FrameLayout stage = new FrameLayout(this);
+        stage.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.BG, PageUi.CYAN, 0.10f),
+                PageUi.blend(PageUi.BORDER, PageUi.CYAN, 0.30f), 10));
+        LinearLayout.LayoutParams stageLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 150f));
+        PageUi.margin(stageLp, this, 0, 5, 0, 0);
+        stageCard.addView(stage, stageLp);
+
+        stageVideo = new SurfaceView(this);
+        stage.addView(stageVideo, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        stageImage = new ImageView(this);
+        stageImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        stageImage.setVisibility(View.GONE);
+        stage.addView(stageImage, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        stageHint = PageUi.text(this, "投送视频或图片时，这里显示画面", 10.5f, PageUi.MUTED, false);
+        stageHint.setGravity(Gravity.CENTER);
+        stage.addView(stageHint, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        stageCard.setVisibility(View.GONE);
+
         LinearLayout trackCard = PageUi.card(this, PageUi.BLUE, 14, 8);
         LinearLayout.LayoutParams tlp = PageUi.matchWrap(this);
         PageUi.margin(tlp, this, 0, 8, 0, 0);
         content.addView(trackCard, tlp);
-        trackCard.addView(PageUi.text(this, "正在播放", 9f, PageUi.BLUE, true), PageUi.wrap(this));
-        trackValue = PageUi.text(this, "还没有收到音频", 12f, PageUi.MUTED, false);
+        trackLabel = PageUi.text(this, "正在投送", 9f, PageUi.BLUE, true);
+        trackCard.addView(trackLabel, PageUi.wrap(this));
+        trackValue = PageUi.text(this, "还没有收到投送", 12f, PageUi.MUTED, false);
         trackValue.setPadding(0, PageUi.dp(this, 3), 0, 0);
         trackValue.setMaxLines(2);
         trackCard.addView(trackValue, PageUi.matchWrap(this));
@@ -129,8 +176,8 @@ public class DlnaActivity extends Activity {
         guideCard.addView(guideHead, PageUi.matchWrap(this));
         TextView guide = PageUi.text(this,
                 "1  手机与车机连同一 Wi‑Fi，点下面“启动接收”\n"
-                        + "2  手机音乐 App 里点“投送到设备 / DLNA / Cast”，选本机设备名\n"
-                        + "3  选中后车机会自动播放；音量用方向盘或车机音量键",
+                        + "2  手机投送：音乐 App 选“投送到设备”，相册选“投屏 / Cast”，视频 App 选“投屏”\n"
+                        + "3  音频走车机音响；视频 / 图片显示在本页“投送画面”，音量用方向盘或车机音量键",
                 11f, PageUi.MUTED, false);
         guide.setPadding(0, PageUi.dp(this, 3), 0, 0);
         guideCard.addView(guide, PageUi.matchWrap(this));
@@ -162,7 +209,71 @@ public class DlnaActivity extends Activity {
         PageUi.margin(backLp, this, 0, 6, 0, 0);
         root.addView(back, backLp);
 
+        stageVideo.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                renderer(DlnaActivity.this).setVideoSurface(holder.getSurface());
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                renderer(DlnaActivity.this).setVideoSurface(holder.getSurface());
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                renderer(DlnaActivity.this).setVideoSurface(null);
+            }
+        });
+
+        renderer(this).setListener(new DlnaRenderer.Listener() {
+            @Override
+            public void onKind(String kind, String title) {
+                runOnUiThread(() -> applyKind(kind, title));
+            }
+
+            @Override
+            public void onImage(Bitmap bitmap, String title) {
+                runOnUiThread(() -> applyImage(bitmap, title));
+            }
+        });
+
         refresh();
+        applyKind(renderer(this).getKind(), renderer(this).getTitle());
+    }
+
+    /** 按媒体类型切换画面区：视频出 Surface，图片出 ImageView，音频整块收起。 */
+    private void applyKind(String kind, String title) {
+        if (stageCard == null) return;
+        boolean video = DlnaRenderer.KIND_VIDEO.equals(kind);
+        boolean image = DlnaRenderer.KIND_IMAGE.equals(kind);
+        stageCard.setVisibility(video || image ? View.VISIBLE : View.GONE);
+        if (!video && !image) return;
+        if (video) {
+            stageImage.setVisibility(View.GONE);
+            stageVideo.setVisibility(View.VISIBLE);
+            stageHint.setText("视频投送中 · " + (title == null || title.isEmpty() ? "" : title));
+            stageHint.setTextColor(PageUi.MUTED);
+        } else {
+            stageVideo.setVisibility(View.INVISIBLE);
+            stageImage.setVisibility(View.VISIBLE);
+        }
+        if (trackLabel != null) trackLabel.setText(video ? "正在播放视频" : "正在显示图片");
+    }
+
+    private void applyImage(Bitmap bitmap, String title) {
+        if (stageImage == null) return;
+        if (bitmap == null) {
+            stageImage.setImageDrawable(null);
+            stageHint.setVisibility(View.VISIBLE);
+            stageHint.setText("投送视频或图片时，这里显示画面");
+            return;
+        }
+        stageImage.setImageBitmap(bitmap);
+        stageImage.setVisibility(View.VISIBLE);
+        stageVideo.setVisibility(View.INVISIBLE);
+        stageHint.setVisibility(View.GONE);
+        stageCard.setVisibility(View.VISIBLE);
     }
 
     private TextView metric(LinearLayout row, String label, String value, int accent) {
@@ -255,13 +366,28 @@ public class DlnaActivity extends Activity {
         portValue.setText(running ? String.valueOf(r.getPort()) : "—");
         progressValue.setText(running && !r.getCurrentUri().isEmpty()
                 ? r.getPositionText() : "—");
+        String kind = r.getKind();
+        String prefix = DlnaRenderer.KIND_VIDEO.equals(kind) ? "视频 · "
+                : DlnaRenderer.KIND_IMAGE.equals(kind) ? "图片 · "
+                : DlnaRenderer.KIND_AUDIO.equals(kind) ? "音频 · " : "";
         trackValue.setText(running
                 ? (r.getCurrentUri().isEmpty()
-                ? (r.getLastError().isEmpty() ? "还没有收到音频" : r.getLastError())
-                : r.getTitle() + "\n" + shorten(r.getCurrentUri()))
-                : "还没有收到音频");
+                ? (r.getLastError().isEmpty() ? "还没有收到投送" : r.getLastError())
+                : prefix + r.getTitle() + "\n" + shorten(r.getCurrentUri()))
+                : "还没有收到投送");
         trackValue.setTextColor(!running || r.getCurrentUri().isEmpty()
                 ? PageUi.MUTED : PageUi.TEXT);
+        if (trackLabel != null) {
+            boolean video = DlnaRenderer.KIND_VIDEO.equals(kind);
+            boolean image = DlnaRenderer.KIND_IMAGE.equals(kind);
+            trackLabel.setText(video ? "正在播放视频" : image ? "正在显示图片" : "正在投送");
+            if (stageCard != null && (video || image)) {
+                stageCard.setVisibility(View.VISIBLE);
+            } else if (stageCard != null) {
+                stageCard.setVisibility(View.GONE);
+                stageHint.setVisibility(View.VISIBLE);
+            }
+        }
         addressValue.setText(running ? "http://" + hostOf(r.location()) : "未启动");
         start.setEnabled(!running);
         stop.setEnabled(running);
@@ -297,6 +423,24 @@ public class DlnaActivity extends Activity {
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(tick);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (renderer != null && stageCard != null) {
+            renderer.setListener(new DlnaRenderer.Listener() {
+                @Override
+                public void onKind(String kind, String title) {
+                    runOnUiThread(() -> applyKind(kind, title));
+                }
+
+                @Override
+                public void onImage(Bitmap bitmap, String title) {
+                    runOnUiThread(() -> applyImage(bitmap, title));
+                }
+            });
+        }
     }
 
     @Override

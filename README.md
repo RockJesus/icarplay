@@ -3,13 +3,15 @@
 面向 **2020 款 SYNC+ 1.0 车机**（Android 8.1 / API 27、1920×720）的第三方接收端：
 **一个 APK 内同时提供 AirPlay 接收、Android Auto 接收、Huawei HiCar 接收、CarPlay 入口和内置悬浮按钮**。
 
-> **当前版本 v0.7.8**
+> **当前版本 v0.7.9**
 >
 > 单 APK 下载：[`icarplay.apk`](https://github.com/RockJesus/icarplay/releases/latest/download/icarplay.apk)
 >
 > 本版 Release 只打包 **arm64-v8a + armeabi-v7a**，并且只发布一个 `icarplay.apk`：CarLife+ 接收端已内嵌，不再附带第二个 APK 或 `bdcf`。
 >
 > 首页是**车机一屏布局**：五张主功能卡（AirPlay / CarPlay / CarLife+ / Android Auto / HiCar）+ 一行快捷操作 + 底部“返回车机主屏幕”，不再需要下拉；宽度 ≥1100px 且宽高比 ≥1.5 的横屏（1600×900、1920×720）五卡同排；接近 4:3 的窄横屏自动 3+2 两行。首次打开会自动引导悬浮窗、麦克风/位置/蓝牙/通知和电池优化权限，并默认启动内置悬浮按钮。
+>
+> - **v0.7.9 调整**：新增「一键无线投屏」向导页（连接中心「快捷操作」下方文字链进入）：第 1 步确认车机网络（当前 Wi-Fi / 本机 IP / 频段 / 网关四格 + 打开 Wi-Fi 设置 / 网络体检），第 2 步手机开热点并让车机加入（iPhone 关“最大兼容性”争取 5GHz、安卓选 5GHz 频段），第 3 步按手机品牌直达对应接收页（AirPlay / HUAWEI HiCar / CarLife+ / DLNA），底部给出“走不通时”的排查顺序；DLNA 从“仅音频”扩成完整接收端（音频 / 视频 / 图片）：新增视频与图片类型识别（DIDL `object.item.videoItem` / `object.item.imageItem` 优先，扩展名兜底）、`GetProtocolInfo` 追加 mp4/mkv/webm/mpeg/mov 与 jpeg/png/gif/webp、新增「投送画面」卡（SurfaceView 放视频 + ImageView 放图片，没投送时隐藏），`/state` 增加 `KIND=` 行；连接中心三处入口收成一行文字链，页面不再被裁切。
 >
 > - **v0.7.8 调整**：新增「连接补强」页（连接中心「外设状态」卡右下角入口）：实时判定蓝牙 / USB Host / Wi‑Fi 客户端 / 自建热点 / P2P / 5GHz，并把 AirPlay、HUAWEI HiCar、Android Auto、CarLife+、DLNA 音频、Miracast 六种投屏方式各自的无线/有线路与前提逐条说清；HiCar 弹窗补充蓝牙实况与“适配器才能无线”结论并增加「连接补强」入口；新增 DLNA / UPnP 音频接收（SSDP 组播应答 + AVTransport / RenderingControl / ConnectionManager 服务 + MediaPlayer 播放），手机音乐 App 投送到设备即可用车机放歌，全程不需要外置路由器。
 > - **v0.7.7 调整**：连接中心「网络状态」卡新增无线能力胶囊：客户端 / 自建热点 / Wi‑Fi Direct(P2P) / 5GHz，点任一胶囊弹出「无线能力与推荐方案」（说明没有外置路由器时的三条路径：手机热点 + 车机加入、车机自建热点、USB 有线兜底）；「网络体检」结论增加无线方案建议；AirPlay 页新增「热点直连向导」，给出 iPhone 个人热点 → 车机加入 → 开始接收的三步操作与 AP 隔离提示。

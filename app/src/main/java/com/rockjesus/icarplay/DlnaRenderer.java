@@ -1,29 +1,34 @@
 package com.rockjesus.icarplay;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.wifi.WifiManager;
+import android.view.Surface;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 轻量 DLNA / UPnP AudioRenderer：SSDP 组播应答 + 最小 HTTP 控制点 + MediaPlayer 播放。
- * 只做别人推过来的音频的接收端，不主动发现网络里的其他设备，也不改动系统网络配置。
- * 手机端用支持 DLNA 投送的播放器（如各家音乐 App 的“投送到设备”）选中本机即可播放。
+ * 轻量 DLNA / UPnP DMR：SSDP 组播应答 + 最小 HTTP 控制点 + MediaPlayer / ImageView 呈现。
+ * 接收别人推过来的音频、视频、图片，不主动发现网络里的其他设备，也不改动系统网络配置。
+ * 手机端用支持 DLNA 投送的 App（音乐“投送到设备”、相册投屏、文件管理器 Cast）选中本机即可。
  */
 public final class DlnaRenderer {
 
@@ -32,6 +37,15 @@ public final class DlnaRenderer {
     public static final String ST_PLAYING = "PLAYING";
     public static final String ST_PAUSED = "PAUSED_PLAYBACK";
     public static final String ST_TRANSITIONING = "TRANSITIONING";
+
+    public static final String KIND_AUDIO = "audio";
+    public static final String KIND_VIDEO = "video";
+    public static final String KIND_IMAGE = "image";
+
+    private static final String[] VIDEO_EXT = {".mp4", ".mkv", ".webm", ".avi", ".mov",
+            ".m4v", ".ts", ".m3u8", ".flv", ".3gp", ".m2ts"};
+    private static final String[] IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".bmp",
+            ".webp", ".heic", ".heif"};
 
     private static final String AVT = "urn:schemas-upnp-org:service:AVTransport:1";
     private static final String RCS = "urn:schemas-upnp-org:service:RenderingControl:1";
@@ -61,6 +75,17 @@ public final class DlnaRenderer {
 
     private MediaPlayer player;
     private boolean pendingPlay;
+    private volatile String kind = "";
+    private volatile Surface videoSurface;
+    private volatile Listener listener;
+    private volatile int imageToken;
+
+    /** 页面侧回调：切换媒体类型、贴图片。回调可能来自工作线程，实现方自行切主线程。 */
+    public interface Listener {
+        void onKind(String kind, String title);
+
+        void onImage(Bitmap bitmap, String title);
+    }
 
     public DlnaRenderer(Context context) {
         this.context = context.getApplicationContext();
@@ -89,6 +114,24 @@ public final class DlnaRenderer {
 
     public String getUuid() {
         return uuid;
+    }
+
+    public String getKind() {
+        return kind;
+    }
+
+    public void setListener(Listener value) {
+        this.listener = value;
+    }
+
+    /** 视频投送时页面把 SurfaceView 的 Surface 交进来；音频/图片传 null 即可。 */
+    public void setVideoSurface(Surface surface) {
+        this.videoSurface = surface;
+        try {
+            MediaPlayer p = player;
+            if (p != null && surface != null) p.setSurface(surface);
+        } catch (Exception ignored) {
+        }
     }
 
     public String getState() {
@@ -143,6 +186,7 @@ public final class DlnaRenderer {
     }
 
     public String getPositionText() {
+        if (KIND_IMAGE.equals(kind)) return ST_PLAYING.equals(state) ? "静态图片" : "—";
         int pos = Math.max(0, getPositionMs());
         int dur = Math.max(0, getDurationMs());
         return clock(pos) + " / " + (dur <= 0 ? "—" : clock(dur));
@@ -470,7 +514,7 @@ public final class DlnaRenderer {
             } else if (method.equals("UNSUBSCRIBE")) {
                 respondEmpty(socket, "200 OK");
             } else {
-                respondText(socket, "iCarPlay DLNA AudioRenderer\n" + stateText());
+                respondText(socket, "iCarPlay DLNA MediaRenderer\n" + stateText());
             }
         } catch (Exception ignored) {
         }
@@ -479,6 +523,7 @@ public final class DlnaRenderer {
     public String stateText() {
         return "STATE=" + state
                 + "\nDEVICE=" + deviceName
+                + "\nKIND=" + (kind.isEmpty() ? "-" : kind)
                 + "\nURI=" + currentUri
                 + "\nTITLE=" + title
                 + "\nPOSITION=" + getPositionText()
@@ -672,7 +717,12 @@ public final class DlnaRenderer {
                     "<Source></Source><Sink>http-get:*:audio/mpeg:*,"
                             + "http-get:*:audio/mp4:*,http-get:*:audio/aac:*,"
                             + "http-get:*:audio/x-flac:*,http-get:*:audio/wav:*,"
-                            + "http-get:*:audio/x-wav:*,http-get:*:audio/ogg:*</Sink>");
+                            + "http-get:*:audio/x-wav:*,http-get:*:audio/ogg:*,"
+                            + "http-get:*:video/mp4:*,http-get:*:video/x-matroska:*,"
+                            + "http-get:*:video/webm:*,http-get:*:video/mpeg:*,"
+                            + "http-get:*:video/quicktime:*,http-get:*:image/jpeg:*,"
+                            + "http-get:*:image/png:*,http-get:*:image/gif:*,"
+                            + "http-get:*:image/webp:*</Sink>");
         }
         if ("GetCurrentConnectionIDs".equals(action)) {
             return cmsResponse(action, "<ConnectionIDs>0</ConnectionIDs>");
@@ -749,30 +799,63 @@ public final class DlnaRenderer {
 
     private void setTrack(String uri, String metadata) {
         state = ST_TRANSITIONING;
-        currentUri = uri == null ? "" : uri;
-        title = guessTitle(currentUri, metadata);
-        releasePlayer();
-        stopStateAfterLoad = false;
-        if (currentUri.isEmpty() || currentUri.startsWith("urn:")) {
+        if (uri == null || uri.isEmpty() || uri.startsWith("urn:")) {
+            currentUri = uri == null ? "" : uri;
+            title = guessTitle(currentUri, metadata);
+            kind = "";
+            imageToken++;
+            releasePlayer();
+            clearImage();
+            pendingPlay = false;
             state = ST_NO_MEDIA;
-            lastError = "只支持直接音频地址（http/https），这份投送用的是不支持的形式";
+            lastError = "只支持直接地址（http/https）的音频 / 视频 / 图片，这份投送用的是不支持的形式";
+            notifyKind();
+            return;
+        }
+        currentUri = uri;
+        title = guessTitle(currentUri, metadata);
+        kind = classify(currentUri, metadata);
+        imageToken++;
+        releasePlayer();
+        clearImage();
+        pendingPlay = false;
+        stopStateAfterLoad = false;
+        notifyKind();
+        if (KIND_IMAGE.equals(kind)) {
+            loadImage(currentUri, title);
             return;
         }
         try {
             MediaPlayer p = new MediaPlayer();
             p.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            Surface surface = videoSurface;
+            if (KIND_VIDEO.equals(kind) && surface != null) {
+                p.setSurface(surface);
+                try {
+                    p.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT);
+                } catch (Exception ignored) {
+                }
+            }
             p.setOnPreparedListener(mp -> {
                 state = ST_STOPPED;
                 if (pendingPlay) {
                     pendingPlay = false;
-                    mp.start();
-                    state = ST_PLAYING;
+                    try {
+                        mp.start();
+                        state = ST_PLAYING;
+                    } catch (Exception e) {
+                        state = ST_STOPPED;
+                        lastError = "开始播放失败：" + e.getClass().getSimpleName();
+                    }
                 }
             });
-            p.setOnCompletionListener(mp -> state = ST_STOPPED);
+            p.setOnCompletionListener(mp -> {
+                if (!ST_PAUSED.equals(state)) state = ST_STOPPED;
+            });
             p.setOnErrorListener((mp, what, extra) -> {
                 state = ST_STOPPED;
-                lastError = "音频播放失败（" + what + "/" + extra + "），可能是格式不支持或地址不可达";
+                lastError = (KIND_VIDEO.equals(kind) ? "视频" : "音频")
+                        + "播放失败（" + what + "/" + extra + "），可能是格式不支持或地址不可达";
                 releasePlayer();
                 return true;
             });
@@ -781,9 +864,92 @@ public final class DlnaRenderer {
             p.prepareAsync();
         } catch (Exception e) {
             state = ST_STOPPED;
-            lastError = "无法打开这个音频地址：" + e.getClass().getSimpleName();
+            lastError = "无法打开这个地址：" + e.getClass().getSimpleName();
             releasePlayer();
         }
+    }
+
+    /** 按 DIDL 元数据里的 upnp:class / protocolInfo 判断类型，再退回按扩展名判断。 */
+    private static String classify(String uri, String metadata) {
+        String meta = metadata == null ? "" : metadata.toLowerCase(Locale.US);
+        if (meta.contains("object.item.imageitem") || meta.contains("image/")) return KIND_IMAGE;
+        if (meta.contains("object.item.videoitem") || meta.contains("video/")) return KIND_VIDEO;
+        String value = uri == null ? "" : uri;
+        int cut = value.indexOf('?');
+        if (cut > 0) value = value.substring(0, cut);
+        value = value.toLowerCase(Locale.US);
+        for (String ext : VIDEO_EXT) {
+            if (value.endsWith(ext)) return KIND_VIDEO;
+        }
+        for (String ext : IMAGE_EXT) {
+            if (value.endsWith(ext)) return KIND_IMAGE;
+        }
+        return KIND_AUDIO;
+    }
+
+    private void notifyKind() {
+        Listener l = listener;
+        if (l != null) {
+            try {
+                l.onKind(kind, title);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    private void clearImage() {
+        Listener l = listener;
+        if (l != null) {
+            try {
+                l.onImage(null, "");
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /** 图片投送：下载到内存后交给页面贴图，视频/音频走 MediaPlayer。 */
+    private void loadImage(final String uri, final String name) {
+        final int token = ++imageToken;
+        Thread worker = new Thread(() -> {
+            Bitmap bitmap = null;
+            String failure = "";
+            try {
+                HttpURLConnection conn = (HttpURLConnection) new URL(uri).openConnection();
+                conn.setConnectTimeout(6000);
+                conn.setReadTimeout(12000);
+                conn.setInstanceFollowRedirects(true);
+                conn.connect();
+                InputStream in = conn.getInputStream();
+                try {
+                    bitmap = BitmapFactory.decodeStream(in);
+                } finally {
+                    try {
+                        in.close();
+                    } catch (Exception ignored) {
+                    }
+                }
+                conn.disconnect();
+            } catch (Exception e) {
+                failure = "图片下载失败：" + e.getClass().getSimpleName();
+            }
+            if (token != imageToken) return;
+            if (bitmap == null) {
+                state = ST_STOPPED;
+                lastError = failure.isEmpty() ? "图片解析失败，可能不是 JPEG/PNG" : failure;
+                return;
+            }
+            state = ST_PLAYING;
+            lastError = "";
+            Listener l = listener;
+            if (l != null) {
+                try {
+                    l.onImage(bitmap, name);
+                } catch (Exception ignored) {
+                }
+            }
+        }, "dlna-image");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     private boolean stopStateAfterLoad;
@@ -814,6 +980,14 @@ public final class DlnaRenderer {
     }
 
     private void play() {
+        if (KIND_IMAGE.equals(kind)) {
+            if (currentUri.isEmpty()) {
+                pendingPlay = true;
+                return;
+            }
+            state = ST_PLAYING;
+            return;
+        }
         MediaPlayer p = player;
         if (p == null) {
             pendingPlay = true;
@@ -834,6 +1008,10 @@ public final class DlnaRenderer {
     }
 
     private void pause() {
+        if (KIND_IMAGE.equals(kind)) {
+            if (ST_PLAYING.equals(state)) state = ST_PAUSED;
+            return;
+        }
         try {
             if (player != null && player.isPlaying()) {
                 player.pause();
@@ -844,6 +1022,12 @@ public final class DlnaRenderer {
     }
 
     private void stopPlayback() {
+        if (KIND_IMAGE.equals(kind)) {
+            imageToken++;
+            clearImage();
+            state = currentUri.isEmpty() ? ST_NO_MEDIA : ST_STOPPED;
+            return;
+        }
         try {
             if (player != null) {
                 player.pause();
@@ -904,9 +1088,9 @@ public final class DlnaRenderer {
                 + "<friendlyName>" + escape(deviceName) + "</friendlyName>"
                 + "<manufacturer>iCarPlay</manufacturer>"
                 + "<manufacturerURL>http://icarplay.local/</manufacturerURL>"
-                + "<modelDescription>车机 DLNA 音频接收</modelDescription>"
-                + "<modelName>iCarPlay AudioRenderer</modelName>"
-                + "<modelNumber>0.7.8</modelNumber>"
+                + "<modelDescription>车机 DLNA 投送接收（音频·视频·图片）</modelDescription>"
+                + "<modelName>iCarPlay MediaRenderer</modelName>"
+                + "<modelNumber>0.7.9</modelNumber>"
                 + "<UDN>" + uuid + "</UDN>"
                 + "<dlna:X_DLNADOC>DMR-1.50</dlna:X_DLNADOC>"
                 + "<serviceList>"

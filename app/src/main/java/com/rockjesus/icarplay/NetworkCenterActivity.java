@@ -217,7 +217,7 @@ public class NetworkCenterActivity extends Activity {
 
         LinearLayout actions = PageUi.card(this, PageUi.GREEN, 10, 8);
         LinearLayout.LayoutParams actionsLp = PageUi.matchWrap(this);
-        PageUi.margin(actionsLp, this, 0, 8, 0, 0);
+        PageUi.margin(actionsLp, this, 0, 6, 0, 0);
         content.addView(actions, actionsLp);
 
         LinearLayout actionHead = new LinearLayout(this);
@@ -245,6 +245,16 @@ public class NetworkCenterActivity extends Activity {
         row2.addView(action("停止 AirPlay", PageUi.RED, v -> stopAirPlay()), actionLp());
         actions.addView(row2, PageUi.matchWrap(this));
 
+        LinearLayout links = new LinearLayout(this);
+        links.setOrientation(LinearLayout.HORIZONTAL);
+        links.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams linksLp = PageUi.matchWrap(this);
+        PageUi.margin(linksLp, this, 0, 3, 0, 0);
+        links.addView(link("一键无线投屏向导 ›", PageUi.CYAN, v -> openWirelessGuide()), weight());
+        links.addView(link("DLNA 投送接收 ›", PageUi.PINK, v -> openDlna()), weight());
+        links.addView(link("连接补强 ›", PageUi.PURPLE, v -> openLinkBoost()), weight());
+        actions.addView(links, linksLp);
+
         LinearLayout resultCard = PageUi.card(this, PageUi.GOLD, 12, 8);
         LinearLayout.LayoutParams resultLp = PageUi.matchWrap(this);
         PageUi.margin(resultLp, this, 0, 8, 0, 0);
@@ -252,8 +262,7 @@ public class NetworkCenterActivity extends Activity {
         resultCard.addView(PageUi.text(this, "体检结果", 8.5f, PageUi.GOLD, true),
                 PageUi.wrap(this));
         mdnsView = PageUi.text(this,
-                "点“网络体检”检查网关、DNS、外网与 AirPlay 端口；点“mDNS 体检”检查"
-                        + " iPhone 的 AirPlay / RAOP 是否能被发现。",
+                "“网络体检”查网关 / DNS / 外网 / AirPlay 端口；“mDNS 体检”查 iPhone 的 AirPlay / RAOP。",
                 9.5f, PageUi.MUTED, false);
         mdnsView.setPadding(0, PageUi.dp(this, 3), 0, 0);
         resultCard.addView(mdnsView, PageUi.matchWrap(this));
@@ -308,10 +317,19 @@ public class NetworkCenterActivity extends Activity {
         return b;
     }
 
+    private TextView link(String label, int accent, View.OnClickListener click) {
+        TextView view = PageUi.text(this, label, 8.5f, accent, true);
+        view.setGravity(Gravity.CENTER);
+        view.setSingleLine(true);
+        view.setOnClickListener(click);
+        return view;
+    }
+
     private LinearLayout.LayoutParams actionLp() {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                0, PageUi.dp(this, 34), 1f);
+                0, PageUi.dp(this, 31), 1f);
         lp.setMargins(PageUi.dp(this, 3), 0, PageUi.dp(this, 3), 0);
+        lp.bottomMargin = 0;
         return lp;
     }
 
@@ -941,6 +959,30 @@ public class NetworkCenterActivity extends Activity {
 
     private void openWifiSettings() {
         startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+    }
+
+    private void openWirelessGuide() {
+        try {
+            startActivity(new Intent(this, WirelessGuideActivity.class));
+        } catch (Exception e) {
+            toast("投屏向导打不开");
+        }
+    }
+
+    private void openDlna() {
+        try {
+            startActivity(new Intent(this, DlnaActivity.class));
+        } catch (Exception e) {
+            toast("DLNA 页打不开");
+        }
+    }
+
+    private void openLinkBoost() {
+        try {
+            startActivity(new Intent(this, LinkBoostActivity.class));
+        } catch (Exception e) {
+            toast("连接补强打不开");
+        }
     }
 
     private void openHotspotSettings() {
