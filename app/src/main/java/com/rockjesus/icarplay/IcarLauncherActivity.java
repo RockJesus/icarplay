@@ -37,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.7.3";
+    public static final String VERSION_LABEL = "v0.7.4";
 
     private TextView statusView;
     private View statusDot;
@@ -128,6 +128,8 @@ public class IcarLauncherActivity extends Activity {
 
         floatButton = makeToolButton("悬浮按钮：开", v -> toggleFloat());
         tools.addView(floatButton);
+        tools.addView(makeToolButton("连接中心", v ->
+                startActivity(new Intent(IcarLauncherActivity.this, NetworkCenterActivity.class))));
         tools.addView(makeToolButton("悬浮窗权限", v -> openOverlayPermission()));
         tools.addView(makeToolButton("认证设置", v ->
                 startActivity(new Intent(IcarLauncherActivity.this, AuthSettingsActivity.class))));

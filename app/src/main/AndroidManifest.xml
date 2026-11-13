@@ -101,6 +101,13 @@
             android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
 
         <activity
+            android:name="com.rockjesus.icarplay.NetworkCenterActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <activity
             android:name="com.rockjesus.icarplay.AuthSettingsActivity"
             android:exported="false"
             android:screenOrientation="landscape"
