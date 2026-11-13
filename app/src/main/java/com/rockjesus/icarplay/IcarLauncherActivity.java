@@ -37,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.7.0";
+    public static final String VERSION_LABEL = "v0.7.1";
 
     private TextView statusView;
     private View statusDot;
@@ -278,8 +278,8 @@ public class IcarLauncherActivity extends Activity {
         brandIcon.setColorFilter(accent);
         brandIcon.setAlpha(0.96f);
         brandIcon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        // 华为花瓣图形本身比 Apple / 百度 / Android 更满版，单独收一点尺寸保持五卡体量一致。
-        int brandSize = brandRes == R.drawable.ic_brand_huawei ? dp(58) : dp(74);
+        // 五个品牌标资源都已按内容裁边并统一到同一视觉盒，这里用同一尺寸即可保证体量一致。
+        int brandSize = dp(64);
         FrameLayout.LayoutParams brandLp = new FrameLayout.LayoutParams(
                 brandSize, brandSize, Gravity.CENTER);
         logoBox.addView(brandIcon, brandLp);
