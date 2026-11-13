@@ -130,20 +130,14 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
             topMargin = dp(10)
         }
 
-        val back = Button(this)
-        back.text = "←  返回主界面"
-        back.setTextColor(PageUi.BLUE)
-        back.textSize = 12.5f
-        back.setTypeface(null, android.graphics.Typeface.BOLD)
-        back.setAllCaps(false)
-        back.setPadding(dp(10), 0, dp(10), 0)
-        back.minWidth = 0
-        back.minimumWidth = 0
-        back.minHeight = 0
-        back.minimumHeight = 0
-        back.setBackground(PageUi.rounded(this, PageUi.tint(PageUi.BLUE, 0.14f), PageUi.BLUE, 10f))
-        back.setOnClickListener { finish() }
-        top.addView(back, LinearLayout.LayoutParams(dp(132), dp(36)))
+        val brand = TextView(this)
+        brand.text = "CarLife+"
+        brand.setTextColor(PageUi.GOLD)
+        brand.textSize = 13f
+        brand.setTypeface(null, android.graphics.Typeface.BOLD)
+        brand.gravity = Gravity.CENTER_VERTICAL
+        brand.setPadding(dp(6), 0, dp(10), 0)
+        top.addView(brand, LinearLayout.LayoutParams(dp(86), dp(36)))
 
         statusDot = View(this)
         statusDot.setBackground(PageUi.rounded(this, PageUi.GREEN, 0, 4f))
@@ -235,13 +229,23 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         ).apply {
             marginStart = dp(10)
             marginEnd = dp(10)
-            bottomMargin = dp(10)
+            bottomMargin = dp(62)
         }
         connectBar.addView(barButton("有线连接", PageUi.BLUE) { startWired() })
         connectBar.addView(barButton("无线连接", PageUi.GREEN) { startWireless() })
         connectBar.addView(barButton("手动 IP", PageUi.GOLD) { showManualConnectDialog() })
         connectBar.addView(barButton("停止", PageUi.RED) { stopEngine() })
         root.addView(connectBar)
+
+        val back = PageUi.back(this)
+        back.setOnClickListener { finish() }
+        root.addView(back, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(44), Gravity.BOTTOM,
+        ).apply {
+            marginStart = dp(10)
+            marginEnd = dp(10)
+            bottomMargin = dp(10)
+        })
 
         status.setOnLongClickListener {
             showLogDialog()

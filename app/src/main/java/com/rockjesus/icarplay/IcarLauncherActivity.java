@@ -18,6 +18,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.6.4";
+    public static final String VERSION_LABEL = "v0.6.5";
 
     private TextView statusView;
     private View statusDot;
@@ -158,84 +160,88 @@ public class IcarLauncherActivity extends Activity {
         backLp.topMargin = dp(8);
         root.addView(back, backLp);
 
-        TextView footer = new TextView(this);
-        footer.setText(VERSION_LABEL);
-        footer.setTextColor(PageUi.MUTED);
-        sp(footer, 9f);
-        footer.setGravity(Gravity.CENTER);
-        footer.setPadding(0, dp(5), 0, 0);
-        root.addView(footer, wrap());
     }
 
-    private LinearLayout buildHeader() {
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
+    private View buildHeader() {
+        FrameLayout header = new FrameLayout(this);
+
+        LinearLayout brand = new LinearLayout(this);
+        brand.setOrientation(LinearLayout.HORIZONTAL);
+        brand.setGravity(Gravity.CENTER_VERTICAL);
 
         View accent = new View(this);
         accent.setBackground(PageUi.rounded(this, PageUi.BLUE, 0, 3));
         LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(dp(3), dp(28));
         alp.setMargins(0, 0, dp(10), 0);
-        header.addView(accent, alp);
+        brand.addView(accent, alp);
 
-        LinearLayout brand = new LinearLayout(this);
-        brand.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout titles = new LinearLayout(this);
+        titles.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(this);
         title.setText("iCarPlay");
         title.setTextColor(PageUi.TEXT);
         sp(title, 24f);
         title.setTypeface(null, Typeface.BOLD);
-        brand.addView(title, wrap());
+        titles.addView(title, wrap());
         TextView model = new TextView(this);
         model.setText(narrow ? "SYNC+ 车载互联" : "SYNC+ 车载互联中枢 · 5 种投屏方式");
         model.setTextColor(PageUi.MUTED);
         sp(model, 9.5f);
-        brand.addView(model, wrap());
-        header.addView(brand, wrap());
+        titles.addView(model, wrap());
+        brand.addView(titles, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        View spacer = new View(this);
-        header.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
+        header.addView(brand, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.START | Gravity.CENTER_VERTICAL));
 
         TextView version = new TextView(this);
         version.setText(VERSION_LABEL);
         version.setTextColor(PageUi.BLUE);
-        sp(version, 10f);
+        sp(version, 10.5f);
         version.setTypeface(null, Typeface.BOLD);
         version.setPadding(dp(10), dp(4), dp(10), dp(4));
         version.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.CARD, PageUi.BLUE, 0.14f),
-                PageUi.blend(PageUi.BORDER, PageUi.BLUE, 0.5f), 20));
-        header.addView(version, wc());
+                PageUi.blend(PageUi.BORDER, PageUi.BLUE, 0.55f), 20));
+        header.addView(version, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.END | Gravity.TOP));
 
         return header;
     }
 
     private View cardAirPlay() {
         return makeCard("AirPlay", "镜像 · 音频", PageUi.BLUE,
-                R.drawable.ic_ui_airplay, "待启动", PageUi.BLUE,
+                R.drawable.ic_ui_airplay, R.drawable.ic_brand_apple,
+                "待启动", PageUi.BLUE,
                 v -> startActivity(new Intent(this, AirPlayActivity.class)));
     }
 
     private View cardCarPlay() {
         return makeCard("CarPlay", "有线 / 无线", PageUi.MUTED,
-                R.drawable.ic_ui_carplay, "未配置", PageUi.RED,
+                R.drawable.ic_ui_carplay, R.drawable.ic_brand_apple,
+                "未配置", PageUi.RED,
                 v -> startActivity(new Intent(this, CarPlayActivity.class)));
     }
 
     private View cardCarLife() {
         return makeCard("CarLife+", "无线 / 有线", PageUi.GOLD,
-                R.drawable.ic_ui_carlife, "待连接", PageUi.GOLD,
+                R.drawable.ic_ui_carlife, R.drawable.ic_brand_baidu,
+                "待连接", PageUi.GOLD,
                 v -> startActivity(new Intent(this, CarLifePlusActivity.class)));
     }
 
     private View cardAuto() {
         return makeCard("Android Auto", "USB / 无线", PageUi.GREEN,
-                R.drawable.ic_ui_auto, "待连接", PageUi.GREEN,
+                R.drawable.ic_ui_auto, R.drawable.ic_brand_android,
+                "待连接", PageUi.GREEN,
                 v -> startActivity(new Intent(this, AndroidAutoActivity.class)));
     }
 
     private View cardHiCar() {
         return makeCard("Huawei HiCar", "华为手机", PageUi.RED,
-                R.drawable.ic_ui_hicar, "待连接", PageUi.RED, v -> {
+                R.drawable.ic_ui_hicar, R.drawable.ic_brand_huawei,
+                "待连接", PageUi.RED, v -> {
                     try {
                         startActivity(new Intent(this, local.hicarlab.HomeActivity.class));
                     } catch (Throwable t) {
@@ -245,7 +251,7 @@ public class IcarLauncherActivity extends Activity {
     }
 
     private LinearLayout makeCard(String title, String subtitle, int accent, int iconRes,
-                                  String initialStatus, int statusAccent,
+                                  int brandRes, String initialStatus, int statusAccent,
                                   View.OnClickListener listener) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
@@ -271,13 +277,30 @@ public class IcarLauncherActivity extends Activity {
         View gap = new View(this);
         card.addView(gap, new LinearLayout.LayoutParams(1, 0, 1f));
 
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        titleRow.setGravity(Gravity.CENTER_VERTICAL);
+
         TextView titleView = new TextView(this);
         titleView.setText(title);
         titleView.setTextColor(PageUi.TEXT);
         sp(titleView, 16.5f);
         titleView.setTypeface(null, Typeface.BOLD);
         titleView.setGravity(Gravity.START);
-        card.addView(titleView, wrap());
+        titleRow.addView(titleView, wc());
+
+        View titleSpacer = new View(this);
+        titleRow.addView(titleSpacer, new LinearLayout.LayoutParams(0, 1, 1f));
+
+        ImageView brandIcon = new ImageView(this);
+        brandIcon.setImageResource(brandRes);
+        brandIcon.setColorFilter(accent);
+        brandIcon.setAlpha(0.9f);
+        LinearLayout.LayoutParams brandLp = new LinearLayout.LayoutParams(dp(17), dp(17));
+        brandLp.leftMargin = dp(4);
+        titleRow.addView(brandIcon, brandLp);
+
+        card.addView(titleRow, wrap());
 
         TextView subtitleView = new TextView(this);
         subtitleView.setText(subtitle);
