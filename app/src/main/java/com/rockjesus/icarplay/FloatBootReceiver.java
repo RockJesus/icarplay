@@ -6,10 +6,10 @@ import android.content.Intent;
 import android.util.Log;
 
 /**
- * 开机后恢复小白点悬浮层。
+ * 开机后恢复悬浮按钮悬浮层。
  *
  * 只启动悬浮服务：不拉起任何 Activity、不改默认桌面、不做无限重试。
- * 用户在首页手动关掉小白点后会写入 float_auto=false，开机也不再自动拉起。
+ * 用户在首页手动关掉悬浮按钮后会写入 float_auto=false，开机也不再自动拉起。
  */
 public final class FloatBootReceiver extends BroadcastReceiver {
 

@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 首次启动权限引导：悬浮窗 -> 运行时权限 -> 电池优化 -> 自动开启小白点。
+ * 首次启动权限引导：悬浮窗 -> 运行时权限 -> 电池优化 -> 自动开启悬浮按钮。
  *
  * 注意：Android 不允许 APK 安装完成后自动拉起界面，所以“安装后自动弹权限”
  * 实际发生在用户第一次打开 iCarPlay 时。
@@ -62,7 +62,7 @@ public final class PermissionOnboarding {
                 openOverlaySettings(activity);
                 return;
             }
-            // 用户刚从设置页返回但没授权：继续把其余权限一次性问完，最后再提示小白点不可用。
+            // 用户刚从设置页返回但没授权：继续把其余权限一次性问完，最后再提示悬浮按钮不可用。
             if (!p.getBoolean(KEY_RUNTIME_ASKED, false)) {
                 requestRuntimePermissions(activity);
             }
@@ -167,7 +167,7 @@ public final class PermissionOnboarding {
             if (Settings.canDrawOverlays(activity)) {
                 requestRuntimePermissions(activity);
             } else {
-                Toast.makeText(activity, "悬浮窗权限未授予，小白点暂时无法显示", Toast.LENGTH_LONG).show();
+                Toast.makeText(activity, "悬浮窗权限未授予，悬浮按钮暂时无法显示", Toast.LENGTH_LONG).show();
                 requestRuntimePermissions(activity);
             }
             return true;
@@ -196,8 +196,8 @@ public final class PermissionOnboarding {
         p.edit().putBoolean(KEY_DONE, true).apply();
         startFloatIfPossible(activity);
         String message = Settings.canDrawOverlays(activity)
-                ? "权限引导完成，小白点已默认开启"
-                : "权限引导完成；悬浮窗未授权，小白点暂不可用";
+                ? "权限引导完成，悬浮按钮已默认开启"
+                : "权限引导完成；悬浮窗未授权，悬浮按钮暂不可用";
         Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
     }
 
@@ -209,8 +209,8 @@ public final class PermissionOnboarding {
         if (isAccessibilityEnabled(activity)) return;
         p.edit().putBoolean(KEY_A11Y_ASKED, true).apply();
         new AlertDialog.Builder(activity)
-                .setTitle("让小白点显示在原车机桌面")
-                .setMessage("原车机桌面位于系统层，普通悬浮窗会被它盖住。开启 iCarPlay 无障碍服务后，小白点才能显示在车机桌面上。该服务只绘制悬浮球，不读取屏幕内容。")
+                .setTitle("让悬浮按钮显示在原车机桌面")
+                .setMessage("原车机桌面位于系统层，普通悬浮窗会被它盖住。开启 iCarPlay 无障碍服务后，悬浮按钮才能显示在车机桌面上。该服务只绘制悬浮球，不读取屏幕内容。")
                 .setPositiveButton("去开启", (d, w) -> {
                     try {
                         activity.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
@@ -222,7 +222,7 @@ public final class PermissionOnboarding {
                 .show();
     }
 
-    /** 是否已在系统无障碍设置中启用 iCarPlay 小白点服务。 */
+    /** 是否已在系统无障碍设置中启用 iCarPlay 悬浮按钮服务。 */
     public static boolean isAccessibilityEnabled(Context context) {
         try {
             String enabled = Settings.Secure.getString(
@@ -237,7 +237,7 @@ public final class PermissionOnboarding {
         }
     }
 
-    /** 默认自动开启小白点；用户在首页手动关掉后不再强制拉起。 */
+    /** 默认自动开启悬浮按钮；用户在首页手动关掉后不再强制拉起。 */
     public static void startFloatIfPossible(Activity activity) {
         SharedPreferences p = prefs(activity);
         if (!p.getBoolean(KEY_DONE, false)) {
@@ -268,13 +268,13 @@ public final class PermissionOnboarding {
                 activity.startService(service);
             }
         } catch (Throwable t) {
-            Toast.makeText(activity, "小白点启动失败：" + t.getClass().getSimpleName(),
+            Toast.makeText(activity, "悬浮按钮启动失败：" + t.getClass().getSimpleName(),
                     Toast.LENGTH_LONG).show();
         }
     }
 
     /**
-     * 开机恢复小白点。只在用户完成首次引导且未手动关闭小白点时启动普通悬浮层。
+     * 开机恢复悬浮按钮。只在用户完成首次引导且未手动关闭悬浮按钮时启动普通悬浮层。
      * 无障碍层若已真正连接，会将普通层让位；若尚未重新绑定，则先由普通层兜底。
      */
     public static void startFloatOnBoot(Context context) {

@@ -37,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.6.6";
+    public static final String VERSION_LABEL = "v0.6.7";
 
     private TextView statusView;
     private View statusDot;
@@ -128,7 +128,7 @@ public class IcarLauncherActivity extends Activity {
         toolsLp.topMargin = dp(8);
         root.addView(tools, toolsLp);
 
-        floatButton = makeToolButton("小白点：开", v -> toggleFloat());
+        floatButton = makeToolButton("悬浮按钮：开", v -> toggleFloat());
         tools.addView(floatButton);
         tools.addView(makeToolButton("悬浮窗权限", v -> openOverlayPermission()));
         tools.addView(makeToolButton("认证设置", v ->
@@ -168,12 +168,6 @@ public class IcarLauncherActivity extends Activity {
         LinearLayout brand = new LinearLayout(this);
         brand.setOrientation(LinearLayout.HORIZONTAL);
         brand.setGravity(Gravity.CENTER_VERTICAL);
-
-        View accent = new View(this);
-        accent.setBackground(PageUi.rainbow(this, 3));
-        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(dp(3), dp(28));
-        alp.setMargins(0, 0, dp(10), 0);
-        brand.addView(accent, alp);
 
         LinearLayout titles = new LinearLayout(this);
         titles.setOrientation(LinearLayout.VERTICAL);
@@ -463,7 +457,7 @@ public class IcarLauncherActivity extends Activity {
                 refresh();
                 return;
             }
-            toast("无障碍服务未连接，请在系统设置里重新开启 iCarPlay 小白点");
+            toast("无障碍服务未连接，请在系统设置里重新开启 iCarPlay 悬浮按钮");
             try {
                 startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
             } catch (Throwable ignored) { }
@@ -520,8 +514,8 @@ public class IcarLauncherActivity extends Activity {
                 + "  ·  Android " + Build.VERSION.RELEASE
                 + " (API " + Build.VERSION.SDK_INT + ")";
         String floatState = running
-                ? (PermissionOnboarding.isAccessibilityEnabled(this) ? "小白点运行中·无障碍" : "小白点运行中")
-                : "小白点未运行";
+                ? (PermissionOnboarding.isAccessibilityEnabled(this) ? "悬浮按钮运行中·无障碍" : "悬浮按钮运行中")
+                : "悬浮按钮未运行";
 
         statusView.setText(line1);
         statusView.append("\n" + device + "  ·  " + floatState);
@@ -538,7 +532,7 @@ public class IcarLauncherActivity extends Activity {
         setPill(hicarState, hicarRunning ? "运行中" : "待连接",
                 hicarRunning ? PageUi.GREEN : PageUi.RED);
 
-        floatButton.setText(running ? "小白点：关" : "小白点：开");
+        floatButton.setText(running ? "悬浮按钮：关" : "悬浮按钮：开");
         floatButton.setTextColor(running ? PageUi.GREEN : PageUi.TEXT);
 
         if (safeMode) {

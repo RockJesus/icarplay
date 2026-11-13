@@ -30,7 +30,7 @@ import android.widget.Toast;
 
 import local.hicarlab.HomeActivity;
 
-/** 内置小白点：悬浮球 + AirPlay / Android Auto / HiCar / CarPlay 快捷面板。 */
+/** 内置悬浮按钮：悬浮球 + AirPlay / Android Auto / HiCar / CarPlay 快捷面板。 */
 public class FloatService extends Service {
 
     private static final String CHANNEL = "icarplay_float";
@@ -66,7 +66,7 @@ public class FloatService extends Service {
         }
 
         if (!Settings.canDrawOverlays(this)) {
-            toast("没有悬浮窗权限，无法显示小白点");
+            toast("没有悬浮窗权限，无法显示悬浮按钮");
             stopSelf();
             return;
         }
@@ -81,14 +81,14 @@ public class FloatService extends Service {
             return START_NOT_STICKY;
         }
         if (!Settings.canDrawOverlays(this)) {
-            toast("没有悬浮窗权限，无法显示小白点");
+            toast("没有悬浮窗权限，无法显示悬浮按钮");
             return START_NOT_STICKY;
         }
         if (ball == null) {
             try {
                 showBall();
             } catch (RuntimeException e) {
-                toast("小白点显示失败：" + e.getClass().getSimpleName());
+                toast("悬浮按钮显示失败：" + e.getClass().getSimpleName());
                 stopSelf();
                 return START_NOT_STICKY;
             }
@@ -100,7 +100,7 @@ public class FloatService extends Service {
     private Notification buildNotification() {
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel ch = new NotificationChannel(
-                    CHANNEL, "iCarPlay 小白点", NotificationManager.IMPORTANCE_LOW);
+                    CHANNEL, "iCarPlay 悬浮按钮", NotificationManager.IMPORTANCE_LOW);
             ch.setShowBadge(false);
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm != null) nm.createNotificationChannel(ch);
@@ -112,7 +112,7 @@ public class FloatService extends Service {
                 ? new Notification.Builder(this, CHANNEL)
                 : new Notification.Builder(this);
         b.setContentTitle("iCarPlay")
-                .setContentText("内置小白点运行中")
+                .setContentText("内置悬浮按钮运行中")
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentIntent(pi)
                 .setOngoing(true);
@@ -121,12 +121,11 @@ public class FloatService extends Service {
 
     private void showBall() {
         ball = new FrameLayout(this);
-        ball.setBackground(PageUi.rounded(this,
-                PageUi.blend(PageUi.BG, PageUi.CYAN, 0.18f), PageUi.CYAN, 54f));
+        ball.setBackground(PageUi.cyberBall(this));
 
         ImageView icon = new ImageView(this);
-        icon.setImageResource(R.drawable.ic_float_ball);
-        icon.setColorFilter(PageUi.CYAN);
+        icon.setImageBitmap(PageUi.gradientIcon(this, R.drawable.ic_float_ball,
+                PageUi.TITLE_GRADIENT, dp(54)));
         icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);

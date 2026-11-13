@@ -135,7 +135,7 @@
             android:name="com.rockjesus.icarplay.FloatAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="true"
-            android:label="iCarPlay 小白点">
+            android:label="iCarPlay 悬浮按钮">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>

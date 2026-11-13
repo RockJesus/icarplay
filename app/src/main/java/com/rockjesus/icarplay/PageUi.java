@@ -1,8 +1,13 @@
 package com.rockjesus.icarplay;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -46,7 +51,8 @@ public final class PageUi {
 
     /** 彩虹渐变顺序，只用于细描边、强调条和标题。 */
     public static final int[] RAINBOW = {BLUE, CYAN, GREEN, GOLD, PINK, PURPLE};
-    public static final int[] TITLE_GRADIENT = {TEXT, CYAN, PURPLE, PINK};
+    /** 英文标题专用：左紫右青，与悬浮按钮同一套双色渐变。 */
+    public static final int[] TITLE_GRADIENT = {PURPLE, CYAN};
 
     private PageUi() {
     }
@@ -122,7 +128,44 @@ public final class PageUi {
         return d;
     }
 
-    /** 彩虹强调条：给页头竖条、卡片下划线、进度线使用。 */
+    /** 悬浮按钮：紫青渐变圆环 + 近黑玻璃内芯，和标题共用同一套双色渐变。 */
+    public static Drawable cyberBall(Context c) {
+        GradientDrawable rim = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR, TITLE_GRADIENT);
+        rim.setShape(GradientDrawable.OVAL);
+        GradientDrawable core = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{blend(BG, PURPLE, 0.24f), blend(BG, CYAN, 0.18f)});
+        core.setShape(GradientDrawable.OVAL);
+        LayerDrawable ball = new LayerDrawable(new Drawable[]{rim, core});
+        int inset = Math.max(1, dp(c, 1.6f));
+        ball.setLayerInset(1, inset, inset, inset, inset);
+        return ball;
+    }
+
+    /** 用紫青渐变给矢量图标上色，保留原图形的描边与透明区域。 */
+    public static Bitmap gradientIcon(Context c, int resId, int[] colors, int sizePx) {
+        Drawable source = c.getDrawable(resId);
+        Bitmap shape = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+        Canvas shapeCanvas = new Canvas(shape);
+        source.setBounds(0, 0, sizePx, sizePx);
+        source.draw(shapeCanvas);
+
+        Bitmap out = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+        Canvas outCanvas = new Canvas(out);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setShader(new LinearGradient(0, 0, sizePx, sizePx, colors, null,
+                Shader.TileMode.CLAMP));
+        outCanvas.drawRect(0, 0, sizePx, sizePx, paint);
+        paint.setShader(null);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+        outCanvas.drawBitmap(shape, 0, 0, paint);
+        paint.setXfermode(null);
+        shape.recycle();
+        return out;
+    }
+
+    /** 彩虹强调条：给卡片下划线、进度线使用。 */
     public static GradientDrawable rainbow(Context c, float radiusDp) {
         GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, RAINBOW);
         d.setShape(GradientDrawable.RECTANGLE);
@@ -307,17 +350,11 @@ public final class PageUi {
         lp.setMargins(dp(c, left), dp(c, top), dp(c, right), dp(c, bottom));
     }
 
-    /** 顶部标题栏：彩虹竖条 + 渐变标题 + 右侧等宽版本胶囊。 */
+    /** 顶部标题栏：紫青渐变标题 + 右侧等宽版本胶囊。 */
     public static LinearLayout header(Context c, String title, String version) {
         LinearLayout header = new LinearLayout(c);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-
-        View accent = new View(c);
-        accent.setBackground(rainbow(c, 3));
-        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(dp(c, 3), dp(c, 24));
-        alp.setMargins(0, 0, dp(c, 9), 0);
-        header.addView(accent, alp);
 
         TextView t = text(c, title, 22f, TEXT, true);
         display(t);

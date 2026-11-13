@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">iCarPlay</string>
-    <string name="float_accessibility_description">只用于在车机桌面显示 iCarPlay 小白点，不读取屏幕内容。</string>
+    <string name="float_accessibility_description">只用于在车机桌面显示 iCarPlay 悬浮按钮，不读取屏幕内容。</string>
 
     <!-- Notification -->
     <string name="notification_channel">AirPlay Service</string>

@@ -30,7 +30,7 @@ import local.hicarlab.HomeActivity;
  * 车机桌面用的无障碍悬浮球。
  *
  * SYNC+ 1.0 的原车桌面是系统层窗口，普通 TYPE_APPLICATION_OVERLAY 会被桌面盖住。
- * 这里使用 TYPE_ACCESSIBILITY_OVERLAY：只绘制小白点和快捷面板，不读取窗口内容，
+ * 这里使用 TYPE_ACCESSIBILITY_OVERLAY：只绘制悬浮按钮和快捷面板，不读取窗口内容，
  * 也不监听输入内容。用户在系统无障碍设置里手动开启后生效。
  */
 public class FloatAccessibilityService extends AccessibilityService {
@@ -63,14 +63,14 @@ public class FloatAccessibilityService extends AccessibilityService {
     public void onServiceConnected() {
         super.onServiceConnected();
         INSTANCE = this;
-        // 无障碍层已经可用，普通悬浮窗服务必须让位，避免出现两个小白点。
+        // 无障碍层已经可用，普通悬浮窗服务必须让位，避免出现两个悬浮按钮。
         try { stopService(new Intent(this, FloatService.class)); } catch (Throwable ignored) { }
         if (!prefs.getBoolean("float_auto", true)) return;
         if (ball == null) {
             try {
                 showBall();
             } catch (RuntimeException e) {
-                toast("小白点显示失败：" + e.getClass().getSimpleName());
+                toast("悬浮按钮显示失败：" + e.getClass().getSimpleName());
                 return;
             }
         }
@@ -91,7 +91,7 @@ public class FloatAccessibilityService extends AccessibilityService {
         return INSTANCE != null;
     }
 
-    /** 从首页或通知恢复小白点。返回是否已由无障碍层接管。 */
+    /** 从首页或通知恢复悬浮按钮。返回是否已由无障碍层接管。 */
     public static boolean showIfRunning() {
         FloatAccessibilityService s = INSTANCE;
         if (s == null) return false;
@@ -99,7 +99,7 @@ public class FloatAccessibilityService extends AccessibilityService {
         return true;
     }
 
-    /** 从首页关闭小白点，但保留无障碍服务本身。 */
+    /** 从首页关闭悬浮按钮，但保留无障碍服务本身。 */
     public static void hideIfRunning() {
         FloatAccessibilityService s = INSTANCE;
         if (s != null) s.hideFromToggle();
@@ -111,7 +111,7 @@ public class FloatAccessibilityService extends AccessibilityService {
             try {
                 showBall();
             } catch (RuntimeException e) {
-                toast("小白点显示失败：" + e.getClass().getSimpleName());
+                toast("悬浮按钮显示失败：" + e.getClass().getSimpleName());
                 return;
             }
         }
@@ -130,12 +130,11 @@ public class FloatAccessibilityService extends AccessibilityService {
 
     private void showBall() {
         ball = new FrameLayout(this);
-        ball.setBackground(PageUi.rounded(this,
-                PageUi.blend(PageUi.BG, PageUi.CYAN, 0.18f), PageUi.CYAN, 54f));
+        ball.setBackground(PageUi.cyberBall(this));
 
         ImageView icon = new ImageView(this);
-        icon.setImageResource(R.drawable.ic_float_ball);
-        icon.setColorFilter(PageUi.CYAN);
+        icon.setImageBitmap(PageUi.gradientIcon(this, R.drawable.ic_float_ball,
+                PageUi.TITLE_GRADIENT, dp(54)));
         icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
