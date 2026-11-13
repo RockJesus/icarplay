@@ -41,6 +41,7 @@ public class FloatService extends Service {
 
     private FrameLayout ball;
     private LinearLayout panel;
+    private View panelScrim;
     private WindowManager.LayoutParams ballParams;
     private WindowManager.LayoutParams panelParams;
 
@@ -281,7 +282,36 @@ public class FloatService extends Service {
         panelParams.x = x;
         panelParams.y = y;
 
+        // 菜单打开时铺一层透明全屏触摸层：点菜单以外的任何位置都先收起菜单，
+        // 避免事件穿透到下层应用后菜单留在屏幕上。
+        addPanelScrim();
         wm.addView(panel, panelParams);
+    }
+
+    private void addPanelScrim() {
+        if (panelScrim != null) return;
+        panelScrim = new View(this);
+        panelScrim.setBackgroundColor(Color.TRANSPARENT);
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                PixelFormat.TRANSLUCENT);
+        lp.gravity = Gravity.TOP | Gravity.START;
+        panelScrim.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent e) {
+                if (e.getAction() == MotionEvent.ACTION_DOWN) {
+                    panelScrim.post(new Runnable() {
+                        public void run() { hidePanel(); }
+                    });
+                }
+                return true;
+            }
+        });
+        wm.addView(panelScrim, lp);
     }
 
     private Button panelButton(String text, View.OnClickListener l) {
@@ -327,6 +357,10 @@ public class FloatService extends Service {
         if (panel != null) {
             try { wm.removeView(panel); } catch (Exception ignored) { }
             panel = null;
+        }
+        if (panelScrim != null) {
+            try { wm.removeView(panelScrim); } catch (Exception ignored) { }
+            panelScrim = null;
         }
     }
 
