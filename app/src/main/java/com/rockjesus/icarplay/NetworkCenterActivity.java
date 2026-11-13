@@ -33,8 +33,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -42,7 +40,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 import io.github.jqssun.airplay.service.AirPlayService;
 
@@ -409,11 +406,13 @@ public class NetworkCenterActivity extends Activity {
             long pingRtt = -1;
             boolean gatewayOk = false;
             if (gateway != null && !"—".equals(gateway)) {
-                pingRtt = pingHost(gateway);
-                gatewayOk = pingRtt >= 0 || tcpProbe(gateway, 53, 1500) >= 0;
+                pingRtt = reachableHost(gateway);
+                gatewayOk = pingRtt >= 0
+                        || tcpProbe(gateway, 53, 1500) >= 0
+                        || tcpProbe(gateway, 80, 1500) >= 0;
                 report.append("\n• 网关连通：").append(gatewayOk ? "通" : "不通");
                 if (pingRtt >= 0) report.append("，平均 ").append(pingRtt).append(" ms");
-                else if (gatewayOk) report.append("（ICMP 被拦，TCP 53 可连）");
+                else if (gatewayOk) report.append("（ICMP 被拦，网关 TCP 端口可连）");
             } else {
                 report.append("\n• 网关连通：无网关，可能未连接 Wi‑Fi");
             }
@@ -468,38 +467,33 @@ public class NetworkCenterActivity extends Activity {
         }, "network-check").start();
     }
 
-    /** ping 主机，返回平均毫秒；失败返回 -1。 */
-    private static long pingHost(String host) {
-        Process process = null;
+    /**
+     * 探测主机是否可达，返回耗时毫秒；不可达返回 -1。
+     * 只用 Java 的 InetAddress.isReachable（ICMP/TCP，由系统实现），不调用任何 shell 命令，
+     * 以保证 APK 在封闭车机上不会执行特权命令行。
+     */
+    private static long reachableHost(String host) {
+        Socket socket = null;
         try {
-            process = new ProcessBuilder("/system/bin/ping", "-c", "2", "-W", "2", host)
-                    .redirectErrorStream(true).start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            StringBuilder out = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) out.append(line).append('\n');
-            reader.close();
-            if (!process.waitFor(6, TimeUnit.SECONDS)) {
-                process.destroy();
-                return -1;
+            long t0 = System.nanoTime();
+            InetAddress address = InetAddress.getByName(host);
+            if (address.isReachable(2000)) return (System.nanoTime() - t0) / 1_000_000L;
+            // Android 上 ICMP 常被系统限制；退一步用 TCP 端口探测同一主机。
+            for (int port : new int[]{53, 80, 443}) {
+                socket = new Socket();
+                socket.connect(new InetSocketAddress(host, port), 1200);
+                return (System.nanoTime() - t0) / 1_000_000L;
             }
-            String text = out.toString();
-            if (!text.contains("0% packet loss") && !text.contains("0% loss")) return -1;
-            int avgAt = text.indexOf("min/avg/max");
-            if (avgAt >= 0) {
-                int slash = text.indexOf('/', text.indexOf('/') + 1);
-                if (slash > 0) {
-                    int end = text.indexOf('/', slash + 1);
-                    if (end > slash) {
-                        String avg = text.substring(slash + 1, end).trim();
-                        return Math.round(Double.parseDouble(avg));
-                    }
+            return -1;
+        } catch (Exception ignored) {
+            return -1;
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (Exception ignored) {
                 }
             }
-            return 0;
-        } catch (Exception ignored) {
-            if (process != null) process.destroy();
-            return -1;
         }
     }
 
