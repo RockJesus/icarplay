@@ -3,6 +3,9 @@ package com.rockjesus.icarplay;
 import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -18,6 +21,8 @@ import android.net.nsd.NsdServiceInfo;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -39,6 +44,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 
 import io.github.jqssun.airplay.service.AirPlayService;
@@ -50,6 +56,7 @@ import io.github.jqssun.airplay.service.AirPlayService;
 public class NetworkCenterActivity extends Activity {
 
     private static final int REQ_WIFI = 70;
+    private static final int REQ_BT = 71;
     private static WifiManager.LocalOnlyHotspotReservation sHotspot;
     private static String sHotspotSsid = "";
     private static String sHotspotPass = "";
@@ -76,6 +83,11 @@ public class NetworkCenterActivity extends Activity {
     private TextView airplayValue;
     private TextView portValue;
     private TextView actionHint;
+    private TextView btValue;
+    private TextView hicarValue;
+    private TextView usbValue;
+    private boolean hicarScanned;
+    private boolean hicarFramework;
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -101,14 +113,14 @@ public class NetworkCenterActivity extends Activity {
         root.addView(PageUi.header(this, "连接中心", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
 
-        TextView sub = PageUi.text(this, "Wi‑Fi / 热点 / 网络体检 · AirPlay 自检与投屏共用",
+        TextView sub = PageUi.text(this, "Wi‑Fi / 蓝牙 / USB / 热点 · 网络体检与 AirPlay 自检共用",
                 10.5f, PageUi.MUTED, false);
         sub.setGravity(Gravity.CENTER_HORIZONTAL);
         LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
         PageUi.margin(subLp, this, 0, 3, 0, 7);
         root.addView(sub, subLp);
 
-        ScrollView scroll = new ScrollView(this);
+        scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.setVerticalScrollBarEnabled(false);
         root.addView(scroll, new LinearLayout.LayoutParams(
@@ -119,8 +131,13 @@ public class NetworkCenterActivity extends Activity {
         content.setPadding(0, 0, 0, PageUi.dp(this, 2));
         scroll.addView(content, PageUi.matchWrap(this));
 
+        LinearLayout cardsRow = new LinearLayout(this);
+        cardsRow.setOrientation(LinearLayout.HORIZONTAL);
+        content.addView(cardsRow, PageUi.matchWrap(this));
+
         LinearLayout statusCard = PageUi.card(this, PageUi.BLUE, 12, 8);
-        content.addView(statusCard, PageUi.matchWrap(this));
+        cardsRow.addView(statusCard, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 3f));
 
         LinearLayout statusHead = new LinearLayout(this);
         statusHead.setOrientation(LinearLayout.HORIZONTAL);
@@ -144,6 +161,30 @@ public class NetworkCenterActivity extends Activity {
         addMetricRow(statusCard, "本机 IP", ipValue, "网关", gatewayValue);
         addMetricRow(statusCard, "DNS", dnsValue, "热点 / Wi‑Fi Direct", hotspotValue);
         addMetricRow(statusCard, "AirPlay 接收", airplayValue, "本机端口", portValue);
+
+        LinearLayout peripheral = PageUi.card(this, PageUi.PURPLE, 12, 8);
+        LinearLayout.LayoutParams peripheralLp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.MATCH_PARENT, 2f);
+        peripheralLp.setMargins(PageUi.dp(this, 8), 0, 0, 0);
+        cardsRow.addView(peripheral, peripheralLp);
+        peripheral.addView(PageUi.text(this, "外设状态", 8.5f, PageUi.PURPLE, true),
+                PageUi.wrap(this));
+
+        btValue = valueText();
+        hicarValue = valueText();
+        usbValue = valueText();
+        btValue.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 9.5f * PageUi.scale(this));
+        hicarValue.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 9.5f * PageUi.scale(this));
+        usbValue.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 9.5f * PageUi.scale(this));
+
+        peripheralRow(peripheral, "蓝牙", btValue, v -> onBluetoothTap());
+        peripheralRow(peripheral, "HUAWEI HiCar", hicarValue, v -> showHiCarDialog());
+        peripheralRow(peripheral, "USB", usbValue, v -> showUsbDialog());
+
+        TextView peripheralHint = PageUi.text(this, "点任一项查看详情", 8f, PageUi.MUTED, false);
+        LinearLayout.LayoutParams hintLp = PageUi.matchWrap(this);
+        PageUi.margin(hintLp, this, 0, 6, 0, 0);
+        peripheral.addView(peripheralHint, hintLp);
 
         LinearLayout actions = PageUi.card(this, PageUi.GREEN, 10, 8);
         LinearLayout.LayoutParams actionsLp = PageUi.matchWrap(this);
@@ -198,6 +239,7 @@ public class NetworkCenterActivity extends Activity {
     }
 
     private TextView mdnsView;
+    private ScrollView scroll;
 
     private TextView valueText() {
         TextView v = PageUi.text(this, "—", 10f, PageUi.TEXT, false);
@@ -278,6 +320,10 @@ public class NetworkCenterActivity extends Activity {
         } else if (!portVerified) {
             portValue.setText(airplayPort() + " 待检");
         }
+
+        refreshBluetooth();
+        refreshHiCar();
+        refreshUsb();
 
         int accent = connected ? PageUi.GREEN : PageUi.RED;
         statusPill.setText(connected ? "已连接" : "未连接");
@@ -463,6 +509,7 @@ public class NetworkCenterActivity extends Activity {
                 portValue.setText(serviceOn ? (port + (portOpen ? " 监听" : " 未监听")) : "—");
                 portVerified = serviceOn;
                 netCheckRunning = false;
+                scrollToResult();
             });
         }, "network-check").start();
     }
@@ -517,6 +564,242 @@ public class NetworkCenterActivity extends Activity {
         }
     }
 
+    /** 统一深色弹窗，避免系统默认浅灰对话框和赛博朋克页面割裂。 */
+    private AlertDialog.Builder dialogBuilder() {
+        return new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert);
+    }
+
+    private void peripheralRow(LinearLayout card, String label, TextView value,
+                               View.OnClickListener listener) {
+        LinearLayout cell = new LinearLayout(this);
+        cell.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams lp = PageUi.matchWrap(this);
+        PageUi.margin(lp, this, 0, 5, 0, 0);
+        cell.addView(PageUi.text(this, label, 8f, PageUi.MUTED, false), PageUi.matchWrap(this));
+        cell.addView(value, PageUi.matchWrap(this));
+        cell.setOnClickListener(listener);
+        card.addView(cell, lp);
+    }
+
+    private boolean hasBtPermission() {
+        return Build.VERSION.SDK_INT < 31
+                || checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private BluetoothAdapter bluetoothAdapter() {
+        BluetoothManager bm = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        return bm == null ? null : bm.getAdapter();
+    }
+
+    private void refreshBluetooth() {
+        if (btValue == null) return;
+        BluetoothAdapter adapter = bluetoothAdapter();
+        if (adapter == null) {
+            btValue.setText("不可用");
+            btValue.setTextColor(PageUi.MUTED);
+            return;
+        }
+        if (!adapter.isEnabled()) {
+            btValue.setText("关闭");
+            btValue.setTextColor(PageUi.RED);
+            return;
+        }
+        if (!hasBtPermission()) {
+            btValue.setText("开 · 待授权（点此）");
+            btValue.setTextColor(PageUi.GOLD);
+            return;
+        }
+        try {
+            int bonded = adapter.getBondedDevices() == null ? 0 : adapter.getBondedDevices().size();
+            boolean a2dp = adapter.getProfileConnectionState(BluetoothProfile.A2DP)
+                    == BluetoothProfile.STATE_CONNECTED;
+            boolean hfp = adapter.getProfileConnectionState(BluetoothProfile.HEADSET)
+                    == BluetoothProfile.STATE_CONNECTED;
+            String audio = (a2dp || hfp) ? " · 音频已连" : " · 无音频连接";
+            btValue.setText("开 · 配对 " + bonded + audio);
+            btValue.setTextColor(a2dp || hfp ? PageUi.GREEN : PageUi.TEXT);
+        } catch (SecurityException e) {
+            btValue.setText("开 · 待授权（点此）");
+            btValue.setTextColor(PageUi.GOLD);
+        } catch (Exception ignored) {
+            btValue.setText("开");
+            btValue.setTextColor(PageUi.TEXT);
+        }
+    }
+
+    private void onBluetoothTap() {
+        if (!hasBtPermission()) {
+            requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQ_BT);
+            return;
+        }
+        showBluetoothDialog();
+    }
+
+    private void showBluetoothDialog() {
+        BluetoothAdapter adapter = bluetoothAdapter();
+        if (adapter == null) {
+            toast("当前系统没有蓝牙服务");
+            return;
+        }
+        if (!adapter.isEnabled()) {
+            dialogBuilder()
+                    .setTitle("蓝牙未开启")
+                    .setMessage("HiCar 无线连接、免提通话和蓝牙音频都依赖蓝牙。\n"
+                            + "请在系统设置里打开蓝牙，并与手机配对。")
+                    .setPositiveButton("打开蓝牙设置", (d, w) -> {
+                        try {
+                            startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+                        } catch (Exception ignored) {
+                            startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
+                        }
+                    })
+                    .setNegativeButton("知道了", null)
+                    .show();
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        int count = 0;
+        try {
+            for (android.bluetooth.BluetoothDevice device : adapter.getBondedDevices()) {
+                if (count >= 6) break;
+                String name;
+                try {
+                    name = device.getName();
+                } catch (SecurityException e) {
+                    name = null;
+                }
+                sb.append("\n• ").append(name == null || name.isEmpty() ? "未命名设备" : name)
+                        .append("  ").append(device.getAddress());
+                count++;
+            }
+        } catch (SecurityException e) {
+            sb.append("\n未授予蓝牙权限，无法读取配对列表。");
+        }
+        String head = count == 0 ? "还没有配对的手机。" : "已配对 " + count + " 台设备：";
+        dialogBuilder()
+                .setTitle("蓝牙与 HiCar 无线连接")
+                .setMessage(head + sb + "\n\nHiCar 无线 = 蓝牙配对 + 同网 Wi‑Fi；"
+                        + "有线 = USB 数据线（需手机支持 HiCar）。\n"
+                        + "配对后回到本页，用“网络体检”确认链路。")
+                .setPositiveButton("蓝牙设置", (d, w) -> {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+                    } catch (Exception ignored) {
+                    }
+                })
+                .setNegativeButton("知道了", null)
+                .show();
+    }
+
+    private void refreshHiCar() {
+        if (hicarValue == null) return;
+        if (!hicarScanned) {
+            hicarScanned = true;
+            try {
+                for (android.content.pm.PackageInfo info : getPackageManager().getInstalledPackages(0)) {
+                    String name = info.packageName == null ? "" : info.packageName.toLowerCase(Locale.US);
+                    if (name.contains("hicar")) {
+                        hicarFramework = true;
+                        break;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        if (hicarFramework) {
+            hicarValue.setText("框架已装 · 本应用入口");
+            hicarValue.setTextColor(PageUi.CYAN);
+        } else {
+            hicarValue.setText("系统未装 · 本应用入口");
+            hicarValue.setTextColor(PageUi.MUTED);
+        }
+    }
+
+    private void showHiCarDialog() {
+        String framework = hicarFramework
+                ? "本机已检测到 HiCar 相关框架包。"
+                : "本机未检测到 HiCar 框架包，投屏走本应用内置入口。";
+        dialogBuilder()
+                .setTitle("HUAWEI HiCar 连接方式")
+                .setMessage(framework + "\n\n无线：手机支持 HiCar 时，蓝牙配对后靠近车机即可发起，"
+                        + "车机与手机需在同一 Wi‑Fi。\n"
+                        + "有线：用支持数据传输的 USB 线连车机 USB 口，首次连接需在手机上允许。\n\n"
+                        + "点首页“HUAWEI HiCar”卡片进入接收页；iPhone 请用 AirPlay。")
+                .setPositiveButton("打开 HiCar 页", (d, w) -> {
+                    try {
+                        startActivity(new Intent(this, local.hicarlab.HomeActivity.class));
+                    } catch (Exception e) {
+                        toast("HiCar 页面启动失败");
+                    }
+                })
+                .setNegativeButton("知道了", null)
+                .show();
+    }
+
+    private void refreshUsb() {
+        if (usbValue == null) return;
+        UsbManager um = (UsbManager) getSystemService(Context.USB_SERVICE);
+        if (um == null) {
+            usbValue.setText("系统无 USB 服务");
+            usbValue.setTextColor(PageUi.MUTED);
+            return;
+        }
+        try {
+            Map<String, UsbDevice> devices = um.getDeviceList();
+            int count = devices == null ? 0 : devices.size();
+            if (count == 0) {
+                usbValue.setText("未检测到设备");
+                usbValue.setTextColor(PageUi.MUTED);
+            } else {
+                usbValue.setText(count + " 个设备 · 点此查看");
+                usbValue.setTextColor(PageUi.GOLD);
+            }
+        } catch (Exception ignored) {
+            usbValue.setText("读取失败");
+            usbValue.setTextColor(PageUi.RED);
+        }
+    }
+
+    private void showUsbDialog() {
+        UsbManager um = (UsbManager) getSystemService(Context.USB_SERVICE);
+        Map<String, UsbDevice> devices = um == null ? null : um.getDeviceList();
+        if (devices == null || devices.isEmpty()) {
+            dialogBuilder()
+                    .setTitle("USB 检测")
+                    .setMessage("当前没有检测到 USB 设备。\n\n"
+                            + "CarPlay / HiCar 有线连接需要：数据线支持传输（不是只能充电的线）、"
+                            + "插在车机可用的 USB 数据口、手机端允许 USB 配件。\n"
+                            + "插上后回到本页会自动刷新。")
+                    .setPositiveButton("知道了", null)
+                    .show();
+            return;
+        }
+        StringBuilder sb = new StringBuilder("检测到 " + devices.size() + " 个 USB 设备：");
+        int shown = 0;
+        for (UsbDevice device : devices.values()) {
+            if (shown >= 6) break;
+            String product;
+            try {
+                product = device.getProductName();
+            } catch (Exception e) {
+                product = null;
+            }
+            String label = product == null || product.isEmpty() ? "USB 设备" : product;
+            sb.append("\n• ").append(label)
+                    .append("  VID ").append(String.format(Locale.US, "%04X", device.getVendorId()))
+                    .append(" / PID ").append(String.format(Locale.US, "%04X", device.getProductId()));
+            shown++;
+        }
+        sb.append("\n\n有设备不代表 CarPlay 一定能通：车机侧 USB 通道还要支持对应协议。"
+                + "无线投屏不受这里影响。");
+        dialogBuilder()
+                .setTitle("USB 检测")
+                .setMessage(sb.toString())
+                .setPositiveButton("知道了", null)
+                .show();
+    }
+
     private void openWifiSettings() {
         startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
     }
@@ -548,9 +831,17 @@ public class NetworkCenterActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == REQ_BT) {
+            boolean granted = results.length > 0
+                    && results[0] == PackageManager.PERMISSION_GRANTED;
+            refresh();
+            if (granted) showBluetoothDialog();
+            else toast("未授权蓝牙，无法读取配对状态");
+            return;
+        }
         if (requestCode != REQ_WIFI) return;
         if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
-            startCarHotspotNow();
+            showHotspotWizard();
         } else {
             toast("需要 Wi‑Fi/附近设备权限才能开启热点");
         }
@@ -578,7 +869,28 @@ public class NetworkCenterActivity extends Activity {
             }
             return;
         }
-        startCarHotspotNow();
+        showHotspotWizard();
+    }
+
+    /**
+     * 热点开启向导：先给三条可执行的路径，再让用户选一条，
+     * 不再直接弹失败原因码。
+     */
+    private void showHotspotWizard() {
+        boolean sysOn = isApEnabled();
+        String state = "系统热点：" + (sysOn ? "已开启" : "未开启")
+                + "\n应用内热点：" + (sHotspot == null ? "未开启" : "已开启");
+        String steps = "① 车机「设置 → 网络 → 便携式热点」打开热点（WPA2 加密）\n"
+                + "② 让 iPhone 连接该热点；热点不开数据也能投屏\n"
+                + "③ 回到本页点「网络体检」，确认网关与 AirPlay 端口\n\n"
+                + "若车机允许 AP 模式，也可直接点「试应用内热点」，由本应用开一个本地热点。";
+        dialogBuilder()
+                .setTitle("热点开启向导")
+                .setMessage(state + "\n\n" + steps)
+                .setPositiveButton("去系统热点设置", (d, w) -> openHotspotSettings())
+                .setNeutralButton("试应用内热点", (d, w) -> startCarHotspotNow())
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private void startCarHotspotNow() {
@@ -630,13 +942,13 @@ public class NetworkCenterActivity extends Activity {
                 : reason == 3 ? "系统禁止热点"
                 : reason > 0 ? "原因码 " + reason
                 : (detail == null ? "未知错误" : detail);
-        new AlertDialog.Builder(this)
+        dialogBuilder()
                 .setTitle("应用内热点没开起来")
                 .setMessage(why + "。\n\n部分车机/模拟器的 Wi‑Fi 驱动不支持 AP 模式。"
-                        + "请点“打开热点设置”用系统热点，或直接让车机加入 iPhone 个人热点。"
+                        + "可点“打开热点向导”按三步走：系统热点设置 → 手机连热点 → 网络体检，或直接让车机加入 iPhone 个人热点。"
                         + "\nAirPlay 不要求车机有外网，只要两台设备在同一 Wi‑Fi。")
-                .setPositiveButton("打开热点设置", (d, w) -> openHotspotSettings())
-                .setNegativeButton("知道了", null)
+                .setPositiveButton("打开热点向导", (d, w) -> showHotspotWizard())
+                .setNegativeButton("用系统热点设置", (d, w) -> openHotspotSettings())
                 .show();
     }
 
@@ -663,7 +975,7 @@ public class NetworkCenterActivity extends Activity {
         String message = "SSID：" + ssid + "\n密码：" + pass
                 + "\n\n让 iPhone 连接这个 Wi‑Fi，然后打开 AirPlay 接收。"
                 + "\n该热点不提供外网，只用于本机互联。";
-        new AlertDialog.Builder(this)
+        dialogBuilder()
                 .setTitle("车机热点已开启")
                 .setMessage(message)
                 .setPositiveButton("复制凭据", (d, w) -> copyText("SSID: " + ssid + "\n密码: " + pass))
@@ -778,9 +1090,11 @@ public class NetworkCenterActivity extends Activity {
             if (mdnsErrors.isEmpty()) {
                 mdnsView.setText("未发现 AirPlay / RAOP 服务。请确认手机与车机在同一网段，"
                         + "并检查热点/路由器是否开启了 AP 隔离或客户端隔离。");
+                scrollToResult();
             } else {
                 mdnsView.setText("mDNS 查询没有结果：" + errorText()
                         + "。可能是系统 Nsd 服务被限制，或当前网络不允许组播。");
+                scrollToResult();
             }
         } else {
             String title = "体检完成，发现 " + mdnsFound.size() + " 个服务：";
@@ -802,6 +1116,7 @@ public class NetworkCenterActivity extends Activity {
         StringBuilder sb = new StringBuilder(title);
         for (String s : mdnsFound) sb.append("\n• ").append(s);
         mdnsView.setText(sb.toString());
+        scrollToResult();
     }
 
     private void stopListener(NsdManager.DiscoveryListener listener) {
@@ -814,6 +1129,15 @@ public class NetworkCenterActivity extends Activity {
 
     private void toast(String text) {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
+    }
+
+    /** 体检结果较长时自动滚到结论，避免首屏只看到前几行。 */
+    private void scrollToResult() {
+        if (scroll == null) return;
+        handler.postDelayed(() -> {
+            if (scroll == null || isFinishing()) return;
+            scroll.fullScroll(View.FOCUS_DOWN);
+        }, 180);
     }
 
     @Override
