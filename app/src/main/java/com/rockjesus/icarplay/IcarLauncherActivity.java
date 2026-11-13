@@ -37,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.6.8";
+    public static final String VERSION_LABEL = "v0.6.9";
 
     private TextView statusView;
     private View statusDot;
@@ -271,8 +271,18 @@ public class IcarLauncherActivity extends Activity {
         top.addView(state, wc());
         card.addView(top, wrap());
 
-        View gap = new View(this);
-        card.addView(gap, new LinearLayout.LayoutParams(1, 0, 1f));
+        // 品牌 logo 放在卡片剩余空间的正中并放大，作为卡片的视觉主体。
+        FrameLayout logoBox = new FrameLayout(this);
+        ImageView brandIcon = new ImageView(this);
+        brandIcon.setImageResource(brandRes);
+        brandIcon.setColorFilter(accent);
+        brandIcon.setAlpha(0.96f);
+        brandIcon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        FrameLayout.LayoutParams brandLp = new FrameLayout.LayoutParams(
+                dp(74), dp(74), Gravity.CENTER);
+        logoBox.addView(brandIcon, brandLp);
+        card.addView(logoBox, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
         LinearLayout titleRow = new LinearLayout(this);
         titleRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -286,17 +296,6 @@ public class IcarLauncherActivity extends Activity {
         titleView.setLetterSpacing(0.03f);
         titleView.setGravity(Gravity.START);
         titleRow.addView(titleView, wc());
-
-        View titleSpacer = new View(this);
-        titleRow.addView(titleSpacer, new LinearLayout.LayoutParams(0, 1, 1f));
-
-        ImageView brandIcon = new ImageView(this);
-        brandIcon.setImageResource(brandRes);
-        brandIcon.setColorFilter(accent);
-        brandIcon.setAlpha(0.9f);
-        LinearLayout.LayoutParams brandLp = new LinearLayout.LayoutParams(dp(17), dp(17));
-        brandLp.leftMargin = dp(4);
-        titleRow.addView(brandIcon, brandLp);
 
         card.addView(titleRow, wrap());
 
