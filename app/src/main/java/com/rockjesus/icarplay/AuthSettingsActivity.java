@@ -2,6 +2,7 @@ package com.rockjesus.icarplay;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.ViewGroup;
@@ -51,13 +52,13 @@ public class AuthSettingsActivity extends Activity {
         content.addView(column("CarPlay 认证后端",
                 new String[]{"未配置", "本地证书（.p7b + .pk8）",
                         "MFi 芯片（I2C / CH341）", "远程 MFI 服务"},
-                prefs.getInt("auth_backend", 0), "auth_backend"), columnLp());
+                prefs.getInt("auth_backend", 0), "auth_backend", PageUi.BLUE), columnLp());
         content.addView(column("音频通道",
                 new String[]{"默认通道", "通道 9（实车验证）"},
-                prefs.getInt("audio_channel", 0), "audio_channel"), columnLp());
+                prefs.getInt("audio_channel", 0), "audio_channel", PageUi.GREEN), columnLp());
         content.addView(column("无线网络模式",
                 new String[]{"现有 Wi-Fi / 同一局域网", "车机热点（可能不可用）"},
-                prefs.getInt("network_mode", 0), "network_mode"), columnLp());
+                prefs.getInt("network_mode", 0), "network_mode", PageUi.PURPLE), columnLp());
 
         TextView hint = PageUi.text(this,
                 "本地证书目录：" + CarPlayCore.identityHint(this) + "\n"
@@ -97,9 +98,9 @@ public class AuthSettingsActivity extends Activity {
         return lp;
     }
 
-    private LinearLayout column(String title, String[] labels, int checked, String key) {
-        LinearLayout box = PageUi.card(this, PageUi.BORDER, 9, 8);
-        TextView t = PageUi.text(this, title, 11f, PageUi.GREEN, true);
+    private LinearLayout column(String title, String[] labels, int checked, String key, int accent) {
+        LinearLayout box = PageUi.card(this, accent, 9, 8);
+        TextView t = PageUi.text(this, title, 11f, accent, true);
         box.addView(t, PageUi.matchWrap(this));
 
         RadioGroup group = new RadioGroup(this);
@@ -116,6 +117,9 @@ public class AuthSettingsActivity extends Activity {
             b.setTextColor(PageUi.TEXT);
             PageUi.textSize(b, 10.5f);
             b.setPadding(0, PageUi.dp(this, 1), 0, PageUi.dp(this, 1));
+            b.setButtonTintList(new ColorStateList(
+                    new int[][]{{android.R.attr.state_checked}, {}},
+                    new int[]{accent, PageUi.MUTED}));
             group.addView(b, PageUi.matchWrap(this));
         }
         group.check(1000 + Math.min(Math.max(checked, 0), labels.length - 1));

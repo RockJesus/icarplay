@@ -12,7 +12,6 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.util.DisplayMetrics;
 import android.os.IBinder;
@@ -122,14 +121,12 @@ public class FloatService extends Service {
 
     private void showBall() {
         ball = new FrameLayout(this);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setShape(GradientDrawable.OVAL);
-        bg.setColor(Color.parseColor("#E6EDF3"));
-        bg.setStroke(dp(1), Color.parseColor("#8B949E"));
-        ball.setBackground(bg);
+        ball.setBackground(PageUi.rounded(this,
+                PageUi.blend(PageUi.BG, PageUi.CYAN, 0.18f), PageUi.CYAN, 54f));
 
         ImageView icon = new ImageView(this);
         icon.setImageResource(R.drawable.ic_float_ball);
+        icon.setColorFilter(PageUi.CYAN);
         icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
@@ -233,11 +230,7 @@ public class FloatService extends Service {
         }
         panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.parseColor("#F21A2026"));
-        bg.setCornerRadius(dp(12));
-        bg.setStroke(dp(1), Color.parseColor("#30363D"));
-        panel.setBackground(bg);
+        panel.setBackground(PageUi.surface(this, PageUi.PURPLE, 12f));
         panel.setPadding(dp(8), dp(8), dp(8), dp(8));
 
         panel.addView(panelButton("AirPlay", new View.OnClickListener() {
@@ -297,7 +290,9 @@ public class FloatService extends Service {
         b.setText(text);
         b.setAllCaps(false);
         b.setTextSize(13);
-        b.setTextColor(Color.parseColor("#E6EDF3"));
+        b.setTextColor(PageUi.TEXT);
+        b.setTypeface(android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD));
+        b.setLetterSpacing(0.03f);
         b.setBackgroundColor(Color.TRANSPARENT);
         b.setOnClickListener(l);
         b.setLayoutParams(new LinearLayout.LayoutParams(

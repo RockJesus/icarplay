@@ -113,13 +113,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         top.orientation = LinearLayout.HORIZONTAL
         top.gravity = Gravity.CENTER_VERTICAL
         top.setPadding(dp(10), dp(7), dp(10), dp(7))
-        top.background = GradientDrawable(
-            GradientDrawable.Orientation.LEFT_RIGHT,
-            intArrayOf(0xE6070C14.toInt(), 0xD90D1926.toInt()),
-        ).apply {
-            cornerRadius = dp(12).toFloat()
-            setStroke(dp(1), 0x553B5876)
-        }
+        top.background = PageUi.surface(this, PageUi.GOLD, 12f)
         top.layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -134,7 +128,9 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         brand.text = "CarLife+"
         brand.setTextColor(PageUi.GOLD)
         brand.textSize = 13f
-        brand.setTypeface(null, android.graphics.Typeface.BOLD)
+        brand.setTypeface(android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD))
+        brand.setLetterSpacing(0.05f)
+        PageUi.gradientText(brand, intArrayOf(PageUi.GOLD, PageUi.PINK, PageUi.CYAN))
         brand.gravity = Gravity.CENTER_VERTICAL
         brand.setPadding(dp(6), 0, dp(10), 0)
         top.addView(brand, LinearLayout.LayoutParams(dp(86), dp(36)))
@@ -147,7 +143,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         })
 
         status = TextView(this)
-        status.setTextColor(0xFFEAF4FF.toInt())
+        status.setTextColor(PageUi.TEXT)
         status.textSize = 12.5f
         status.setSingleLine(false)
         status.maxLines = 2
@@ -156,18 +152,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         status.setPadding(0, 0, dp(8), 0)
         top.addView(status, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
 
-        val log = Button(this)
-        log.text = "日志"
-        log.setTextColor(PageUi.BLUE)
-        log.textSize = 12f
-        log.setAllCaps(false)
-        log.setPadding(dp(10), 0, dp(10), 0)
-        log.minWidth = 0
-        log.minimumWidth = 0
-        log.minHeight = 0
-        log.minimumHeight = 0
-        log.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.CARD, PageUi.BLUE, 0.16f),
-            PageUi.blend(PageUi.BORDER, PageUi.BLUE, 0.55f), 10f))
+        val log = PageUi.button(this, "日志", 11.5f, PageUi.BLUE)
         log.setOnClickListener { showLogDialog() }
         top.addView(log, LinearLayout.LayoutParams(dp(56), dp(36)))
         root.addView(top)
@@ -215,13 +200,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         connectBar.orientation = LinearLayout.HORIZONTAL
         connectBar.gravity = Gravity.CENTER
         connectBar.setPadding(dp(8), dp(6), dp(8), dp(8))
-        connectBar.background = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(0x990A111B.toInt(), 0xE6070C14.toInt()),
-        ).apply {
-            cornerRadius = dp(12).toFloat()
-            setStroke(dp(1), 0x443B5876)
-        }
+        connectBar.background = PageUi.surface(this, PageUi.BLUE, 12f)
         connectBar.layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -255,18 +234,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
     }
 
     private fun barButton(label: String, accent: Int, action: () -> Unit): Button {
-        val b = Button(this)
-        b.text = label
-        b.setTextColor(PageUi.TEXT)
-        b.textSize = 13f
-        b.setAllCaps(false)
-        b.setPadding(dp(10), 0, dp(10), 0)
-        b.minWidth = 0
-        b.minimumWidth = 0
-        b.minHeight = 0
-        b.minimumHeight = 0
-        b.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.CARD, accent, 0.12f),
-            PageUi.blend(PageUi.BORDER, accent, 0.55f), 10f))
+        val b = PageUi.button(this, label, 13f, accent)
         b.setOnClickListener { action() }
         val lp = LinearLayout.LayoutParams(0, dp(40), 1f)
         lp.setMargins(dp(4), 0, dp(4), 0)
@@ -408,7 +376,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
             text = "${WirelessNetwork.describe(this@CarLifePlusActivity)}\n" +
                 "输入手机 CarLife+ 无线页显示的 IPv4 地址"
             textSize = 12.5f
-            setTextColor(0xFF9AA4B2.toInt())
+            setTextColor(PageUi.MUTED)
         }
         box.addView(hintView)
         val input = EditText(this).apply {

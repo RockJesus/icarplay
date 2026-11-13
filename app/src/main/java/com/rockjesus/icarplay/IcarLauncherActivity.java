@@ -37,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.6.5";
+    public static final String VERSION_LABEL = "v0.6.6";
 
     private TextView statusView;
     private View statusDot;
@@ -170,7 +170,7 @@ public class IcarLauncherActivity extends Activity {
         brand.setGravity(Gravity.CENTER_VERTICAL);
 
         View accent = new View(this);
-        accent.setBackground(PageUi.rounded(this, PageUi.BLUE, 0, 3));
+        accent.setBackground(PageUi.rainbow(this, 3));
         LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(dp(3), dp(28));
         alp.setMargins(0, 0, dp(10), 0);
         brand.addView(accent, alp);
@@ -181,12 +181,15 @@ public class IcarLauncherActivity extends Activity {
         title.setText("iCarPlay");
         title.setTextColor(PageUi.TEXT);
         sp(title, 24f);
-        title.setTypeface(null, Typeface.BOLD);
+        title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        title.setLetterSpacing(0.02f);
+        PageUi.gradientText(title, PageUi.TITLE_GRADIENT);
         titles.addView(title, wrap());
         TextView model = new TextView(this);
         model.setText(narrow ? "SYNC+ 车载互联" : "SYNC+ 车载互联中枢 · 5 种投屏方式");
         model.setTextColor(PageUi.MUTED);
         sp(model, 9.5f);
+        model.setLetterSpacing(0.04f);
         titles.addView(model, wrap());
         brand.addView(titles, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -197,12 +200,12 @@ public class IcarLauncherActivity extends Activity {
 
         TextView version = new TextView(this);
         version.setText(VERSION_LABEL);
-        version.setTextColor(PageUi.BLUE);
-        sp(version, 10.5f);
-        version.setTypeface(null, Typeface.BOLD);
+        version.setTextColor(PageUi.CYAN);
+        sp(version, 10f);
+        PageUi.mono(version);
         version.setPadding(dp(10), dp(4), dp(10), dp(4));
-        version.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.CARD, PageUi.BLUE, 0.14f),
-                PageUi.blend(PageUi.BORDER, PageUi.BLUE, 0.55f), 20));
+        version.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.CARD, PageUi.PURPLE, 0.16f),
+                PageUi.blend(PageUi.PURPLE, PageUi.CYAN, 0.45f), 20));
         header.addView(version, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
                 Gravity.END | Gravity.TOP));
@@ -218,7 +221,7 @@ public class IcarLauncherActivity extends Activity {
     }
 
     private View cardCarPlay() {
-        return makeCard("CarPlay", "有线 / 无线", PageUi.MUTED,
+        return makeCard("CarPlay", "有线 / 无线", PageUi.PURPLE,
                 R.drawable.ic_ui_carplay, R.drawable.ic_brand_apple,
                 "未配置", PageUi.RED,
                 v -> startActivity(new Intent(this, CarPlayActivity.class)));
@@ -285,7 +288,8 @@ public class IcarLauncherActivity extends Activity {
         titleView.setText(title);
         titleView.setTextColor(PageUi.TEXT);
         sp(titleView, 16.5f);
-        titleView.setTypeface(null, Typeface.BOLD);
+        titleView.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        titleView.setLetterSpacing(0.03f);
         titleView.setGravity(Gravity.START);
         titleRow.addView(titleView, wc());
 
@@ -306,12 +310,13 @@ public class IcarLauncherActivity extends Activity {
         subtitleView.setText(subtitle);
         subtitleView.setTextColor(accent);
         sp(subtitleView, 9.5f);
+        subtitleView.setLetterSpacing(0.05f);
         subtitleView.setPadding(0, dp(2), 0, dp(5));
         card.addView(subtitleView, wrap());
 
         View rule = new View(this);
-        rule.setBackground(PageUi.rounded(this, PageUi.blend(accent, PageUi.CARD, 0.4f), 0, 2));
-        LinearLayout.LayoutParams ruleLp = new LinearLayout.LayoutParams(dp(28), dp(2));
+        rule.setBackground(PageUi.rainbow(this, 1));
+        LinearLayout.LayoutParams ruleLp = new LinearLayout.LayoutParams(dp(34), dp(2));
         ruleLp.bottomMargin = dp(6);
         card.addView(rule, ruleLp);
 
@@ -319,7 +324,8 @@ public class IcarLauncherActivity extends Activity {
         open.setText("打开  →");
         open.setTextColor(PageUi.blend(accent, PageUi.TEXT, 0.4f));
         sp(open, 9.5f);
-        open.setTypeface(null, Typeface.BOLD);
+        open.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        open.setLetterSpacing(0.05f);
         card.addView(open, wrap());
 
         if ("AirPlay".equals(title)) airplayState = state;

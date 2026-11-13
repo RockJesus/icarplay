@@ -8,6 +8,7 @@ import android.app.AlertDialog;
 import android.bluetooth.*;
 import android.content.*;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.os.*;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,8 +66,8 @@ public final class HomeActivity extends ThemeActivity {
         retry=PageUi.button(this,"重新连接",12f,PageUi.BLUE);
         retry.setVisibility(View.GONE);
         Button trial=PageUi.button(this,"试运行自动接收",12f,PageUi.BLUE);
-        Button diag=PageUi.button(this,"设置与诊断",12f,PageUi.BORDER);
-        Button settings=PageUi.button(this,"系统后台与通知",12f,PageUi.BORDER);
+        Button diag=PageUi.button(this,"设置与诊断",12f,PageUi.PURPLE);
+        Button settings=PageUi.button(this,"系统后台与通知",12f,PageUi.CYAN);
 
         grid.addView(row(start,stop),new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f));
         LinearLayout row2=row(retry,trial);
@@ -76,12 +77,19 @@ public final class HomeActivity extends ThemeActivity {
         LinearLayout.LayoutParams row3Lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f);
         PageUi.margin(row3Lp,this,0,6,0,0);grid.addView(row3,row3Lp);
 
-        LinearLayout switchCard=PageUi.card(this,PageUi.BORDER,10,4);
+        LinearLayout switchCard=PageUi.card(this,PageUi.PURPLE,10,4);
         switchCard.setOrientation(LinearLayout.VERTICAL);
         micSwitch=new Switch(this);micSwitch.setText("麦克风语音（仅在 HiCar 请求时采集）");micSwitch.setTextColor(PageUi.TEXT);PageUi.textSize(micSwitch,10f);
+        int[][] tintStates=new int[][]{{android.R.attr.state_checked},{}};
+        ColorStateList thumbTint=new ColorStateList(tintStates,new int[]{PageUi.CYAN,PageUi.MUTED});
+        ColorStateList trackTint=new ColorStateList(tintStates,new int[]{PageUi.blend(PageUi.CARD,PageUi.PURPLE,0.75f),PageUi.BORDER});
+        micSwitch.setThumbTintList(thumbTint);
+        micSwitch.setTrackTintList(trackTint);
         micSwitch.setChecked(MicrophoneSender.enabled(this));
         switchCard.addView(micSwitch,PageUi.matchWrap(this));
         Switch autoStart=new Switch(this);autoStart.setText("开机自动接收（后台等待，不自动弹画面）");autoStart.setTextColor(PageUi.TEXT);PageUi.textSize(autoStart,10f);
+        autoStart.setThumbTintList(thumbTint);
+        autoStart.setTrackTintList(trackTint);
         autoStart.setChecked(AutoStart.enabled(this));
         switchCard.addView(autoStart,PageUi.matchWrap(this));
         root.addView(switchCard,PageUi.matchWrap(this));
