@@ -49,6 +49,7 @@ public class FloatService extends Service {
     private float downX, downY;
     private int startX, startY;
     private boolean dragging;
+    private int screenW, screenH;
 
     @Override
     public void onCreate() {
@@ -143,8 +144,12 @@ public class FloatService extends Service {
                         | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 PixelFormat.TRANSLUCENT);
         ballParams.gravity = Gravity.TOP | Gravity.START;
+        updateScreenSize();
         ballParams.x = prefs.getInt("float_x", dp(24));
         ballParams.y = prefs.getInt("float_y", dp(120));
+        boundBall();
+        prefs.edit().putInt("float_x", ballParams.x)
+                .putInt("float_y", ballParams.y).apply();
 
         ball.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent e) {
@@ -165,10 +170,12 @@ public class FloatService extends Service {
                         if (dragging) {
                             ballParams.x = startX + dx;
                             ballParams.y = startY + dy;
+                            boundBall();
                             wm.updateViewLayout(ball, ballParams);
                         }
                         return true;
                     case MotionEvent.ACTION_UP:
+                        boundBall();
                         prefs.edit().putInt("float_x", ballParams.x)
                                 .putInt("float_y", ballParams.y).apply();
                         if (!dragging) togglePanel();
@@ -182,16 +189,32 @@ public class FloatService extends Service {
         wm.addView(ball, ballParams);
     }
 
-    private void clampBall() {
-        if (ball == null || ballParams == null || wm == null) return;
+    /** 把悬浮球坐标限制在屏幕内，避免拖出屏幕后找不回来。 */
+    private void boundBall() {
+        if (ballParams == null) return;
+        if (screenW <= 0 || screenH <= 0) updateScreenSize();
+        int size = Math.max(0, ballParams.width);
+        int margin = dp(8);
+        ballParams.x = Math.max(margin, Math.min(ballParams.x,
+                Math.max(margin, screenW - size - margin)));
+        ballParams.y = Math.max(margin, Math.min(ballParams.y,
+                Math.max(margin, screenH - size - margin)));
+    }
+
+    private void updateScreenSize() {
         try {
             DisplayMetrics dm = new DisplayMetrics();
             wm.getDefaultDisplay().getRealMetrics(dm);
-            int w = dm.widthPixels;
-            int h = dm.heightPixels;
-            int size = ballParams.width;
-            ballParams.x = Math.max(0, Math.min(ballParams.x, Math.max(0, w - size)));
-            ballParams.y = Math.max(0, Math.min(ballParams.y, Math.max(0, h - size)));
+            screenW = dm.widthPixels;
+            screenH = dm.heightPixels;
+        } catch (Throwable ignored) { }
+    }
+
+    private void clampBall() {
+        if (ball == null || ballParams == null || wm == null) return;
+        updateScreenSize();
+        boundBall();
+        try {
             wm.updateViewLayout(ball, ballParams);
         } catch (Throwable ignored) { }
     }

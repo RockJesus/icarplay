@@ -131,18 +131,19 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         }
 
         val back = Button(this)
-        back.text = "← iCarPlay"
-        back.setTextColor(Color.WHITE)
+        back.text = "←  返回主界面"
+        back.setTextColor(PageUi.BLUE)
         back.textSize = 12.5f
+        back.setTypeface(null, android.graphics.Typeface.BOLD)
         back.setAllCaps(false)
         back.setPadding(dp(10), 0, dp(10), 0)
         back.minWidth = 0
         back.minimumWidth = 0
         back.minHeight = 0
         back.minimumHeight = 0
-        back.setBackground(PageUi.rounded(this, 0x2EFFFFFF, 0x55FFFFFF, 10f))
+        back.setBackground(PageUi.rounded(this, PageUi.tint(PageUi.BLUE, 0.14f), PageUi.BLUE, 10f))
         back.setOnClickListener { finish() }
-        top.addView(back, LinearLayout.LayoutParams(dp(112), dp(36)))
+        top.addView(back, LinearLayout.LayoutParams(dp(132), dp(36)))
 
         statusDot = View(this)
         statusDot.setBackground(PageUi.rounded(this, PageUi.GREEN, 0, 4f))
