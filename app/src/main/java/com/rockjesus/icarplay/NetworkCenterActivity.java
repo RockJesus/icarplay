@@ -201,7 +201,16 @@ public class NetworkCenterActivity extends Activity {
         peripheralRow(peripheral, "HUAWEI HiCar", hicarValue, v -> showHiCarDialog());
         peripheralRow(peripheral, "USB", usbValue, v -> showUsbDialog());
 
-        TextView peripheralHint = PageUi.text(this, "点任一项查看详情", 8f, PageUi.MUTED, false);
+        TextView peripheralHint = PageUi.text(this,
+                "点任一项看详情 · 连接补强 ›", 8f, PageUi.CYAN, true);
+        peripheralHint.setGravity(Gravity.END);
+        peripheralHint.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(this, LinkBoostActivity.class));
+            } catch (Exception e) {
+                toast("连接补强打不开");
+            }
+        });
         LinearLayout.LayoutParams hintLp = PageUi.matchWrap(this);
         PageUi.margin(hintLp, this, 0, 6, 0, 0);
         peripheral.addView(peripheralHint, hintLp);
@@ -835,17 +844,32 @@ public class NetworkCenterActivity extends Activity {
         String framework = hicarFramework
                 ? "本机已检测到 HiCar 相关框架包。"
                 : "本机未检测到 HiCar 框架包，投屏走本应用内置入口。";
+        boolean btOn = false;
+        try {
+            BluetoothAdapter adapter = bluetoothAdapter();
+            btOn = adapter != null && adapter.isEnabled();
+        } catch (Exception ignored) {
+        }
+        String btState = btOn ? "蓝牙已开启，可以和手机配对" : "蓝牙未开启，无线 HiCar 第一步就过不去";
         dialogBuilder()
                 .setTitle("HUAWEI HiCar 连接方式")
-                .setMessage(framework + "\n\n无线：手机支持 HiCar 时，蓝牙配对后靠近车机即可发起，"
-                        + "车机与手机需在同一 Wi‑Fi。\n"
-                        + "有线：用支持数据传输的 USB 线连车机 USB 口，首次连接需在手机上允许。\n\n"
-                        + "点首页“HUAWEI HiCar”卡片进入接收页；iPhone 请用 AirPlay。")
+                .setMessage(framework + " " + btState + "\n\n"
+                        + "HiCar 官方支持无线和有线两种：\n"
+                        + "无线：蓝牙配对 + 同一 Wi‑Fi，由车机侧 HiCar 发起；"
+                        + "SYNC+ 没有原厂 HiCar，需要外接 HiCar 适配器（USB 盒子）才成立。\n"
+                        + "有线：USB 数据线直连，数据线要能传输，手机端允许 USB 配件。\n\n"
+                        + "点首页“HUAWEI HiCar”卡片进入接收页；想看清三条路，点“连接补强”。")
                 .setPositiveButton("打开 HiCar 页", (d, w) -> {
                     try {
                         startActivity(new Intent(this, local.hicarlab.HomeActivity.class));
                     } catch (Exception e) {
                         toast("HiCar 页面启动失败");
+                    }
+                })
+                .setNeutralButton("连接补强", (d, w) -> {
+                    try {
+                        startActivity(new Intent(this, LinkBoostActivity.class));
+                    } catch (Exception ignored) {
                     }
                 })
                 .setNegativeButton("知道了", null)
