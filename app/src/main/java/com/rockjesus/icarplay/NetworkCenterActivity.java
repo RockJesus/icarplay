@@ -2,11 +2,14 @@ package com.rockjesus.icarplay;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.DhcpInfo;
@@ -18,6 +21,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
 import android.view.Gravity;
@@ -25,13 +29,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+
+import io.github.jqssun.airplay.service.AirPlayService;
 
 /**
  * 网络与连接中心：只读展示 Wi‑Fi/热点状态，并提供热点向导与 mDNS 体检。
@@ -53,6 +66,8 @@ public class NetworkCenterActivity extends Activity {
     private NsdManager.DiscoveryListener airplayListener;
     private NsdManager.DiscoveryListener raopListener;
     private boolean mdnsRunning;
+    private boolean netCheckRunning;
+    private boolean portVerified;
 
     private TextView statusPill;
     private TextView wifiValue;
@@ -61,6 +76,8 @@ public class NetworkCenterActivity extends Activity {
     private TextView gatewayValue;
     private TextView dnsValue;
     private TextView hotspotValue;
+    private TextView airplayValue;
+    private TextView portValue;
     private TextView actionHint;
 
     private final Runnable tick = new Runnable() {
@@ -87,15 +104,26 @@ public class NetworkCenterActivity extends Activity {
         root.addView(PageUi.header(this, "连接中心", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
 
-        TextView sub = PageUi.text(this, "Wi‑Fi / 热点 / mDNS 体检 · AirPlay、HiCar、Android Auto 共用",
+        TextView sub = PageUi.text(this, "Wi‑Fi / 热点 / 网络体检 · AirPlay 自检与投屏共用",
                 10.5f, PageUi.MUTED, false);
         sub.setGravity(Gravity.CENTER_HORIZONTAL);
         LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
         PageUi.margin(subLp, this, 0, 3, 0, 7);
         root.addView(sub, subLp);
 
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setVerticalScrollBarEnabled(false);
+        root.addView(scroll, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(0, 0, 0, PageUi.dp(this, 2));
+        scroll.addView(content, PageUi.matchWrap(this));
+
         LinearLayout statusCard = PageUi.card(this, PageUi.BLUE, 12, 8);
-        root.addView(statusCard, PageUi.matchWrap(this));
+        content.addView(statusCard, PageUi.matchWrap(this));
 
         LinearLayout statusHead = new LinearLayout(this);
         statusHead.setOrientation(LinearLayout.HORIZONTAL);
@@ -112,22 +140,25 @@ public class NetworkCenterActivity extends Activity {
         gatewayValue = valueText();
         dnsValue = valueText();
         hotspotValue = valueText();
+        airplayValue = valueText();
+        portValue = valueText();
 
         addMetricRow(statusCard, "Wi‑Fi / SSID", wifiValue, "频段 / 速率", bandValue);
         addMetricRow(statusCard, "本机 IP", ipValue, "网关", gatewayValue);
         addMetricRow(statusCard, "DNS", dnsValue, "热点 / Wi‑Fi Direct", hotspotValue);
+        addMetricRow(statusCard, "AirPlay 接收", airplayValue, "本机端口", portValue);
 
         LinearLayout actions = PageUi.card(this, PageUi.GREEN, 10, 8);
         LinearLayout.LayoutParams actionsLp = PageUi.matchWrap(this);
         PageUi.margin(actionsLp, this, 0, 8, 0, 0);
-        root.addView(actions, actionsLp);
+        content.addView(actions, actionsLp);
 
         LinearLayout actionHead = new LinearLayout(this);
         actionHead.setOrientation(LinearLayout.HORIZONTAL);
         actionHead.setGravity(Gravity.CENTER_VERTICAL);
         actionHead.addView(PageUi.text(this, "快捷操作", 8.5f, PageUi.GREEN, true),
                 new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        actionHint = PageUi.text(this, "热点优先用手机热点", 8.5f, PageUi.MUTED, false);
+        actionHint = PageUi.text(this, "状态自动刷新", 8.5f, PageUi.MUTED, false);
         actionHead.addView(actionHint, PageUi.wrap(this));
         actions.addView(actionHead, PageUi.matchWrap(this));
 
@@ -136,40 +167,29 @@ public class NetworkCenterActivity extends Activity {
         row1.addView(action("打开 Wi‑Fi 设置", PageUi.BLUE, v -> openWifiSettings()), actionLp());
         row1.addView(action("打开热点设置", PageUi.GREEN, v -> openHotspotSettings()), actionLp());
         row1.addView(action("mDNS 体检", PageUi.GOLD, v -> startMdnsCheck()), actionLp());
+        row1.addView(action("网络体检", PageUi.CYAN, v -> startNetworkCheck()), actionLp());
         actions.addView(row1, PageUi.matchWrap(this));
 
         LinearLayout row2 = new LinearLayout(this);
         row2.setOrientation(LinearLayout.HORIZONTAL);
         row2.addView(action("开启车机热点", PageUi.PURPLE, v -> startCarHotspot()), actionLp());
         row2.addView(action("停止车机热点", PageUi.RED, v -> stopCarHotspot()), actionLp());
-        row2.addView(action("刷新状态", PageUi.CYAN, v -> refresh()), actionLp());
+        row2.addView(action("启动 AirPlay", PageUi.BLUE, v -> startAirPlay()), actionLp());
+        row2.addView(action("停止 AirPlay", PageUi.RED, v -> stopAirPlay()), actionLp());
         actions.addView(row2, PageUi.matchWrap(this));
 
         LinearLayout resultCard = PageUi.card(this, PageUi.GOLD, 12, 8);
         LinearLayout.LayoutParams resultLp = PageUi.matchWrap(this);
         PageUi.margin(resultLp, this, 0, 8, 0, 0);
-        root.addView(resultCard, resultLp);
+        content.addView(resultCard, resultLp);
         resultCard.addView(PageUi.text(this, "体检结果", 8.5f, PageUi.GOLD, true),
                 PageUi.wrap(this));
         mdnsView = PageUi.text(this,
-                "尚未体检。点“mDNS 体检”检查 AirPlay / RAOP 是否能在当前局域网被发现。",
+                "点“网络体检”检查网关、DNS、外网与 AirPlay 端口；点“mDNS 体检”检查"
+                        + " iPhone 的 AirPlay / RAOP 是否能被发现。",
                 9.5f, PageUi.MUTED, false);
         mdnsView.setPadding(0, PageUi.dp(this, 3), 0, 0);
         resultCard.addView(mdnsView, PageUi.matchWrap(this));
-
-        TextView guide = PageUi.text(this,
-                "AirPlay：让 iPhone 与车机处于同一 Wi‑Fi。可让车机加入 iPhone 个人热点，"
-                        + "或开启车机热点后让 iPhone 加入；不需要外置路由器。\n"
-                        + "HiCar 需要蓝牙 + WLAN；Android Auto 无线建议 5GHz，2.4GHz 容易卡顿。"
-                        + "有线连接始终比无线更稳。",
-                9f, PageUi.MUTED, false);
-        LinearLayout.LayoutParams guideLp = PageUi.matchWrap(this);
-        PageUi.margin(guideLp, this, 0, 7, 0, 0);
-        root.addView(guide, guideLp);
-
-        View spacer = new View(this);
-        root.addView(spacer, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         Button back = PageUi.back(this);
         back.setOnClickListener(v -> finish());
@@ -222,7 +242,7 @@ public class NetworkCenterActivity extends Activity {
 
     private LinearLayout.LayoutParams actionLp() {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                0, PageUi.dp(this, 36), 1f);
+                0, PageUi.dp(this, 34), 1f);
         lp.setMargins(PageUi.dp(this, 3), 0, PageUi.dp(this, 3), 0);
         return lp;
     }
@@ -253,6 +273,15 @@ public class NetworkCenterActivity extends Activity {
         boolean p2p = getPackageManager().hasSystemFeature("android.hardware.wifi.direct");
         hotspotValue.setText(hot + " · P2P " + (p2p ? "支持" : "不支持"));
 
+        boolean airplayRunning = isAirPlayServiceRunning();
+        airplayValue.setText(airplayRunning ? "运行中" : "已停止");
+        if (!airplayRunning) {
+            portVerified = false;
+            portValue.setText("—");
+        } else if (!portVerified) {
+            portValue.setText(airplayPort() + " 待检");
+        }
+
         int accent = connected ? PageUi.GREEN : PageUi.RED;
         statusPill.setText(connected ? "已连接" : "未连接");
         statusPill.setTextColor(accent);
@@ -274,6 +303,223 @@ public class NetworkCenterActivity extends Activity {
             return result instanceof Boolean && (Boolean) result;
         } catch (Exception ignored) {
             return false;
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private boolean isAirPlayServiceRunning() {
+        try {
+            ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            if (am == null) return false;
+            for (ActivityManager.RunningServiceInfo info : am.getRunningServices(Integer.MAX_VALUE)) {
+                if ("io.github.jqssun.airplay.service.AirPlayService"
+                        .equals(info.service.getClassName())) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    private int airplayPort() {
+        int port = getSharedPreferences("settings", MODE_PRIVATE).getInt("server_port", 7000);
+        return port > 0 ? port : 7000;
+    }
+
+    private void startAirPlay() {
+        portVerified = false;
+        try {
+            Intent intent = new Intent(this, AirPlayService.class);
+            intent.setAction(AirPlayService.ACTION_START_SERVER);
+            if (Build.VERSION.SDK_INT >= 26) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+            toast("正在启动 AirPlay 接收…");
+            handler.postDelayed(() -> {
+                refresh();
+                boolean ok = isAirPlayServiceRunning();
+                mdnsView.setText(ok
+                        ? "AirPlay 已启动。点“网络体检”确认端口是否监听。"
+                        : "AirPlay 启动失败。点“网络体检”查看端口状态。");
+                if (ok) toast("AirPlay 已启动，等待 iPhone 连接");
+                else toast("AirPlay 启动失败，请查看通知或日志");
+            }, 1800);
+        } catch (Throwable t) {
+            toast("AirPlay 启动失败：" + t.getClass().getSimpleName());
+        }
+    }
+
+    private void stopAirPlay() {
+        if (!isAirPlayServiceRunning()) {
+            toast("AirPlay 接收当前未运行");
+            return;
+        }
+        toast("正在停止 AirPlay 接收…");
+        ServiceConnection conn = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder binder) {
+                portVerified = false;
+                try {
+                    AirPlayService service = ((AirPlayService.LocalBinder) binder).getService();
+                    service.stopServer();
+                } catch (Exception e) {
+                    toast("停止失败：" + e.getClass().getSimpleName());
+                }
+                try {
+                    unbindService(this);
+                } catch (Exception ignored) {
+                }
+                handler.postDelayed(() -> {
+                    refresh();
+                    mdnsView.setText("AirPlay 已停止。点“网络体检”重新检查端口；"
+                            + "点“启动 AirPlay”可恢复接收。");
+                    toast("AirPlay 已停止；可在本页重新启动");
+                }, 700);
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+            }
+        };
+        try {
+            bindService(new Intent(this, AirPlayService.class), conn, Context.BIND_AUTO_CREATE);
+        } catch (Exception e) {
+            toast("停止失败：" + e.getClass().getSimpleName());
+        }
+    }
+
+    private void startNetworkCheck() {
+        if (netCheckRunning) return;
+        netCheckRunning = true;
+        final int port = airplayPort();
+        mdnsView.setText("正在体检：网关 ping / DNS / 外网 / AirPlay 端口…\n约 4–8 秒，请稍候。");
+        new Thread(() -> {
+            StringBuilder report = new StringBuilder("网络体检");
+            DhcpInfo dhcp = wifi == null ? null : wifi.getDhcpInfo();
+            String gateway = dhcp == null ? null : ip(dhcp.gateway);
+            String dns1 = dhcp == null ? null : ip(dhcp.dns1);
+            boolean wifiOn = wifi != null && wifi.isWifiEnabled();
+
+            report.append("\n• Wi‑Fi：").append(wifiOn ? "已开启" : "已关闭");
+            if (gateway != null && !"—".equals(gateway)) report.append("，网关 ").append(gateway);
+
+            long pingRtt = -1;
+            boolean gatewayOk = false;
+            if (gateway != null && !"—".equals(gateway)) {
+                pingRtt = pingHost(gateway);
+                gatewayOk = pingRtt >= 0 || tcpProbe(gateway, 53, 1500) >= 0;
+                report.append("\n• 网关连通：").append(gatewayOk ? "通" : "不通");
+                if (pingRtt >= 0) report.append("，平均 ").append(pingRtt).append(" ms");
+                else if (gatewayOk) report.append("（ICMP 被拦，TCP 53 可连）");
+            } else {
+                report.append("\n• 网关连通：无网关，可能未连接 Wi‑Fi");
+            }
+
+            boolean dnsOk = false;
+            long dnsMs = -1;
+            try {
+                long t0 = System.nanoTime();
+                InetAddress addr = InetAddress.getByName("www.apple.com");
+                dnsMs = (System.nanoTime() - t0) / 1_000_000L;
+                dnsOk = addr != null;
+            } catch (Exception ignored) {
+            }
+            report.append("\n• DNS 解析 apple.com：").append(dnsOk ? "正常" : "失败");
+            if (dnsOk && dnsMs >= 0) report.append("，").append(dnsMs).append(" ms");
+            if (dns1 != null && !"—".equals(dns1)) report.append("（DNS ").append(dns1).append("）");
+
+            long netMs = -1;
+            if (dnsOk) netMs = tcpProbe("www.apple.com", 443, 4000);
+            boolean netOk = netMs >= 0;
+            report.append("\n• 外网 HTTPS：").append(netOk ? "可连" : "不可连");
+            if (netOk) report.append("，").append(netMs).append(" ms");
+
+            boolean serviceOn = isAirPlayServiceRunning();
+            boolean portOpen = tcpProbe("127.0.0.1", port, 900) >= 0;
+            report.append("\n• AirPlay 接收：").append(serviceOn ? "运行中" : "未运行");
+            report.append("，端口 ").append(port).append(portOpen ? " 监听" : " 未监听");
+
+            boolean allCore = wifiOn && gatewayOk && serviceOn && portOpen;
+            report.append("\n\n结论：");
+            if (!gatewayOk && wifiOn) {
+                report.append("车机到网关不通，先重连 Wi‑Fi 或检查热点是否还开着。");
+            } else if (!wifiOn) {
+                report.append("Wi‑Fi 已关闭，先打开 Wi‑Fi 或加入手机热点。");
+            } else if (!serviceOn || !portOpen) {
+                report.append("网络可用，但 AirPlay 接收没有正常监听，点“启动 AirPlay”重试。");
+            } else if (!netOk) {
+                report.append("局域网正常、外网不通；AirPlay 不依赖外网，可继续投屏。若 iPhone 搜不到，检查 AP 隔离。");
+            } else if (allCore) {
+                report.append("链路正常。若 iPhone 仍搜不到车机，重点检查热点/路由器的 AP 隔离或客户端隔离。");
+            }
+
+            String text = report.toString();
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                mdnsView.setText(text);
+                airplayValue.setText(serviceOn ? "运行中" : "已停止");
+                portValue.setText(serviceOn ? (port + (portOpen ? " 监听" : " 未监听")) : "—");
+                portVerified = serviceOn;
+                netCheckRunning = false;
+            });
+        }, "network-check").start();
+    }
+
+    /** ping 主机，返回平均毫秒；失败返回 -1。 */
+    private static long pingHost(String host) {
+        Process process = null;
+        try {
+            process = new ProcessBuilder("/system/bin/ping", "-c", "2", "-W", "2", host)
+                    .redirectErrorStream(true).start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder out = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) out.append(line).append('\n');
+            reader.close();
+            if (!process.waitFor(6, TimeUnit.SECONDS)) {
+                process.destroy();
+                return -1;
+            }
+            String text = out.toString();
+            if (!text.contains("0% packet loss") && !text.contains("0% loss")) return -1;
+            int avgAt = text.indexOf("min/avg/max");
+            if (avgAt >= 0) {
+                int slash = text.indexOf('/', text.indexOf('/') + 1);
+                if (slash > 0) {
+                    int end = text.indexOf('/', slash + 1);
+                    if (end > slash) {
+                        String avg = text.substring(slash + 1, end).trim();
+                        return Math.round(Double.parseDouble(avg));
+                    }
+                }
+            }
+            return 0;
+        } catch (Exception ignored) {
+            if (process != null) process.destroy();
+            return -1;
+        }
+    }
+
+    /** TCP 连接测试，返回耗时毫秒；失败返回 -1。 */
+    private static long tcpProbe(String host, int port, int timeoutMs) {
+        Socket socket = null;
+        try {
+            long t0 = System.nanoTime();
+            socket = new Socket();
+            socket.connect(new InetSocketAddress(host, port), timeoutMs);
+            return (System.nanoTime() - t0) / 1_000_000L;
+        } catch (Exception ignored) {
+            return -1;
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (Exception ignored) {
+                }
+            }
         }
     }
 

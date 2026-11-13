@@ -1,5 +1,6 @@
 package io.github.jqssun.airplay.service
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -1143,6 +1144,13 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     private fun launchMainActivity() {
         Handler(Looper.getMainLooper()).post {
+            // 已经在应用内（首页或二级页）时不要抢焦点，避免正在看连接中心被投屏连接打断。
+            val am = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            val visible = am?.runningAppProcesses?.any {
+                it.processName == packageName &&
+                    it.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
+            } == true
+            if (visible) return@post
             val launchIntent = Intent(this, IcarLauncherActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             try {
