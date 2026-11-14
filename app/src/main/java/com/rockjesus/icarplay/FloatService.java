@@ -22,11 +22,13 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ScrollView;
 import android.widget.LinearLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -267,47 +269,61 @@ public class FloatService extends Service {
         panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setBackground(PageUi.surface(this, PageUi.PURPLE, 12f));
-        panel.setPadding(dp(8), dp(8), dp(8), dp(8));
+        panel.setPadding(dp(6), dp(6), dp(6), dp(6));
 
-        panel.addView(panelButton("AirPlay", new View.OnClickListener() {
+        // 菜单条目已经到 13 项，在 8:3 或小屏车机上整列会超过屏幕高度，
+        // 所以放进 ScrollView：窗口高度夹到屏幕内，超出的部分可以滑动看到。
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+
+        content.addView(panelButton("AirPlay", new View.OnClickListener() {
             public void onClick(View v) { open(AirPlayActivity.class); }
         }));
-        panel.addView(panelButton("Android Auto", new View.OnClickListener() {
+        content.addView(panelButton("Android Auto", new View.OnClickListener() {
             public void onClick(View v) { open(AndroidAutoActivity.class); }
         }));
-        panel.addView(panelButton("HiCar", new View.OnClickListener() {
+        content.addView(panelButton("HiCar", new View.OnClickListener() {
             public void onClick(View v) { open(HomeActivity.class); }
         }));
-        panel.addView(panelButton("CarPlay", new View.OnClickListener() {
+        content.addView(panelButton("CarPlay", new View.OnClickListener() {
             public void onClick(View v) { open(CarPlayActivity.class); }
         }));
-        panel.addView(panelButton("认证设置", new View.OnClickListener() {
+        content.addView(panelButton("认证设置", new View.OnClickListener() {
             public void onClick(View v) { open(AuthSettingsActivity.class); }
         }));
-        panel.addView(panelButton("无线传文件", new View.OnClickListener() {
+        content.addView(panelButton("无线传文件", new View.OnClickListener() {
             public void onClick(View v) { open(TransferActivity.class); }
         }));
-        panel.addView(panelButton("应用管理", new View.OnClickListener() {
+        content.addView(panelButton("应用管理", new View.OnClickListener() {
             public void onClick(View v) { open(AppManageActivity.class); }
         }));
-        panel.addView(panelButton("HA 面板", new View.OnClickListener() {
+        content.addView(panelButton("HA 面板", new View.OnClickListener() {
             public void onClick(View v) { open(HaPanelActivity.class); }
         }));
-        panel.addView(panelButton("豆包", new View.OnClickListener() {
+        content.addView(panelButton("豆包", new View.OnClickListener() {
             public void onClick(View v) { open(DoubaoActivity.class); }
         }));
-        panel.addView(panelButton("网页投屏", new View.OnClickListener() {
+        content.addView(panelButton("网页投屏", new View.OnClickListener() {
             public void onClick(View v) { open(MirrorActivity.class); }
         }));
-        panel.addView(panelButton("系统设置", new View.OnClickListener() {
+        content.addView(panelButton("系统设置", new View.OnClickListener() {
             public void onClick(View v) { openSystemSettings(); }
         }));
-        panel.addView(panelButton("iCarPlay主界面", new View.OnClickListener() {
+        content.addView(panelButton("iCarPlay主界面", new View.OnClickListener() {
             public void onClick(View v) { open(IcarLauncherActivity.class); }
         }));
-        panel.addView(panelButton("车机主屏幕", new View.OnClickListener() {
+        content.addView(panelButton("车机主屏幕", new View.OnClickListener() {
             public void onClick(View v) { goCarHome(); }
         }));
+
+        ScrollView scroller = new ScrollView(this);
+        scroller.setFillViewport(true);
+        scroller.setVerticalScrollBarEnabled(false);
+        scroller.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        scroller.addView(content, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        panel.addView(scroller, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         panelParams = new WindowManager.LayoutParams(
                 dp(170), WindowManager.LayoutParams.WRAP_CONTENT,
@@ -325,11 +341,15 @@ public class FloatService extends Service {
                 View.MeasureSpec.makeMeasureSpec(panelW, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         int panelH = panel.getMeasuredHeight();
+        int maxPanelH = Math.max(dp(120), screenH - dp(24));
+        boolean clipped = panelH > maxPanelH;
+        if (clipped) panelH = maxPanelH;
         int x = Math.min(ballParams.x - dp(56), screenW - panelW - dp(8));
         x = Math.max(0, Math.min(x, Math.max(0, screenW - panelW - dp(8))));
         int yBelow = ballParams.y + ballParams.height + dp(8);
         int y = yBelow + panelH > screenH ? ballParams.y - panelH - dp(8) : yBelow;
         y = Math.max(0, Math.min(y, Math.max(0, screenH - panelH)));
+        if (clipped) panelParams.height = panelH;
         panelParams.x = x;
         panelParams.y = y;
 

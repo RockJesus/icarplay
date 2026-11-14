@@ -68,6 +68,7 @@ public class HaPanelActivity extends FitActivity {
     // ---------- 首次打开：填地址 ----------
 
     private void showSetup() {
+        destroyWeb();
         LinearLayout shell = new LinearLayout(this);
         shell.setOrientation(LinearLayout.VERTICAL);
         shell.setBackground(PageUi.background(this));
@@ -174,6 +175,7 @@ public class HaPanelActivity extends FitActivity {
     // ---------- 已配置：直接进面板 ----------
 
     private void showPanel(String url) {
+        destroyWeb();
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
         setContentView(root);
@@ -229,27 +231,6 @@ public class HaPanelActivity extends FitActivity {
         root.addView(bar, barLp);
 
         web.loadUrl(targetUrl(url));
-
-        // 工具条 6 秒后淡出，点顶部 40dp 区域再唤出，避免长期遮挡面板
-        bar.animate().alpha(0f).setStartDelay(6000).setDuration(600).withEndAction(() -> {
-            bar.setVisibility(View.GONE);
-            bar.setAlpha(1f);
-        }).start();
-
-        View hotspot = new View(this);
-        hotspot.setBackgroundColor(Color.TRANSPARENT);
-        hotspot.setOnClickListener(v -> {
-            if (bar.getVisibility() == View.GONE) {
-                bar.setVisibility(View.VISIBLE);
-                bar.setAlpha(1f);
-                bar.animate().alpha(0f).setStartDelay(6000).setDuration(600).withEndAction(() -> {
-                    bar.setVisibility(View.GONE);
-                    bar.setAlpha(1f);
-                }).start();
-            }
-        });
-        root.addView(hotspot, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 24), Gravity.TOP));
     }
 
     private TextView smallBarButton(String label, int accent, View.OnClickListener onClick) {
@@ -271,7 +252,23 @@ public class HaPanelActivity extends FitActivity {
         if (raw == null || raw.isEmpty()) return "about:blank";
         if (!prefs.getBoolean(PREF_KIOSK, true)) return raw;
         if (raw.contains("kiosk")) return raw;
-        return raw + (raw.contains("?") ? "&" : "?") + "kiosk";
+        int hash = raw.indexOf('#');
+        String base = hash >= 0 ? raw.substring(0, hash) : raw;
+        String tail = hash >= 0 ? raw.substring(hash) : "";
+        return base + (base.contains("?") ? "&" : "?") + "kiosk" + tail;
+    }
+
+    private void destroyWeb() {
+        try {
+            if (web != null) {
+                ViewGroup parent = (ViewGroup) web.getParent();
+                if (parent != null) parent.removeView(web);
+                web.loadUrl("about:blank");
+                web.destroy();
+            }
+        } catch (Throwable ignored) {
+        }
+        web = null;
     }
 
     private String normalize(String raw) {
@@ -300,14 +297,7 @@ public class HaPanelActivity extends FitActivity {
 
     @Override
     protected void onDestroy() {
-        try {
-            if (web != null) {
-                web.loadUrl("about:blank");
-                web.destroy();
-                web = null;
-            }
-        } catch (Throwable ignored) {
-        }
+        destroyWeb();
         ui.removeCallbacksAndMessages(null);
         super.onDestroy();
     }

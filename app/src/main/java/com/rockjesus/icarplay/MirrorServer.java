@@ -222,7 +222,7 @@ public class MirrorServer {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             byte[] sha = md.digest((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
                     .getBytes(StandardCharsets.US_ASCII));
-            accept = java.util.Base64.getEncoder().encodeToString(sha);
+            accept = base64(sha);
         } catch (Throwable ignored) {
         }
         if (accept == null) {
@@ -263,6 +263,22 @@ public class MirrorServer {
             }
             client.close();
         }
+    }
+
+    /** 纯 JDK 的 Base64 编码：java.util.Base64 只在 API 26+ 有，这里自己算，minSdk 23 也安全。 */
+    private static String base64(byte[] data) {
+        final String table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < data.length; i += 3) {
+            int b0 = data[i] & 0xFF;
+            int b1 = i + 1 < data.length ? data[i + 1] & 0xFF : -1;
+            int b2 = i + 2 < data.length ? data[i + 2] & 0xFF : -1;
+            sb.append(table.charAt(b0 >> 2));
+            sb.append(table.charAt(((b0 & 0x03) << 4) | (b1 < 0 ? 0 : (b1 >> 4))));
+            sb.append(b1 < 0 ? '=' : table.charAt(((b1 & 0x0F) << 2) | (b2 < 0 ? 0 : (b2 >> 6))));
+            sb.append(b2 < 0 ? '=' : table.charAt(b2 & 0x3F));
+        }
+        return sb.toString();
     }
 
     private String readFrame(InputStream in) throws IOException {
