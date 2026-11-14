@@ -1090,7 +1090,7 @@ public final class DlnaRenderer {
                 + "<manufacturerURL>http://icarplay.local/</manufacturerURL>"
                 + "<modelDescription>车机 DLNA 投送接收（音频·视频·图片）</modelDescription>"
                 + "<modelName>iCarPlay MediaRenderer</modelName>"
-                + "<modelNumber>0.9.6</modelNumber>"
+                + "<modelNumber>0.9.7</modelNumber>"
                 + "<UDN>" + uuid + "</UDN>"
                 + "<dlna:X_DLNADOC>DMR-1.50</dlna:X_DLNADOC>"
                 + "<serviceList>"
