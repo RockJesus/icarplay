@@ -284,6 +284,9 @@ public class FloatService extends Service {
         panel.addView(panelButton("认证设置", new View.OnClickListener() {
             public void onClick(View v) { open(AuthSettingsActivity.class); }
         }));
+        panel.addView(panelButton("无线传文件", new View.OnClickListener() {
+            public void onClick(View v) { open(TransferActivity.class); }
+        }));
         panel.addView(panelButton("系统设置", new View.OnClickListener() {
             public void onClick(View v) { openSystemSettings(); }
         }));

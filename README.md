@@ -3,9 +3,9 @@
 # iCarPlay
 
 **2020 款福特锐际 SYNC+ 车机的第三方互联中枢**
-一个 APK，五种投屏入口 · 一套赛博朋克车机 UI
+一个 APK：五种投屏入口 + 手机 ⇄ 车机 APK 无线互传 · 一套赛博朋克车机 UI
 
-`v0.8.0`　·　`Android 8.1 / API 27`　·　`1920×720 · 1600×900`　·　`arm64-v8a + armeabi-v7a`
+`v0.9.0`　·　`Android 8.1 / API 27`　·　`1920×720 · 1600×900`　·　`arm64-v8a + armeabi-v7a`
 
 </div>
 
@@ -48,6 +48,7 @@
 | **CarLife+** | 百度 CarLife+ 兼容接收（有线 / 无线），接收核心内嵌在同一个 APK | 待真机复测 |
 | **Android Auto** | USB AOA 有线条目 + 手机 Headunit Server 手动无线 | 协议已接通，待实车验证 |
 | **Huawei HiCar** | 华为手机原生 HiCar 实验接收端，手机端不装第二个 APK | 实验路径（上游按 Android 10+ 设计） |
+| **无线传文件** | 手机 ⇄ 车机互传 APK：内置 HTTP 服务（手机浏览器上传 / 下载）+ 蓝牙分享 | 已接入，只收 `.apk` / `.apks` |
 
 **首页是车机一屏布局**：五张主功能卡（AirPlay / CarPlay / CarLife+ / Android Auto / HiCar）+ 一行快捷操作 + 一行「返回车机主屏幕」，不需要下拉；宽度 ≥1100px 且宽高比 ≥1.5 的横屏（1600×900、1920×720）五卡同排，接近 4:3 的窄横屏自动 3+2 两行。
 
@@ -71,6 +72,19 @@
 - **一键无线投屏向导** — 第 1 步确认车机链路，第 2 步手机开热点让车机加入，第 3 步按手机品牌直达对应接收页，末尾给“走不通时”的排查顺序。
 - **DLNA 投送接收** — 手机相册 / 视频 App 选“投屏 · Cast”，把音乐、视频、图片推到车机；投送中状态卡、投送画面、单行说明与按钮压在同一屏，停止后画面卡自动清空、版式恢复。
 
+## 手机 ⇄ 车机 传 APK
+
+不想每次插 U 盘时，用「无线传文件」：车机上开一个小服务，手机浏览器打开地址就能**上传 APK 到车机**，也能把车机上的 APK **下载回手机**。
+
+| 通道 | 怎么走 | 谁发起 |
+|---|---|---|
+| 同一 Wi‑Fi | 车机与手机连同一个 AP，开服务 → 手机浏览器输地址 | 手机上传 / 下载 |
+| 手机热点 | 手机开个人热点 → 车机加入（一键无线投屏向导）→ 同上 | 手机上传 / 下载 |
+| 车机热点 | 连接中心「开启车机热点」→ 手机连车机 → 同上 | 手机上传 / 下载 |
+| 蓝牙 | 列表里点「蓝牙分享」，把 APK 交给系统蓝牙发给已配对手机；手机往车机发走系统蓝牙接收 | 系统蓝牙 |
+
+细节：端口 8090（被占用时自动顺延），单文件上限 260MB，只接受 `.apk` / `.apks`；页面只负责收发，装包仍由系统弹出确认，应用不会静默安装。上传/下载记录会写到应用私有目录 `Android/data/com.rockjesus.icarplay/files/transfer/`，不污染车机公共目录。
+
 ## 能力矩阵
 
 | 能力 | 状态 | 说明 |
@@ -85,6 +99,8 @@
 | DLNA 投送接收（音频 / 视频 / 图片） | ✅ | SSDP 组播应答 + AVTransport / RenderingControl / ConnectionManager，同局域网即可 |
 | 连接中心 / 网络体检 / mDNS 体检 | ✅ | 只读诊断，不调用系统命令、不改系统设置 |
 | 内置悬浮按钮 | ✅ | 可拖动，点按弹出快捷菜单，点外部自动收起；开机仅恢复悬浮层 |
+| 无线传文件（Wi‑Fi / 热点） | ✅ | 车机内置 HTTP 服务，手机浏览器上传 / 下载 APK；端口 8090，只收 apk |
+| 传文件（蓝牙通道） | ✅ | 调系统蓝牙分享发送；接收走系统蓝牙，不接管 OPP 服务 |
 | CarPlay 有线 / 无线入口 | ⚠️ 骨架 | USB 枚举 / Wi‑Fi 状态 + 启动状态，协议引擎未接入 |
 | CarPlay 认证后端 | ⚠️ 骨架 | 本地证书 / MFi 芯片 / 远程 MFI 三选一，仅保存与检查 |
 | 车机安全约束 | ✅ | 不写系统分区、不申请设备管理员 / 系统设置权限、不抢占默认桌面 |
@@ -97,7 +113,7 @@
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
 5. 首次打开会自动弹出权限引导：允许悬浮窗，再依次允许麦克风、位置、蓝牙、通知和电池优化；悬浮按钮默认自动启动；
-6. 首页点 CarLife+ → 有线 / 无线连接；DLNA 页点「启动接收」；Android Auto / HiCar 进入接收页；CarPlay 进入认证 / 连接页。
+6. 首页点 CarLife+ → 有线 / 无线连接；DLNA 页点「启动接收」；Android Auto / HiCar 进入接收页；CarPlay 进入认证 / 连接页；「传文件」页可让手机无线上传 / 下载 APK。
 
 详细步骤与判读见 [`docs/INSTALL.md`](docs/INSTALL.md)。
 
@@ -155,7 +171,7 @@ icarplay/
 │   ├── src/main/java/info/anodsplace/headunit/     # Android Auto AAP/TLS/解码/触控协议层
 │   ├── src/main/cpp/                               # UxPlay / FFmpeg / OpenSSL 原生栈
 │   └── src/main/AndroidManifest.xml
-├── docs/                                           # INSTALL / AIRPLAY / ANDROID-AUTO / HICAR / CARPLAY / CARLIFE-PLUS / SAFETY / BUILD
+├── docs/                                           # INSTALL / AIRPLAY / ANDROID-AUTO / HICAR / CARPLAY / CARLIFE-PLUS / TRANSFER / SAFETY / BUILD
 ├── docs/preview/                                   # README 界面预览图（1600×900）
 ├── scripts/preflight-safety.sh                      # 发布前车机安全检查
 ├── scripts/render-preview.py                        # 预览图渲染脚本（HTML 复刻 → Chromium 截图）
@@ -197,6 +213,7 @@ git submodule update --init --recursive
 - SYNC+ 有签名白名单，自签名包可能直接装不上；
 - 主界面和接收服务默认不自启，仅悬浮按钮悬浮层开机恢复，避免 Wi‑Fi Direct 导致的重启循环；
 - AirPlay 长期稳定性、音频通道、1920×720 适配仍需实车验证；
+- 传文件服务只在局域网内监听 8090，同网段的设备都能访问页面；不要在公共网络下长期开着，用完点「停止服务」；
 - 2020 款锐际的 Wi‑Fi 是否能自建热点、5GHz 与 mDNS 能否稳定发现 iPhone，以车机实测为准，连接中心与网络体检就是为此准备的。
 
 <div align="center">

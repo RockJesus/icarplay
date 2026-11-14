@@ -4,7 +4,7 @@
 
 一条硬约束：**APK 不能破坏车机原有系统，不能导致无法启动或无限重启。**
 
-`适用版本 v0.8.0`　·　`SYNC+ 2020 · Android 8.1 / API 27`　·　[← 返回 README](../README.md)
+`适用版本 v0.9.0`　·　`SYNC+ 2020 · Android 8.1 / API 27`　·　[← 返回 README](../README.md)
 
 </div>
 
@@ -24,7 +24,8 @@
 - 不通过 `Runtime.exec` / `ProcessBuilder` 调特权命令，不执行 `settings put`、`pm install`、`mount -o remount`；
 - 不把 `android.intent.category.HOME` / `LEANBACK_LAUNCHER` 加进 Manifest，因此不会被系统当作“桌面”候选；
 - 不自动打开主界面、不自动启动 HiCar 接收；仅悬浮按钮悬浮层在用户完成首次引导且未手动关闭时开机恢复；
-- HiCar 的 `local.hicarlab.BootReceiver` 在 Manifest 中保持 `android:enabled="false"`。
+- HiCar 的 `local.hicarlab.BootReceiver` 在 Manifest 中保持 `android:enabled="false"`；
+- 传文件服务只接受 `.apk` / `.apks`、单文件上限 260MB，装包走系统安装确认，应用自身不申请系统级安装权限、不静默装包。
 
 ## 仍然存在的现实风险
 
