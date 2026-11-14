@@ -62,7 +62,7 @@ public class AppManageActivity extends Activity {
                 PageUi.matchWrap(this));
 
         TextView sub = PageUi.text(this,
-                "卸载车机上多余的第三方 App · 系统预装应用只能停用 · 卸载会弹出系统确认框",
+                "卸载车载多余的 App · 设置里点应用会闪退的，本页直接调卸载框 · 系统预装通常只能停用",
                 10.5f, PageUi.MUTED, false);
         sub.setGravity(Gravity.CENTER_HORIZONTAL);
         LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
@@ -88,7 +88,7 @@ public class AppManageActivity extends Activity {
         right.addView(buildListCard(), new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        resultText = PageUi.text(this, "选一个应用，点「卸载」会弹系统确认框", 9.5f, PageUi.MUTED, false);
+        resultText = PageUi.text(this, "点「详情」闪退就跳过它，直接用「卸载」——卸载框不读应用详情页", 9.5f, PageUi.MUTED, false);
         LinearLayout.LayoutParams resultLp = PageUi.matchWrap(this);
         PageUi.margin(resultLp, this, 0, 4, 0, 0);
         shell.addView(resultText, resultLp);
@@ -119,7 +119,8 @@ public class AppManageActivity extends Activity {
                 "① 被设为「设备管理员」：先去系统安全里取消勾选\n"
                         + "② 开着「无障碍服务」：先关掉该服务，悬浮类 App 基本都卡在这\n"
                         + "③ 系统预装应用：卸不掉，只能在详情页「停用」\n"
-                        + "原生设置的按钮是灰的、点不动，多半就是前两种。",
+                        + "原生设置的按钮是灰的、点不动，多半就是前两种。\n"
+                        + "设置里点某个应用直接闪退，说明那个应用的详情页坏了：跳过详情，直接点「卸载」。",
                 9.5f, PageUi.MUTED, false);
         why.setLineSpacing(PageUi.dp(this, 1.5f), 1f);
         why.setPadding(0, PageUi.dp(this, 4), 0, 0);
@@ -149,7 +150,7 @@ public class AppManageActivity extends Activity {
         LinearLayout head = new LinearLayout(this);
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.CENTER_VERTICAL);
-        head.addView(PageUi.text(this, "已安装的第三方应用", 8.5f, PageUi.CYAN, true), PageUi.wrap(this));
+        head.addView(PageUi.text(this, "已安装的应用（含系统预装）", 8.5f, PageUi.CYAN, true), PageUi.wrap(this));
         View spacer = new View(this);
         head.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
         countText = PageUi.text(this, "—", 8.5f, PageUi.MUTED, false);
@@ -232,10 +233,20 @@ public class AppManageActivity extends Activity {
             pillLp.setMargins(PageUi.dp(this, 6), 0, 0, 0);
             titleLine.addView(PageUi.statusPill(this, "桌面有图标", PageUi.GREEN), pillLp);
         }
+        if (app.damaged) {
+            LinearLayout.LayoutParams pillLp = PageUi.wrap(this);
+            pillLp.setMargins(PageUi.dp(this, 6), 0, 0, 0);
+            titleLine.addView(PageUi.statusPill(this, "安装包缺失", PageUi.RED), pillLp);
+        }
         if (app.blockedReason != null) {
             LinearLayout.LayoutParams pillLp = PageUi.wrap(this);
             pillLp.setMargins(PageUi.dp(this, 6), 0, 0, 0);
             titleLine.addView(PageUi.statusPill(this, app.blockedReason, PageUi.RED), pillLp);
+        }
+        if (app.system) {
+            LinearLayout.LayoutParams pillLp = PageUi.wrap(this);
+            pillLp.setMargins(PageUi.dp(this, 6), 0, 0, 0);
+            titleLine.addView(PageUi.statusPill(this, "系统预装", PageUi.GOLD), pillLp);
         }
         texts.addView(titleLine, PageUi.matchWrap(this));
 
@@ -266,6 +277,7 @@ public class AppManageActivity extends Activity {
         String sizeText;
         long updated;
         boolean system;
+        boolean damaged;
         boolean hasLauncher;
         String blockedReason;
         Drawable icon;
@@ -285,7 +297,6 @@ public class AppManageActivity extends Activity {
             if (info.packageName.equals(self)) continue;
             boolean system = (info.flags & ApplicationInfo.FLAG_SYSTEM) != 0
                     && (info.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0;
-            if (system) continue;
             AppEntry entry = new AppEntry();
             entry.pkg = info.packageName;
             entry.label = String.valueOf(pm.getApplicationLabel(info));
@@ -302,13 +313,20 @@ public class AppManageActivity extends Activity {
                 entry.sizeText = "—";
             }
             entry.updated = info.sourceDir == null ? 0 : new File(info.sourceDir).lastModified();
+            try {
+                File src = info.sourceDir == null ? null : new File(info.sourceDir);
+                entry.damaged = src == null || !src.exists() || src.length() <= 0;
+            } catch (Throwable ignored) {
+                entry.damaged = true;
+            }
             entry.hasLauncher = hasLauncher(pm, info.packageName);
             entry.blockedReason = blockedReason(info.packageName);
             out.add(entry);
         }
         out.sort((a, b) -> {
-            if (a.blockedReason != null && b.blockedReason == null) return -1;
-            if (a.blockedReason == null && b.blockedReason != null) return 1;
+            int rankA = a.damaged ? 0 : (a.blockedReason != null ? 1 : (a.system ? 3 : 2));
+            int rankB = b.damaged ? 0 : (b.blockedReason != null ? 1 : (b.system ? 3 : 2));
+            if (rankA != rankB) return rankA - rankB;
             return a.label.compareToIgnoreCase(b.label);
         });
         return out;

@@ -4,7 +4,7 @@
 
 CI 出未签名 release 包，本机做签名与发布前安全检查，最终只发布一个 `icarplay.apk`。
 
-`当前版本 0.9.1 / versionCode 47`　·　`compileSdk 37 · minSdk 23 · NDK 27.0.12077973`　·　[← 返回 README](../README.md)
+`当前版本 0.9.2 / versionCode 48`　·　`compileSdk 37 · minSdk 23 · NDK 27.0.12077973`　·　[← 返回 README](../README.md)
 
 </div>
 
@@ -79,7 +79,7 @@ python3 scripts/render-preview.py     # 输出到 docs/preview/
 
 - `app/build.gradle.kts` 的 `versionCode` / `versionName`；
 - 首页右上角胶囊与 `DlnaRenderer` 的 `modelNumber` 跟 `versionName` 对齐；
-- Release tag 与 `versionName` 对齐，例如 `v0.9.1`；
+- Release tag 与 `versionName` 对齐，例如 `v0.9.2`；
 - 递增按十进制逐位，段内不超过 9：`0.9.0 → 0.9.1 … 0.9.9 → 1.0.0`。
 
 ## 发布流程
