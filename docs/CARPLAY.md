@@ -1,30 +1,33 @@
-# CarPlay 接入说明（当前为骨架）
+<div align="center">
 
-## 结论先说
+# CarPlay 接入
 
-**当前 v0.6.0 的 CarPlay 仍不能真正连接 iPhone。**
+接入层已完成，协议引擎未接入：**没有 Apple MFi 认证身份时，iPhone 会在认证阶段直接拒绝。**
 
-仓库里已经完成的是“接入层”：
+`状态：骨架 · 需 MFi 材料`　·　`不含任何 Apple 私钥或他人配件身份`　·　[← 返回 README](../README.md)
+
+</div>
+
+---
+
+## 已经完成的部分
 
 - 认证后端 4 选 1（未配置 / 本地证书 / MFi 芯片 / 远程 MFI）；
 - Apple USB 设备枚举（vendor id `0x05AC`）；
 - 有线 / 无线启动入口与状态返回；
 - 认证与连接设置页；
-- 与 AirPlay、悬浮球共用的单 APK 外壳。
+- 与 AirPlay、悬浮按钮共用的单 APK 外壳。
 
-**没有完成的是协议引擎**：iAP2 识别、MFi 认证签名、CarPlay 的 AirPlay 隧道、
-H.264 解码、HID 触控/方控、USB NCM、无线蓝牙引导 + Wi-Fi 切换。
-
-没有 Apple MFi 认证身份，iPhone 会在认证阶段直接拒绝，协议引擎写了也连不上。
+**没有完成的是协议引擎**：iAP2 识别、MFi 认证签名、CarPlay 的 AirPlay 隧道、H.264 解码、HID 触控 / 方控、USB NCM、无线蓝牙引导 + Wi‑Fi 切换。
 
 ## 代码位置
 
 | 文件 | 作用 |
 |---|---|
 | `app/src/main/java/com/rockjesus/icarplay/CarPlayCore.java` | 认证后端、USB 枚举、启动状态 |
-| `CarPlayActivity.java` | 有线/无线入口、认证检查、状态展示 |
+| `CarPlayActivity.java` | 有线 / 无线入口、认证检查、状态展示 |
 | `AuthSettingsActivity.java` | 认证后端 / 音频通道 / 网络模式 |
-| `FloatService.java` | 悬浮球里的 CarPlay 快捷入口 |
+| `FloatService.java` | 悬浮按钮里的 CarPlay 快捷入口 |
 
 ## 三种认证后端
 
@@ -35,7 +38,7 @@ H.264 解码、HID 触控/方控、USB NCM、无线蓝牙引导 + Wi-Fi 切换�
 - 放置位置（二选一）：
   - `app/src/main/assets/carplay/`（需重新构建 APK）；
   - `/sdcard/Android/data/com.rockjesus.icarplay/files/carplay/`；
-- 当前代码只做“文件存在性检查”，没有加载证书和签名。
+- 当前代码只做“文件存在性检查”，没有加载证书与签名。
 
 ### 2. MFi 芯片
 
@@ -45,8 +48,6 @@ H.264 解码、HID 触控/方控、USB NCM、无线蓝牙引导 + Wi-Fi 切换�
 - 当前只有设置项，没有驱动。
 
 ### 3. 远程 MFI 服务
-
-需要自建三个接口：
 
 | 接口 | 作用 |
 |---|---|
@@ -60,12 +61,12 @@ H.264 解码、HID 触控/方控、USB NCM、无线蓝牙引导 + Wi-Fi 切换�
 
 1. **iAP2**：USB / 蓝牙链路上的配件识别、会话建立；
 2. **MFi**：证书链、challenge 签名、配件身份校验；
-3. **CarPlay AirPlay 隧道**：RTSP/HTTP 信令、加密流、H.264/H.265；
+3. **CarPlay AirPlay 隧道**：RTSP / HTTP 信令、加密流、H.264 / H.265；
 4. **显示**：MediaCodec → SurfaceView，1920×720 letterbox；
 5. **音频**：通道 9 / 默认通道，AudioTrack 路由；
 6. **输入**：HID 触控回传、方控按键映射；
 7. **USB**：NCM / 有线 CarPlay 网络接口；
-8. **无线**：蓝牙引导 + Wi-Fi 凭据切换 + mDNS 广播。
+8. **无线**：蓝牙引导 + Wi‑Fi 凭据切换 + mDNS 广播。
 
 ## 推荐接入路线
 
@@ -91,3 +92,7 @@ H.264 解码、HID 触控/方控、USB NCM、无线蓝牙引导 + Wi-Fi 切换�
 - 不把他人提取的配件身份打进仓库；
 - 不承诺“没有认证也能连”；
 - 不在车机上注册开机自启，避免重启循环。
+
+## 相关文档
+
+[`AIRPLAY.md`](AIRPLAY.md) 车机侧 AirPlay 通道 · [`SAFETY.md`](SAFETY.md) 不开机自启的约定
