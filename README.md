@@ -37,7 +37,25 @@
   <em>一键无线投屏 · 手机开热点 → 车机加入 → 打开接收页</em>
 </p>
 
-> 预览图按 **v0.8.0 的设计规格**（1600×900）等比渲染：色板、字号、卡片描边、品牌标与页面文案均取自仓库内同一份 UI 代码与资源，不是营销示意图；设备名、IP 等字段已替换为示例值。
+### v0.9 新增页面
+
+<p align="center">
+  <img src="docs/preview/transfer.png" width="49%" alt="无线传文件：手机 ⇄ 车机互传 APK" />
+  <img src="docs/preview/appmanage.png" width="49%" alt="应用管理：卸载车机上多余的 App" />
+</p>
+<p align="center">
+  <em>无线传文件 · 内置接收服务 + 四种无线通道 + 文件列表</em><br/>
+  <em>应用管理 · 卸载直调系统卸载框，标出设备管理员 / 无障碍 / 系统预装 / 安装包缺失</em>
+</p>
+
+<p align="center">
+  <img src="docs/preview/update.png" width="80%" alt="版本更新：一键检查、下载、校验、安装" />
+</p>
+<p align="center">
+  <em>版本更新 · 多源下载 + 断点续传 + SHA-256 / 签名校验，最后由系统安装框收尾</em>
+</p>
+
+> 预览图按 **v0.9.4 的设计规格**（1600×900）等比渲染：色板、字号、卡片描边、品牌标与页面文案均取自仓库内同一份 UI 代码与资源，不是营销示意图；设备名、IP、SSID 等字段已替换为示例值，不含任何真实账号或地址。
 
 ## 它能做什么
 
@@ -176,7 +194,7 @@ icarplay/
 │   ├── src/main/cpp/                               # UxPlay / FFmpeg / OpenSSL 原生栈
 │   └── src/main/AndroidManifest.xml
 ├── docs/                                           # INSTALL / AIRPLAY / ANDROID-AUTO / HICAR / CARPLAY / CARLIFE-PLUS / TRANSFER / APP-MANAGE / UPDATE / SAFETY / BUILD
-├── docs/preview/                                   # README 界面预览图（1600×900）
+├── docs/preview/                                   # README 界面预览图（1600×900，7 张）
 ├── scripts/preflight-safety.sh                      # 发布前车机安全检查
 ├── scripts/render-preview.py                        # 预览图渲染脚本（HTML 复刻 → Chromium 截图）
 ├── .github/workflows/apk.yml                        # GitHub Actions 构建
