@@ -4,7 +4,7 @@
 
 一条硬约束：**APK 不能破坏车机原有系统，不能导致无法启动或无限重启。**
 
-`适用版本 v0.9.4`　·　`SYNC+ 2020 · Android 8.1 / API 27`　·　[← 返回 README](../README.md)
+`适用版本 v0.9.5`　·　`SYNC+ 2020 · Android 8.1 / API 27`　·　[← 返回 README](../README.md)
 
 </div>
 

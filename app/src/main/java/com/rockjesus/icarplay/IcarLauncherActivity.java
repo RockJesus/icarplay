@@ -37,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.9.4";
+    public static final String VERSION_LABEL = "v0.9.5";
 
     private TextView versionPill;
     private TextView statusView;
@@ -538,16 +538,28 @@ public class IcarLauncherActivity extends Activity {
         statusView.setText(line1);
         statusView.append("\n" + device + "  ·  " + floatState);
 
-        setPill(airplayState, airplayRunning ? "待连接" : "待启动", PageUi.BLUE);
+        String carlifeStateLabel = prefs.getString("carlife_state", "");
+
+        // 状态胶囊统一语义：蓝=待启动、金=待连接、绿=已就绪/运行中、红=不可用。
+        setPill(airplayState, airplayRunning ? "待连接" : "待启动",
+                airplayRunning ? PageUi.GOLD : PageUi.BLUE);
+
         boolean carplayReady = CarPlayCore.hasAuth(this) || CarPlayCore.hasLocalIdentity(this);
-        setPill(carplayState, carplayReady ? "已配置" : (auth.equals("未配置") ? "未配置" : auth),
+        setPill(carplayState, carplayReady ? "已配置" : shortAuth(auth),
                 carplayReady ? PageUi.GREEN : PageUi.RED);
-        setPill(carlifeState, carlifeRunning ? "运行中" : "待连接",
+
+        String carlifeText = !carlifeRunning ? "待连接"
+                : (carlifeStateLabel == null || carlifeStateLabel.isEmpty() ? "运行中" : carlifeStateLabel);
+        setPill(carlifeState, carlifeText,
                 carlifeRunning ? PageUi.GREEN : PageUi.GOLD);
+
         setPill(autoState, autoRunning ? "运行中" : "待连接",
-                autoRunning ? PageUi.GREEN : PageUi.GREEN);
+                autoRunning ? PageUi.GREEN : PageUi.GOLD);
+
+        // HiCar 接收端是本应用内置模块（local.hicarlab），没有「未安装」这一态：
+        // 服务未起=等手机来连（金），起了=运行中（绿）。
         setPill(hicarState, hicarRunning ? "运行中" : "待连接",
-                hicarRunning ? PageUi.GREEN : PageUi.RED);
+                hicarRunning ? PageUi.GREEN : PageUi.GOLD);
 
         floatButton.setText(running ? "悬浮按钮：关" : "悬浮按钮：开");
         floatButton.setTextColor(running ? PageUi.GREEN : PageUi.TEXT);
@@ -570,6 +582,15 @@ public class IcarLauncherActivity extends Activity {
         builder.append("● ").append(text);
         builder.setSpan(new ForegroundColorSpan(color), start, builder.length(),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    /** 把「本地证书 (.p7b + .pk8)」这类长串压成能塞进胶囊的短标签。 */
+    private String shortAuth(String auth) {
+        if (auth == null) return "未配置";
+        if (auth.startsWith("本地证书")) return "本地证书";
+        if (auth.startsWith("MFi 芯片")) return "MFi 芯片";
+        if (auth.startsWith("远程 MFI")) return "远程 MFi";
+        return auth.length() > 6 ? auth.substring(0, 6) : auth;
     }
 
     private void setPill(TextView view, String text, int accent) {
