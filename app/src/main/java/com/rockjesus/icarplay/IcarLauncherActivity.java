@@ -37,8 +37,9 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends Activity {
 
-    public static final String VERSION_LABEL = "v0.9.2";
+    public static final String VERSION_LABEL = "v0.9.3";
 
+    private TextView versionPill;
     private TextView statusView;
     private View statusDot;
     private Button floatButton;
@@ -72,6 +73,7 @@ public class IcarLauncherActivity extends Activity {
         setContentView(root);
 
         root.addView(buildHeader(), wrap());
+        maybeAutoCheck();
 
         LinearLayout grid = new LinearLayout(this);
         grid.setOrientation(LinearLayout.VERTICAL);
@@ -200,6 +202,14 @@ public class IcarLauncherActivity extends Activity {
                 Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL));
 
         TextView version = new TextView(this);
+        versionPill = version;
+        version.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(this, UpdateActivity.class));
+            } catch (Exception e) {
+                Toast.makeText(this, "更新页打不开", Toast.LENGTH_SHORT).show();
+            }
+        });
         version.setText(VERSION_LABEL);
         version.setTextColor(PageUi.CYAN);
         sp(version, 10f);
@@ -645,4 +655,31 @@ public class IcarLauncherActivity extends Activity {
     private void toast(String s) {
         Toast.makeText(this, s, Toast.LENGTH_LONG).show();
     }
+    /**
+     * 首页静默查一次版本：每 12 小时最多一次，有新版本就把版本胶囊点亮成「↑ 新版」。
+     * 失败静默，不打扰开车。
+     */
+    private void maybeAutoCheck() {
+        long last = prefs.getLong("updateCheckedAt", 0);
+        if (System.currentTimeMillis() - last < 12L * 60L * 60L * 1000L) return;
+        new Thread(() -> {
+            UpdateChecker.Info info;
+            try {
+                info = UpdateChecker.latest(8000);
+            } catch (Throwable e) {
+                return;
+            }
+            prefs.edit().putLong("updateCheckedAt", System.currentTimeMillis()).apply();
+            if (!UpdateChecker.isNewer(VERSION_LABEL, info.tag)) return;
+            runOnUiThread(() -> {
+                if (isFinishing() || versionPill == null) return;
+                versionPill.setText(VERSION_LABEL + "  ↑ " + info.tag);
+                versionPill.setTextColor(PageUi.GREEN);
+                versionPill.setBackground(PageUi.rounded(this,
+                        PageUi.blend(PageUi.CARD, PageUi.GREEN, 0.18f),
+                        PageUi.blend(PageUi.GREEN, PageUi.CYAN, 0.45f), 20));
+            });
+        }, "home-update-check").start();
+    }
+
 }

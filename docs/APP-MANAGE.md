@@ -65,4 +65,4 @@
 
 ## 相关文档
 
-[`TRANSFER.md`](TRANSFER.md) 无线传文件 · [`SAFETY.md`](SAFETY.md) 权限与安全边界 · [`INSTALL.md`](INSTALL.md) 装车步骤
+[`UPDATE.md`](UPDATE.md) 一键更新 · [`TRANSFER.md`](TRANSFER.md) 无线传文件 · [`SAFETY.md`](SAFETY.md) 权限与安全边界 · [`INSTALL.md`](INSTALL.md) 装车步骤

@@ -3,9 +3,9 @@
 # iCarPlay
 
 **2020 款福特锐际 SYNC+ 车机的第三方互联中枢**
-一个 APK：五种投屏入口 + APK 无线互传 + 应用管理 · 一套赛博朋克车机 UI
+一个 APK：五种投屏入口 + APK 无线互传 + 应用管理 + 一键自更新 · 一套赛博朋克车机 UI
 
-`v0.9.2`　·　`Android 8.1 / API 27`　·　`1920×720 · 1600×900`　·　`arm64-v8a + armeabi-v7a`
+`v0.9.3`　·　`Android 8.1 / API 27`　·　`1920×720 · 1600×900`　·　`arm64-v8a + armeabi-v7a`
 
 </div>
 
@@ -50,6 +50,7 @@
 | **Huawei HiCar** | 华为手机原生 HiCar 实验接收端，手机端不装第二个 APK | 实验路径（上游按 Android 10+ 设计） |
 | **无线传文件** | 手机 ⇄ 车机互传 APK：内置 HTTP 服务（手机浏览器上传 / 下载）+ 蓝牙分享 | 已接入，只收 `.apk` / `.apks` |
 | **应用管理** | 列全部应用（含系统预装、安装包缺失），直调系统卸载框；卸不掉时给原因 | 已接入，不静默删包 |
+| **一键更新** | 点首页版本胶囊 → 查 GitHub Releases → 下载 → SHA-256 + 签名校验 → 系统安装框 | 已接入，不静默安装 |
 
 **首页是车机一屏布局**：五张主功能卡（AirPlay / CarPlay / CarLife+ / Android Auto / HiCar）+ 一行快捷操作 + 一行「返回车机主屏幕」，不需要下拉；宽度 ≥1100px 且宽高比 ≥1.5 的横屏（1600×900、1920×720）五卡同排，接近 4:3 的窄横屏自动 3+2 两行。
 
@@ -103,6 +104,7 @@
 | 无线传文件（Wi‑Fi / 热点） | ✅ | 车机内置 HTTP 服务，手机浏览器上传 / 下载 APK；端口 8090，只收 apk |
 | 传文件（蓝牙通道） | ✅ | 调系统蓝牙分享发送；接收走系统蓝牙，不接管 OPP 服务 |
 | 应用管理（卸载 App） | ✅ | 系统卸载确认框；标注设备管理员 / 无障碍 / 系统预装 / 安装包缺失；设置页闪退时仍可卸 |
+| 一键更新（应用内自更新） | ✅ | 查 Release 取版本 → 下载 → size / SHA-256 / 签名三重校验 → 系统安装确认；12 小时静默检查一次 |
 | CarPlay 有线 / 无线入口 | ⚠️ 骨架 | USB 枚举 / Wi‑Fi 状态 + 启动状态，协议引擎未接入 |
 | CarPlay 认证后端 | ⚠️ 骨架 | 本地证书 / MFi 芯片 / 远程 MFI 三选一，仅保存与检查 |
 | 车机安全约束 | ✅ | 不写系统分区、不申请设备管理员 / 系统设置权限、不抢占默认桌面 |
@@ -115,7 +117,7 @@
 3. 如果报 **“应用未安装”**，说明撞上 SYNC+ 的签名白名单，需要百度签名重签；
 4. 装完桌面没有图标，从 **设置 → 应用 → iCarPlay → 打开** 进入；
 5. 首次打开会自动弹出权限引导：允许悬浮窗，再依次允许麦克风、位置、蓝牙、通知和电池优化；悬浮按钮默认自动启动；
-6. 首页点 CarLife+ → 有线 / 无线连接；DLNA 页点「启动接收」；Android Auto / HiCar 进入接收页；CarPlay 进入认证 / 连接页；「传文件」页可让手机无线上传 / 下载 APK；「应用管理」页可卸载多余的第三方 App（含旧小白点）。
+6. 首页点 CarLife+ → 有线 / 无线连接；DLNA 页点「启动接收」；Android Auto / HiCar 进入接收页；CarPlay 进入认证 / 连接页；「传文件」页可让手机无线上传 / 下载 APK；「应用管理」页可卸载多余的第三方 App（含旧小白点）；点右上角版本胶囊可一键检查并安装新版本。
 
 详细步骤与判读见 [`docs/INSTALL.md`](docs/INSTALL.md)。
 
@@ -173,7 +175,7 @@ icarplay/
 │   ├── src/main/java/info/anodsplace/headunit/     # Android Auto AAP/TLS/解码/触控协议层
 │   ├── src/main/cpp/                               # UxPlay / FFmpeg / OpenSSL 原生栈
 │   └── src/main/AndroidManifest.xml
-├── docs/                                           # INSTALL / AIRPLAY / ANDROID-AUTO / HICAR / CARPLAY / CARLIFE-PLUS / TRANSFER / APP-MANAGE / SAFETY / BUILD
+├── docs/                                           # INSTALL / AIRPLAY / ANDROID-AUTO / HICAR / CARPLAY / CARLIFE-PLUS / TRANSFER / APP-MANAGE / UPDATE / SAFETY / BUILD
 ├── docs/preview/                                   # README 界面预览图（1600×900）
 ├── scripts/preflight-safety.sh                      # 发布前车机安全检查
 ├── scripts/render-preview.py                        # 预览图渲染脚本（HTML 复刻 → Chromium 截图）
