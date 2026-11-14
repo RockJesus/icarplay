@@ -136,6 +136,13 @@
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <activity
+            android:name="com.rockjesus.icarplay.DoubaoActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <activity
             android:name="com.rockjesus.icarplay.HaPanelActivity"
             android:exported="false"
             android:screenOrientation="landscape"
