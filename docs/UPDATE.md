@@ -25,11 +25,23 @@
 |---|---|
 | 查版本 | `GET https://api.github.com/repos/RockJesus/icarplay/releases/latest`，读 `tag_name`、`body`、assets 里的 `icarplay.apk` |
 | 比版本 | 逐段十进制比较（`0.9.9 → 1.0.0` 算升版），段数不同按缺位 0 处理 |
-| 下载 | 直连 Release 资产地址，落到 `Android/data/com.rockjesus.icarplay/files/update/`，边下边报进度 |
+| 下载 | **多源**：先走 Release 说明里的镜像（`mirrors:` 一行），再回落 GitHub 资产地址；落到 `Android/data/com.rockjesus.icarplay/files/update/` |
+| 抗抖动 | 每个源最多重试 3 次，用 HTTP `Range` **断点续传**（失败后从已下字节继续），3 次不过自动换下一个源 |
 | 校验一 | 字节数与 Release 声明的 `size` 不一致 → 删文件、不装 |
 | 校验二 | Release 声明 `digest: sha256:…` 时比对摘要，不符 → 删文件、不装 |
 | 校验三 | 用 `PackageManager` 比对**下载包签名**与当前已装包签名，不一致 → 删文件、不装（防篡改/防误装他人包） |
 | 安装 | `FileProvider` + `ACTION_VIEW`（`application/vnd.android.package-archive`）拉起系统安装确认框 |
+
+## 国内下载不稳怎么办
+
+GitHub 的资产地址（`github.com/.../releases/download/...`）在国内经常时快时慢、甚至中途断掉。应用里已经按这个现实设计：
+
+1. **镜像优先**：Release 说明里写一行 `mirrors: <镜像地址1> <镜像地址2>`，应用会**先走镜像**，全部失败才回落 GitHub；
+2. **断点续传**：每个源都带 HTTP `Range`，断了从已下字节继续，不用从头；
+3. **自动换源**：单源最多 3 次（每次退避 0.7s / 1.4s / 2.1s），3 次不过换下一个源；界面上会显示「下载源 2/2 · host · 第 1 次」；
+4. **校验兜底**：无论来自哪个源，最后都要过 size + SHA-256 + 签名三道校验，镜像有毒也装不上。
+
+> 发布新版本时记得把 CDN 短链写进 Release 说明的 `mirrors:` 行，否则应用只能回落到 GitHub。
 
 ## 边界
 

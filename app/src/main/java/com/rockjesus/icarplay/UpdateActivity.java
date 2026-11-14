@@ -191,7 +191,7 @@ public class UpdateActivity extends Activity {
             UpdateChecker.Info got = null;
             String err = null;
             try {
-                got = UpdateChecker.latest(9000);
+                got = UpdateChecker.latest(12000);
             } catch (Throwable e) {
                 err = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
             }
@@ -248,7 +248,8 @@ public class UpdateActivity extends Activity {
                 apk = UpdateChecker.download(got, dir, (done, total) -> ui.post(() -> {
                     if (total > 0) bar.setProgress((int) (done * 1000 / total));
                     log("下载中 " + fmtSize(done) + " / " + fmtSize(total));
-                }));
+                }), (idx, count, host, tryIndex) -> ui.post(() ->
+                        log("下载源 " + idx + "/" + count + " · " + host + " · 第 " + tryIndex + " 次")));
             } catch (Throwable e) {
                 err = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
             }
