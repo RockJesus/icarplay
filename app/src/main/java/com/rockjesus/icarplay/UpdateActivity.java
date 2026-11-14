@@ -31,7 +31,7 @@ import java.security.MessageDigest;
  * <p>下载完先比字节数与 Release 声明的 SHA-256，再比签名指纹，任一不符就把文件删掉不装；
  * 装包本身走系统安装确认，应用不做静默安装。
  */
-public class UpdateActivity extends Activity {
+public class UpdateActivity extends FitActivity {
 
     private TextView statePill;
     private TextView versionText;
@@ -54,7 +54,7 @@ public class UpdateActivity extends Activity {
         shell.setBackground(PageUi.background(this));
         int pad = PageUi.dp(this, 18);
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
-        setContentView(shell);
+        setFitContentView(shell);
 
         shell.addView(PageUi.header(this, "版本更新", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));

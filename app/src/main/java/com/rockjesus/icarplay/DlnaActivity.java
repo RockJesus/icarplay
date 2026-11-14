@@ -28,7 +28,7 @@ import android.widget.Toast;
  * DLNA 投送接收页：手机把歌、视频、图片“投送”到车机，车机当音箱 + 副屏用。
  * 只接收同一局域网内主动推过来的媒体，不扫描别人的设备。
  */
-public class DlnaActivity extends Activity {
+public class DlnaActivity extends FitActivity {
 
     private static DlnaRenderer renderer;
 
@@ -82,7 +82,7 @@ public class DlnaActivity extends Activity {
         root.setBackground(PageUi.background(this));
         int pad = PageUi.dp(this, 18);
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
-        setContentView(root);
+        setFitContentView(root);
 
         root.addView(PageUi.header(this, "DLNA 投送接收", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));

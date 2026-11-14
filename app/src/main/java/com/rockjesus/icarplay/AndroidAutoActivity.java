@@ -46,7 +46,7 @@ import info.anodsplace.headunit.connection.UsbAccessoryMode;
  *
  * 协议层来自 harryjph/android-auto-headunit（AGPL-3.0），不含 Google 私有应用。
  */
-public class AndroidAutoActivity extends Activity {
+public class AndroidAutoActivity extends FitActivity {
 
     private static final String ACTION_USB_PERMISSION = "com.rockjesus.icarplay.USB_PERMISSION";
     private static final String CONNECTED_ACTION = "info.anodsplace.info.headunit.ACTION_CONNECTED";
@@ -105,7 +105,7 @@ public class AndroidAutoActivity extends Activity {
         root.setBackground(PageUi.background(this));
         root.setPadding(PageUi.dp(this, 18), PageUi.dp(this, 10),
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
-        setContentView(root);
+        setFitContentView(root);
 
         root.addView(PageUi.header(this, "Android Auto 接收", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));

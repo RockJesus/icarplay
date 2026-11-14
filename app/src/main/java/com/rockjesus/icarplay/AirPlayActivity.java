@@ -22,7 +22,7 @@ import android.widget.Toast;
 import io.github.jqssun.airplay.service.AirPlayService;
 
 /** AirPlay 接收单页：状态、本机地址、连接步骤和启停都在一屏。 */
-public class AirPlayActivity extends Activity {
+public class AirPlayActivity extends FitActivity {
     private AirPlayService service;
     private TextView status;
     private TextView statusPill;
@@ -57,7 +57,7 @@ public class AirPlayActivity extends Activity {
         root.setBackground(PageUi.background(this));
         int pad = PageUi.dp(this, 18);
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
-        setContentView(root);
+        setFitContentView(root);
 
         root.addView(PageUi.header(this, "AirPlay 接收", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));

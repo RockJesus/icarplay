@@ -35,9 +35,9 @@ import local.hicarlab.SafetyGuard;
  * 视觉上使用同一套深色玻璃卡片：左上角图标、右上角实时状态、下方名称与说明。
  * 分辨率按屏幕 dp 自适应：宽屏五卡横排，较窄或纵向空间不足时改为 3+2。
  */
-public class IcarLauncherActivity extends Activity {
+public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v0.9.5";
+    public static final String VERSION_LABEL = "v0.9.6";
 
     private TextView versionPill;
     private TextView statusView;
@@ -70,7 +70,7 @@ public class IcarLauncherActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackground(PageUi.background(this));
         root.setPadding(dp(18), dp(10), dp(18), dp(8));
-        setContentView(root);
+        setFitContentView(root);
 
         root.addView(buildHeader(), wrap());
         maybeAutoCheck();
@@ -528,9 +528,14 @@ public class IcarLauncherActivity extends Activity {
         chip(line1, usb > 0 ? "USB " + usb + " 个" : "USB 未检测",
                 usb > 0 ? PageUi.BLUE : PageUi.MUTED);
 
+        android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
+        int wDp = (int) (dm.widthPixels / dm.density);
+        int hDp = (int) (dm.heightPixels / dm.density);
         String device = Build.MANUFACTURER + " " + Build.MODEL
                 + "  ·  Android " + Build.VERSION.RELEASE
-                + " (API " + Build.VERSION.SDK_INT + ")";
+                + " (API " + Build.VERSION.SDK_INT + ")"
+                + "  ·  " + wDp + "×" + hDp + "dp"
+                + String.format(java.util.Locale.US, " %.2fx", PageUi.scale(this));
         String floatState = running
                 ? (PermissionOnboarding.isAccessibilityEnabled(this) ? "悬浮按钮运行中·无障碍" : "悬浮按钮运行中")
                 : "悬浮按钮未运行";

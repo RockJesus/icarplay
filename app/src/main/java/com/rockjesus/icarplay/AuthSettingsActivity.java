@@ -17,7 +17,7 @@ import android.widget.Toast;
  * 认证与连接设置：单屏三列全部显示，不滚动。
  * 三组选项分别是认证后端、音频通道、无线网络模式。
  */
-public class AuthSettingsActivity extends Activity {
+public class AuthSettingsActivity extends FitActivity {
 
     private SharedPreferences prefs;
 
@@ -31,7 +31,7 @@ public class AuthSettingsActivity extends Activity {
         root.setBackground(PageUi.background(this));
         root.setPadding(PageUi.dp(this, 18), PageUi.dp(this, 10),
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
-        setContentView(root);
+        setFitContentView(root);
 
         root.addView(PageUi.header(this, "认证与连接设置",
                 IcarLauncherActivity.VERSION_LABEL), PageUi.matchWrap(this));

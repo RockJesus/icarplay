@@ -53,7 +53,7 @@ import io.github.jqssun.airplay.service.AirPlayService;
  * 网络与连接中心：只读展示 Wi‑Fi/热点状态，并提供热点向导与 mDNS 体检。
  * 不修改系统网络配置，不自动替用户连未知热点。
  */
-public class NetworkCenterActivity extends Activity {
+public class NetworkCenterActivity extends FitActivity {
 
     private static final int REQ_WIFI = 70;
     private static final int REQ_BT = 71;
@@ -112,7 +112,7 @@ public class NetworkCenterActivity extends Activity {
         root.setBackground(PageUi.background(this));
         root.setPadding(PageUi.dp(this, 18), PageUi.dp(this, 10),
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
-        setContentView(root);
+        setFitContentView(root);
 
         root.addView(PageUi.header(this, "连接中心", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));

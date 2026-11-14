@@ -37,7 +37,7 @@ import java.util.Locale;
  * <p>第三方 App 无法静默卸载别的包，这里统一走系统的卸载确认框（ACTION_UNINSTALL_PACKAGE）；
  * 若系统按钮是灰的，多半是被设备管理员、无障碍服务或系统应用身份拦住，页面会把原因和对应设置入口一并给出来。
  */
-public class AppManageActivity extends Activity {
+public class AppManageActivity extends FitActivity {
 
     private static final int REQ_UNINSTALL = 1201;
 
@@ -56,7 +56,7 @@ public class AppManageActivity extends Activity {
         shell.setBackground(PageUi.background(this));
         int pad = PageUi.dp(this, 18);
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
-        setContentView(shell);
+        setFitContentView(shell);
 
         shell.addView(PageUi.header(this, "应用管理", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));

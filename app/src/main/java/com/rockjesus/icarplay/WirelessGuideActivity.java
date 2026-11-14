@@ -23,7 +23,7 @@ import java.util.Locale;
  * 一键无线投屏向导：手机开热点 → 车机加入 → 打开对应接收页，三步收在一页。
  * 只读网络状态和跳系统页面，不自己改 Wi‑Fi、不抢默认桌面。
  */
-public class WirelessGuideActivity extends Activity {
+public class WirelessGuideActivity extends FitActivity {
 
     private TextView ssidValue;
     private TextView ipValue;
@@ -39,7 +39,7 @@ public class WirelessGuideActivity extends Activity {
         root.setBackground(PageUi.background(this));
         int pad = PageUi.dp(this, 18);
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
-        setContentView(root);
+        setFitContentView(root);
 
         root.addView(PageUi.header(this, "一键无线投屏", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));

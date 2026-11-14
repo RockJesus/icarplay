@@ -18,7 +18,7 @@ import android.widget.Toast;
  * CarPlay 接收页：把认证状态、连接入口和诊断信息放在同一屏。
  * 不伪造“已连接”状态：没有 MFi 认证材料时明确显示未配置。
  */
-public class CarPlayActivity extends Activity {
+public class CarPlayActivity extends FitActivity {
 
     private TextView authValue;
     private TextView certValue;
@@ -35,7 +35,7 @@ public class CarPlayActivity extends Activity {
         root.setBackground(PageUi.background(this));
         root.setPadding(PageUi.dp(this, 18), PageUi.dp(this, 10),
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
-        setContentView(root);
+        setFitContentView(root);
 
         root.addView(PageUi.header(this, "CarPlay 接收", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));

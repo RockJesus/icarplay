@@ -38,7 +38,7 @@ import java.util.Locale;
  * 蓝牙作为兜底通道，用系统分享把车机上的 APK 发给已配对手机。页面本身不装包，
  * 装包交给系统的安装确认，避免应用偷偷静默安装。
  */
-public class TransferActivity extends Activity {
+public class TransferActivity extends FitActivity {
 
     private TextView statePill;
     private TextView addressText;
@@ -72,7 +72,7 @@ public class TransferActivity extends Activity {
         shell.setBackground(PageUi.background(this));
         int pad = PageUi.dp(this, 18);
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
-        setContentView(shell);
+        setFitContentView(shell);
 
         shell.addView(PageUi.header(this, "无线传文件", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));

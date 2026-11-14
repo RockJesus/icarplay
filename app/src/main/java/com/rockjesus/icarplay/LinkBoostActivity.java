@@ -29,7 +29,7 @@ import java.util.Locale;
  * 连接补强页：把“没有外置路由器时，五种投屏方式各自走哪条路”讲清楚。
  * 只做能力判定和向导，不改系统网络配置、不抢默认桌面。
  */
-public class LinkBoostActivity extends Activity {
+public class LinkBoostActivity extends FitActivity {
 
     private TextView btMetric;
     private TextView usbMetric;
@@ -46,7 +46,7 @@ public class LinkBoostActivity extends Activity {
         root.setBackground(PageUi.background(this));
         int pad = PageUi.dp(this, 18);
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
-        setContentView(root);
+        setFitContentView(root);
 
         root.addView(PageUi.header(this, "连接补强", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
