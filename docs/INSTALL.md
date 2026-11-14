@@ -4,7 +4,7 @@
 
 在 2020 款 SYNC+（Android 8.1 / API 27）上装好 iCarPlay，并完成第一次投屏验证。
 
-`适用版本 v0.9.0`　·　`单 APK`　·　[← 返回 README](../README.md)
+`适用版本 v0.9.1`　·　`单 APK`　·　[← 返回 README](../README.md)
 
 </div>
 

@@ -65,4 +65,4 @@
 
 ## 相关文档
 
-[`INSTALL.md`](INSTALL.md) 装车与验证清单 · [`SAFETY.md`](SAFETY.md) 权限边界
+[`INSTALL.md`](INSTALL.md) 装车与验证清单 · [`SAFETY.md`](SAFETY.md) 权限边界 · [`APP-MANAGE.md`](APP-MANAGE.md) 应用管理

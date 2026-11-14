@@ -254,6 +254,7 @@ public class NetworkCenterActivity extends Activity {
         links.addView(link("DLNA 投送接收 ›", PageUi.PINK, v -> openDlna()), weight());
         links.addView(link("连接补强 ›", PageUi.PURPLE, v -> openLinkBoost()), weight());
         links.addView(link("无线传文件 ›", PageUi.GOLD, v -> openTransfer()), weight());
+        links.addView(link("应用管理 ›", PageUi.GREEN, v -> openAppManage()), weight());
         actions.addView(links, linksLp);
 
         LinearLayout resultCard = PageUi.card(this, PageUi.GOLD, 12, 8);
@@ -975,6 +976,14 @@ public class NetworkCenterActivity extends Activity {
             startActivity(new Intent(this, DlnaActivity.class));
         } catch (Exception e) {
             toast("DLNA 页打不开");
+        }
+    }
+
+    private void openAppManage() {
+        try {
+            startActivity(new Intent(this, AppManageActivity.class));
+        } catch (Exception e) {
+            toast("应用管理页打不开");
         }
     }
 
