@@ -257,6 +257,7 @@ public class NetworkCenterActivity extends FitActivity {
         links.addView(link("应用管理 ›", PageUi.GREEN, v -> openAppManage()), weight());
         links.addView(link("HA 面板 ›", PageUi.PURPLE, v -> openHaPanel()), weight());
         links.addView(link("豆包 ›", PageUi.PINK, v -> openDoubao()), weight());
+        links.addView(link("网页投屏 ›", PageUi.CYAN, v -> openMirror()), weight());
         actions.addView(links, linksLp);
 
         LinearLayout resultCard = PageUi.card(this, PageUi.GOLD, 12, 8);
@@ -978,6 +979,14 @@ public class NetworkCenterActivity extends FitActivity {
             startActivity(new Intent(this, DlnaActivity.class));
         } catch (Exception e) {
             toast("DLNA 页打不开");
+        }
+    }
+
+    private void openMirror() {
+        try {
+            startActivity(new Intent(this, MirrorActivity.class));
+        } catch (Exception e) {
+            toast("网页投屏打不开");
         }
     }
 

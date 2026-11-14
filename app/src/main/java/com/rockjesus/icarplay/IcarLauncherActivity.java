@@ -37,7 +37,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v0.9.8";
+    public static final String VERSION_LABEL = "v0.9.9";
 
     private TextView versionPill;
     private TextView statusView;

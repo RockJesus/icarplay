@@ -296,6 +296,9 @@ public class FloatService extends Service {
         panel.addView(panelButton("豆包", new View.OnClickListener() {
             public void onClick(View v) { open(DoubaoActivity.class); }
         }));
+        panel.addView(panelButton("网页投屏", new View.OnClickListener() {
+            public void onClick(View v) { open(MirrorActivity.class); }
+        }));
         panel.addView(panelButton("系统设置", new View.OnClickListener() {
             public void onClick(View v) { openSystemSettings(); }
         }));
