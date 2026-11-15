@@ -120,7 +120,7 @@ public class CarPlayActivity extends FitActivity {
 
         grid.addView(row(
                 action("有线连接（USB）", PageUi.BLUE, v -> openDetect("wired")),
-                action("无线连接（Wi‑Fi）", PageUi.GREEN, v -> openDetect("wireless"))
+                action("无线向导（Wi‑Fi）", PageUi.GREEN, v -> openWireless())
         ), rowLp(0));
 
         grid.addView(row(
@@ -173,6 +173,14 @@ public class CarPlayActivity extends FitActivity {
                     android.net.Uri.parse(DiPlayBridge.installUrl())));
         } catch (Throwable e) {
             toast("车机没有浏览器，复制链接到手机打开：" + DiPlayBridge.installUrl());
+        }
+    }
+
+    private void openWireless() {
+        try {
+            startActivity(new Intent(this, CarPlayWirelessActivity.class));
+        } catch (Throwable e) {
+            toast("无线向导打不开");
         }
     }
 

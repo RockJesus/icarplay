@@ -131,3 +131,27 @@ DiPlay（`com.shihab.diplay`，GPLv3，开源）是独立的 Android 车机 CarP
 
 兼容性判断（对 2020 款锐际 SYNC+，Android 8.1 / API 27）：DiPlay 要求 **Android 7.0+（API 24）**，`arm64-v8a` 支持，两者都满足；它在 Android 7.0–8.1 上**有线 CarPlay 已被一台车验证可用**，无线在该区间尚未在实车确认。
 
+## 无线 CarPlay 向导
+
+CarPlay 页的「无线向导（Wi‑Fi）」入口。无线 CarPlay 的前提是四件事同时成立：MFi 身份 + 蓝牙配对 + Wi‑Fi 承载音视频 + 协议引擎；页面把它们拆成实测条目，并按成功率给出三条路径。
+
+**前置条件实测**（5 项，可重新检测）
+
+| 项 | 判定方式 |
+|---|---|
+| 蓝牙配对 | 蓝牙开关 + 已配对设备里是否有 iPhone/iPad |
+| Wi‑Fi 开关 | `WifiManager.isWifiEnabled()` |
+| 当前网络 / 频段 | SSID + 频点（4.9–5.9GHz 判为 5GHz） |
+| Wi‑Fi Direct | `FEATURE_WIFI_DIRECT` |
+| CarPlay 引擎 | DiPlay 是否安装及版本 |
+
+**三条无线路径**
+
+| 路径 | 把握 | 关键步骤 |
+|---|---|---|
+| ① iPhone 热点 | 最高 | iPhone 开个人热点（关「最大兼容性」争取 5GHz）→ 车机连该热点 → DiPlay 选「Existing Wi‑Fi / Same LAN」 |
+| ② 车机热点 | 中等 | 车机系统设置开 WPA2 热点 → iPhone 连入 → DiPlay 读或手填热点名/密码 |
+| ③ Wi‑Fi Direct | 最低 | 两端蓝牙先配对 → DiPlay 建 P2P 组；8.1 走固件相关旧路径，频点未校验 |
+
+页面底部提供「Wi‑Fi 设置」「蓝牙配对」「启动 DiPlay CarPlay」直达入口；系统没有对应设置页时给出明确提示，不静默失败。
+
