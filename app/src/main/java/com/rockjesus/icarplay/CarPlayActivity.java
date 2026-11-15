@@ -78,14 +78,12 @@ public class CarPlayActivity extends FitActivity {
         root.addView(grid, gridLp);
 
         grid.addView(row(
-                action("有线连接（USB）", PageUi.BLUE,
-                        v -> toast(CarPlayCore.startWired(CarPlayActivity.this))),
-                action("无线连接（Wi‑Fi）", PageUi.GREEN,
-                        v -> toast(CarPlayCore.startWireless(CarPlayActivity.this)))
+                action("有线连接（USB）", PageUi.BLUE, v -> openDetect("wired")),
+                action("无线连接（Wi‑Fi）", PageUi.GREEN, v -> openDetect("wireless"))
         ), rowLp(0));
 
         grid.addView(row(
-                action("检查认证材料", PageUi.MUTED, v -> checkIdentity()),
+                action("连接方式检测", PageUi.GOLD, v -> openDetect("all")),
                 action("认证与连接设置", PageUi.BLUE,
                         v -> startActivity(new Intent(CarPlayActivity.this, AuthSettingsActivity.class)))
         ), rowLp(6));
@@ -114,6 +112,12 @@ public class CarPlayActivity extends FitActivity {
         LinearLayout.LayoutParams backLp = PageUi.fixed(this, 44);
         PageUi.margin(backLp, this, 0, 8, 0, 0);
         root.addView(back, backLp);
+    }
+
+    private void openDetect(String mode) {
+        Intent i = new Intent(this, CarPlayDetectActivity.class);
+        i.putExtra("mode", mode);
+        startActivity(i);
     }
 
     private LinearLayout.LayoutParams rowLp(float top) {
