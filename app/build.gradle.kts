@@ -31,10 +31,10 @@ android {
 
     defaultConfig {
         applicationId = "com.rockjesus.icarplay"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 37
-        versionCode = 59
-        versionName = "1.0.3"
+        versionCode = 60
+        versionName = "1.0.4"
 
         externalNativeBuild {
             cmake {
@@ -147,4 +147,23 @@ dependencies {
 
     // UxPlay 音频输出，CMake 通过 prefab 引入
     implementation(libs.oboe)
+
+    // DiPlay CarPlay 引擎（同源 AAR，源码构建自 DiPlay v0.2.22，GPLv3）
+    implementation(files("libs/diplay-shared.aar"))
+    implementation(files("libs/diplay-common.aar"))
+    implementation("androidx.car.app:app:1.4.0")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.79")
+    implementation("org.jmdns:jmdns:3.6.3")
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("androidx.work:work-runtime:2.12.0")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
+    implementation(platform("androidx.compose:compose-bom:2026.05.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.appcompat:appcompat:1.8.0")
+    implementation("androidx.media3:media3-ui:1.11.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.11.1")
 }

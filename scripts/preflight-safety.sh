@@ -13,6 +13,7 @@ from pathlib import Path
 
 manifest, gradle = map(Path, sys.argv[1:3])
 AND = "{http://schemas.android.com/apk/res/android}"
+TOOLS = "{http://schemas.android.com/tools}"
 forbidden_permissions = {
     "android.permission.WRITE_SETTINGS",
     "android.permission.WRITE_SECURE_SETTINGS",
@@ -38,6 +39,10 @@ if root.get(AND + "sharedUserId"):
 
 for node in root.iter():
     if node.tag == "uses-permission":
+        # A declaration carrying tools:node="remove" only strips the permission
+        # contributed by an embedded library; the merged APK does not request it.
+        if node.get(TOOLS + "node") == "remove":
+            continue
         name = node.get(AND + "name", "")
         if name in forbidden_permissions:
             problems.append(f"forbidden permission: {name}")

@@ -11,3 +11,4 @@
 
 *.jks
 /dist/
+app/src/main/assets/offline-mfi/

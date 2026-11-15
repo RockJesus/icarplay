@@ -155,3 +155,15 @@ CarPlay 页的「无线向导（Wi‑Fi）」入口。无线 CarPlay 的前提�
 
 页面底部提供「Wi‑Fi 设置」「蓝牙配对」「启动 DiPlay CarPlay」直达入口；系统没有对应设置页时给出明确提示，不静默失败。
 
+
+## 内置 CarPlay 引擎
+
+CarPlay 不再需要另装 DiPlay：引擎以两个 AAR（`diplay-shared`、`diplay-common`）编进本 APK，
+`com.shilapi.xcertplay.DiPlayActivity` 与 iCarPlay 同在 `com.rockjesus.icarplay` 这一个包里。
+
+- CarPlay 页「启动 CarPlay」直接拉起内置 `DiPlayActivity`（走引擎首页，便于选有线/无线与配对）
+- CarPlay 检测页的「CarPlay 协议引擎」显示 `0.2.22（内置）`
+- 若用户另外装了独立版 DiPlay，检测优先显示外部包版本，启动也优先外部包
+- 未继承引擎的高危权限与开机自启，细节见 `docs/THIRD-PARTY.md`
+
+代价：APK 由 ~27.6 MB 增至 ~34 MB（多出引擎 dex、`libxcertplay_i2c.so`、`liblocal_hotspot_radio.so`、`libspeex_echo.so` 与身份材料）。

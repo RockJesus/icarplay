@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
+
+    <!-- 并入 DiPlay 引擎后，剥掉我们拒绝的权限与自启组件 -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:node="remove" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:node="remove" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -310,6 +318,16 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-    </application>
+    
+    <!-- 引擎自带自启/悬浮组件一律不继承，保持「不接管系统」的底线 -->
+    <receiver android:name="com.shilapi.xcertplay.BootReceiver" tools:node="remove" />
+
+    <activity android:name="com.shilapi.xcertplay.DiPlayActivity">
+        <intent-filter tools:node="remove">
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
+</application>
 
 </manifest>
