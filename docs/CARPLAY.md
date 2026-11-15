@@ -116,3 +116,18 @@
 
 检测页里「CarPlay 协议引擎」一项固定显示**未接入**，这是实话：真正的 CarPlay 会话需要 MFi 认证材料 + 协议引擎，本应用目前只有链路、枚举、认证后端与检测，CarUp 的引擎是闭源的。这一项就是后续要补的核心。
 
+## 与 DiPlay 的关系（引擎补齐路径）
+
+DiPlay（`com.shihab.diplay`，GPLv3，开源）是独立的 Android 车机 CarPlay 接收端，自带 `assets/offline-mfi/certificate.p7b` + `identity.pk8`——也就是本应用一直缺的离线 MFi 身份，还带 `libxcertplay_i2c.so` 等原生库。
+
+本应用**不复制**它的资产或代码，只做入口桥接（`DiPlayBridge`）：
+
+| 能力 | 行为 |
+|---|---|
+| 检测安装 | 读 `com.shihab.diplay` 的版本号，CarPlay 页显示 `DiPlay v0.2.22` 或「未安装」 |
+| 启动 | 「启动 CarPlay」调 `getLaunchIntentForPackage` 拉起 DiPlay |
+| 获取 | 「获取 DiPlay」打开官方 Releases 页 |
+| 检测页联动 | 有线/无线两栏的「CarPlay 协议引擎」一项改为显示 DiPlay 状态，装上即变绿 |
+
+兼容性判断（对 2020 款锐际 SYNC+，Android 8.1 / API 27）：DiPlay 要求 **Android 7.0+（API 24）**，`arm64-v8a` 支持，两者都满足；它在 Android 7.0–8.1 上**有线 CarPlay 已被一台车验证可用**，无线在该区间尚未在实车确认。
+

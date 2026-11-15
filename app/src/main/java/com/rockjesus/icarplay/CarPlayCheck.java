@@ -90,8 +90,11 @@ public class CarPlayCheck {
                 CarPlayCore.hasLocalIdentity(c) ? OK : WARN,
                 "identity.pk8 + certificate.p7b，放在 assets/carplay 或外部目录"));
 
-        list.add(new Item("CarPlay 协议引擎", "未接入", FAIL,
-                "认证通过后还需协议引擎才能出画面；本版本只有链路与检测"));
+        boolean diplay = DiPlayBridge.isInstalled(c);
+        list.add(new Item("CarPlay 协议引擎", diplay ? "DiPlay " + DiPlayBridge.version(c) : "未接入",
+                diplay ? OK : FAIL,
+                diplay ? "已装第三方接收端 DiPlay，可从 CarPlay 页直接启动"
+                        : "本应用无引擎；装 DiPlay 可补上（其自带离线 MFi 身份）"));
 
         list.add(new Item("数据线要求", "需数据线", UNKNOWN,
                 "只能充电的线不枚举数据，换一根支持数据传输的线"));
@@ -163,8 +166,10 @@ public class CarPlayCheck {
                 authOk ? OK : FAIL,
                 authOk ? "认证材料已就位" : "无线同样过不了认证"));
 
-        list.add(new Item("CarPlay 协议引擎", "未接入", FAIL,
-                "无线链路建好也需要协议引擎才能出画面"));
+        boolean diplayW = DiPlayBridge.isInstalled(c);
+        list.add(new Item("CarPlay 协议引擎", diplayW ? "DiPlay " + DiPlayBridge.version(c) : "未接入",
+                diplayW ? OK : FAIL,
+                diplayW ? "已装 DiPlay，无线由它负责" : "本应用无引擎；装 DiPlay 可补上"));
 
         list.add(new Item("iPhone 端状态", "需已配对", UNKNOWN,
                 "首次无线连接要在 iPhone 里完成配对与授权"));
