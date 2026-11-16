@@ -62,6 +62,22 @@ class TcpChannelTransport(
     @Volatile
     private var running = false
 
+    /**
+     * True once the handshake actually produced a session (encoder init done).
+     * Before that a silent CMD channel means a dead handshake, so a read
+     * timeout must fail the channel. After that the phone may legitimately stay
+     * quiet for tens of seconds, and tearing the projection down on idle was a
+     * live bug (2026-11-16, iPhone 13 Pro Max): the handshake completed, no
+     * frame arrived for 20 s, the CMD read timeout fired and the engine
+     * reconnected in a 20 s loop, so the screen never showed anything.
+     */
+    @Volatile
+    private var handshakeDone = false
+
+    fun markHandshakeDone() {
+        handshakeDone = true
+    }
+
     // Throttle timestamps for the per-instance drop/proof-of-life logs. These
     // were companion statics once, which made instances throttle each other.
     private var lastDropLogAt = 0L
@@ -155,7 +171,9 @@ class TcpChannelTransport(
             // CMD and VIDEO carry a heartbeat/steady frame flow; a dead Wi-Fi
             // link otherwise blocks read() forever. TOUCH is write-only and
             // audio channels can legitimately stay silent for minutes, so they
-            // keep the no-timeout behaviour.
+            // keep the no-timeout behaviour. Once [handshakeDone] is set the
+            // read loop converts a timeout on the first byte of a frame into
+            // "idle" instead of a failure - see IDLE_LIMITS below.
             socket.soTimeout = when (channel.id) {
                 CarLife.CHANNEL_CMD, CarLife.CHANNEL_VIDEO -> READ_TIMEOUT_MS
                 else -> 0
@@ -175,10 +193,23 @@ class TcpChannelTransport(
             // 2 MB; mirror it so readFully never overruns the buffer on a big frame.
             val buf = ByteArray(2 * 1024 * 1024)
             val input = channel.input!!
+            val idleLimit = IDLE_LIMITS[channel.id] ?: 0
+            var idleReads = 0
             while (running && channel.open) {
                 // Per-channel stream: one message header + payload at a time.
-                val head = readFully(input, buf, if (channel.id == CarLife.CHANNEL_CMD || channel.id == CarLife.CHANNEL_TOUCH) 8 else 12)
-                    ?: return null
+                val headSize = if (channel.id == CarLife.CHANNEL_CMD || channel.id == CarLife.CHANNEL_TOUCH) 8 else 12
+                val head = try {
+                    readFully(input, buf, headSize, idleOk = handshakeDone)
+                } catch (_: IdleTimeoutException) {
+                    // Nothing received for one READ_TIMEOUT_MS. After the handshake
+                    // that is silence, not death: keep the socket. Only a phone that
+                    // goes quiet for the whole tolerance budget counts as gone.
+                    idleReads++
+                    if (idleReads > idleLimit) return "idle ${idleReads * READ_TIMEOUT_MS / 1000}s"
+                    idleLog(channel.id, idleReads)
+                    continue
+                } ?: return null
+                idleReads = 0
                 val payloadLen = if (channel.id == CarLife.CHANNEL_CMD || channel.id == CarLife.CHANNEL_TOUCH) {
                     ((head[0].toInt() and 0xFF) shl 8) or (head[1].toInt() and 0xFF)
                 } else {
@@ -217,14 +248,24 @@ class TcpChannelTransport(
         return out
     }
 
-    private fun readFully(input: BufferedInputStream, buf: ByteArray, len: Int): ByteArray? {
+    /** Nothing arrived before the first byte of a frame: idle, not a dead link. */
+    private class IdleTimeoutException : RuntimeException()
+
+    private fun readFully(input: BufferedInputStream, buf: ByteArray, len: Int, idleOk: Boolean = false): ByteArray? {
         // Guard against frames larger than the reusable buffer (defensive; the
         // 2 MB buffer already covers normal CarLife frames, but never overrun it).
         if (len > buf.size) {
             val big = ByteArray(len)
             var off = 0
             while (off < len) {
-                val n = input.read(big, off, len - off)
+                val n = try {
+                    input.read(big, off, len - off)
+                } catch (e: java.net.SocketTimeoutException) {
+                    // A timeout mid-frame means the framing is already broken, so
+                    // only a timeout before any byte counts as idle.
+                    if (idleOk && off == 0) throw IdleTimeoutException()
+                    throw e
+                }
                 if (n < 0) return null
                 off += n
             }
@@ -232,7 +273,12 @@ class TcpChannelTransport(
         }
         var off = 0
         while (off < len) {
-            val n = input.read(buf, off, len - off)
+            val n = try {
+                input.read(buf, off, len - off)
+            } catch (e: java.net.SocketTimeoutException) {
+                if (idleOk && off == 0) throw IdleTimeoutException()
+                throw e
+            }
             if (n < 0) return null
             off += n
         }
@@ -270,6 +316,13 @@ class TcpChannelTransport(
         }
     }
 
+    /** Idle windows are expected after the handshake: log the first few only. */
+    private fun idleLog(channel: Int, idleReads: Int) {
+        if (idleReads <= 3) {
+            android.util.Log.i("CarLifeLog", "TCP: channel $channel idle ${idleReads * READ_TIMEOUT_MS / 1000}s, keeping socket")
+        }
+    }
+
     /** Runs on the writer thread only: routes one frame to its channel socket. */
     private fun routeWrite(frame: ByteArray) {
         if (frame.size < 8) return
@@ -303,10 +356,28 @@ class TcpChannelTransport(
     }
 
     companion object {
-        private const val CONNECT_TIMEOUT_MS = 10_000
+        /**
+         * LAN connect, not a WAN one: a listening phone answers in ~80 ms, so
+         * anything near this cap means "phone is not listening yet". The old
+         * 10 s value made every miss feel like a 10 s hang before the retry
+         * even started (2026-11-16 field report: "能连上但很慢").
+         */
+        private const val CONNECT_TIMEOUT_MS = 2_500
         private const val READ_TIMEOUT_MS = 20_000
-        private const val RETRY_BACKOFF_START_MS = 1_000L
-        private const val RETRY_BACKOFF_MAX_MS = 5_000L
+        private const val RETRY_BACKOFF_START_MS = 500L
+        private const val RETRY_BACKOFF_MAX_MS = 3_000L
+
+        /**
+         * How many READ_TIMEOUT_MS windows of silence to tolerate per channel
+         * once the handshake is done. CMD carries the session and only sees
+         * traffic on events, so it gets a generous budget (4 min); VIDEO is
+         * expected to flow continuously and gets 2 min before the stream is
+         * treated as dead. Other channels keep the no-timeout behaviour.
+         */
+        private val IDLE_LIMITS = mapOf(
+            CarLife.CHANNEL_CMD to 12,
+            CarLife.CHANNEL_VIDEO to 6,
+        )
 
         /** In-place retries per non-CMD channel before escalating to a full reconnect. */
         private const val CHANNEL_SELFHEAL_ATTEMPTS = 2

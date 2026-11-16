@@ -205,7 +205,10 @@ class CarLifeEngine(
             if (channel == CarLife.CHANNEL_CMD) {
                 armHandshakeTimeout()
                 session?.startHandshake()
-                uiListener.onEngineState("connected")
+                // TCP connect is not "connected to the phone": the handshake can
+                // still fail or time out, and saying so made the page show a
+                // green "已连接手机" over a black screen (live 2026-11-16).
+                uiListener.onEngineState("channel-open")
             }
         }
 
@@ -301,7 +304,7 @@ class CarLifeEngine(
     }
 
     /**
-     * Auto-reconnect with capped backoff (1s, 2s, 4s; max 15s), unless the
+     * Auto-reconnect with capped backoff (0.5s, 1s, 2s, then 4s), unless the
      * user stopped the engine. Keeps the projection alive across USB hiccups
      * and phone-side session drops, mirroring DiPlay's connection behaviour.
      */
@@ -309,7 +312,10 @@ class CarLifeEngine(
         if (userStopped || !running) return
         if (reconnectScheduled) return
         reconnectScheduled = true
-        val delayMs = (1000L shl minOf(reconnectAttempt, 4)).coerceAtMost(15_000L)
+        // The phone opens its ports only once its CarLife+ page is in the foreground,
+        // so the engine has to keep knocking at a human tempo: a 15 s ceiling left
+        // the user staring at "重连中" long after the phone was ready.
+        val delayMs = (500L shl minOf(reconnectAttempt, 3)).coerceAtMost(4_000L)
         reconnectAttempt++
         emitState("reconnecting", "$reason (retry $reconnectAttempt in ${delayMs / 1000}s)")
         reconnectHandler.postDelayed({
@@ -469,7 +475,7 @@ class CarLifeEngine(
                     sdkInt = android.os.Build.VERSION.SDK_INT,
                 ),
             )
-            emitState("connected")
+            emitState("handshaking", "version matched")
         } else {
             session?.close("version mismatch: $matchStatus")
         }
@@ -550,6 +556,10 @@ class CarLifeEngine(
         if (name.isNotEmpty()) {
             CarLifePersistence.get(context).saveLastPhone(name)
             CarLifeSessionLog.log(context, "PHONE", name)
+            // The phone introducing itself is the first proof the handshake
+            // really reached the other side, so this is where the state
+            // graduates from "channel open" to "connected to <phone>".
+            emitState("connected", name)
         }
         uiListener.onMobileInfo(info)
     }
@@ -559,6 +569,9 @@ class CarLifeEngine(
         decoderHeight = info.height
         uiListener.onEncoderSize(info.width, info.height)
         setupDecoder()
+        // Handshake produced a real session: from here on a silent channel is
+        // idle time, not a dead link (see TcpChannelTransport.IDLE_LIMITS).
+        tcp?.markHandshakeDone()
         session?.sendVideoEncoderStart()
         // GNSS is optional instrumentation, not part of the verified CarLife+
         // handshake. Send it only after the encoder is running so it can never

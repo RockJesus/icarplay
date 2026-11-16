@@ -50,6 +50,10 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
     private lateinit var video: TextureView
     private lateinit var status: TextView
     private lateinit var connectBar: LinearLayout
+    private lateinit var topBar: LinearLayout
+    private lateinit var backBar: View
+    private var streamingNow = false
+    private lateinit var floatExit: TextView
     private lateinit var idlePanel: LinearLayout
     private lateinit var statusDot: View
 
@@ -109,12 +113,12 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         }
         video.setOnTouchListener { v, event -> onVideoTouch(v, event) }
 
-        val top = LinearLayout(this)
-        top.orientation = LinearLayout.HORIZONTAL
-        top.gravity = Gravity.CENTER_VERTICAL
-        top.setPadding(dp(10), dp(7), dp(10), dp(7))
-        top.background = PageUi.surface(this, PageUi.GOLD, 12f)
-        top.layoutParams = FrameLayout.LayoutParams(
+        topBar = LinearLayout(this)
+        topBar.orientation = LinearLayout.HORIZONTAL
+        topBar.gravity = Gravity.CENTER_VERTICAL
+        topBar.setPadding(dp(10), dp(7), dp(10), dp(7))
+        topBar.background = PageUi.surface(this, PageUi.GOLD, 12f)
+        topBar.layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
             Gravity.TOP,
@@ -133,11 +137,11 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         PageUi.gradientText(brand, intArrayOf(PageUi.GOLD, PageUi.PINK, PageUi.CYAN))
         brand.gravity = Gravity.CENTER_VERTICAL
         brand.setPadding(dp(6), 0, dp(10), 0)
-        top.addView(brand, LinearLayout.LayoutParams(dp(86), dp(36)))
+        topBar.addView(brand, LinearLayout.LayoutParams(dp(86), dp(36)))
 
         statusDot = View(this)
         statusDot.setBackground(PageUi.rounded(this, PageUi.GREEN, 0, 4f))
-        top.addView(statusDot, LinearLayout.LayoutParams(dp(8), dp(8)).apply {
+        topBar.addView(statusDot, LinearLayout.LayoutParams(dp(8), dp(8)).apply {
             marginStart = dp(8)
             marginEnd = dp(7)
         })
@@ -150,12 +154,12 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         status.gravity = Gravity.START or Gravity.CENTER_VERTICAL
         status.textAlignment = View.TEXT_ALIGNMENT_VIEW_START
         status.setPadding(0, 0, dp(8), 0)
-        top.addView(status, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        topBar.addView(status, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
 
         val log = PageUi.button(this, "日志", 11.5f, PageUi.BLUE)
         log.setOnClickListener { showLogDialog() }
-        top.addView(log, LinearLayout.LayoutParams(dp(56), dp(36)))
-        root.addView(top)
+        topBar.addView(log, LinearLayout.LayoutParams(dp(56), dp(36)))
+        root.addView(topBar)
 
         idlePanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -216,13 +220,33 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         connectBar.addView(barButton("停止", PageUi.RED) { stopEngine() })
         root.addView(connectBar)
 
-        val back = PageUi.back(this)
-        back.setOnClickListener { finish() }
-        root.addView(back, FrameLayout.LayoutParams(
+        backBar = PageUi.back(this)
+        backBar.setOnClickListener { finish() }
+        root.addView(backBar, FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, dp(44), Gravity.BOTTOM,
         ).apply {
             marginStart = dp(10)
             marginEnd = dp(10)
+            bottomMargin = dp(10)
+        })
+
+        floatExit = TextView(this).apply {
+            text = "结束投屏"
+            setTextColor(PageUi.CYAN)
+            textSize = 11.5f
+            gravity = Gravity.CENTER
+            background = PageUi.surface(this@CarLifePlusActivity, PageUi.CYAN, 20f)
+            alpha = 0.92f
+            visibility = View.GONE
+            setOnClickListener { stopEngine() }
+            setOnLongClickListener {
+                showLogDialog()
+                true
+            }
+        }
+        root.addView(floatExit, FrameLayout.LayoutParams(
+            dp(96), dp(38), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL,
+        ).apply {
             bottomMargin = dp(10)
         })
 
@@ -268,13 +292,23 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
             status.text = "未连接 Wi-Fi 或有线网络：请先让车机接入手机所在网络"
             return
         }
+        val lastHost = CarLifePersistence.get(this).lastWirelessHost()
+            ?.let { WirelessNetwork.parseIpv4(it) }
+        CarLifeSessionLog.log(this, "SCAN", "lan=${lan.summary()} last=${lastHost?.hostAddress ?: "-"}")
+        if (lastHost != null) {
+            // Connect straight away instead of probing the port first. A probe is
+            // a TCP connect followed by an immediate close, and the phone treats
+            // that as a broken attempt: it reset the session we opened 5 ms later
+            // and then stopped listening (log 2026-11-16 15:04:46). The engine's
+            // own retry loop is the availability check.
+            CarLifeSessionLog.log(this, "SCAN", "direct connect, no probe: ${lastHost.hostAddress}")
+            startWirelessToHost(lastHost, fromScan = true)
+            return
+        }
         scanning = true
         val epoch = ++scanEpoch
         val cancel = AtomicBoolean(false)
         scanCancel = cancel
-        val lastHost = CarLifePersistence.get(this).lastWirelessHost()
-            ?.let { WirelessNetwork.parseIpv4(it) }
-        CarLifeSessionLog.log(this, "SCAN", "lan=${lan.summary()} last=${lastHost?.hostAddress ?: "-"}")
         status.text = "正在 ${lan.summary()} 搜索手机…\n手机请先点 CarLife+ 的“无线连接”"
         SubnetScanner.findPhone(
             this,
@@ -327,7 +361,7 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         engine = e
         e.start(mode, host)
         idlePanel.visibility = View.GONE
-        setEngineActive(true)
+        setEngineActive(true, "wireless-connecting")
         statusDot.setBackground(PageUi.rounded(this, PageUi.GOLD, 0, 4f))
         status.text = if (mode == CarLifeEngine.Mode.WIRED) {
             "正在等待手机（USB）…"
@@ -342,16 +376,34 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         engine?.stop()
         engine = null
         idlePanel.visibility = View.VISIBLE
+        streamingNow = false
+        applyChromeForState(false)
         setEngineActive(false)
         statusDot.setBackground(PageUi.rounded(this, PageUi.GOLD, 0, 4f))
         status.text = "已停止。可重新连接手机"
     }
 
-    private fun setEngineActive(active: Boolean, label: String = "") {
+    private fun setEngineActive(active: Boolean, state: String = "") {
         getSharedPreferences("icarplay", Context.MODE_PRIVATE).edit()
             .putBoolean("carlife_active", active)
-            .putString("carlife_state", label)
+            .putString("carlife_state", homeLabel(state))
             .apply()
+    }
+
+    /**
+     * The home card shows this verbatim, so never hand it the raw engine state:
+     * "phase:streaming" leaked onto the card once and read like an error code.
+     */
+    private fun homeLabel(state: String): String = when {
+        state == "phase:streaming" -> "投屏中"
+        state == "connected" -> "已连接"
+        state == "phase:encoder_init" -> "准备画面"
+        state == "channel-open" -> "通道就绪"
+        state == "handshaking" || state.startsWith("phase:") -> "握手中"
+        state == "wireless-connecting" || state == "wireless" -> "连接中"
+        state == "reconnecting" || state == "watchdog" -> "重连中"
+        state == "scanning" -> "扫描中"
+        else -> "运行中"
     }
 
     /** Invalidates every in-flight scan callback, then stops the worker pool. */
@@ -456,6 +508,25 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         return true
     }
 
+    /**
+     * Streaming owns the whole panel: the header and both button bars disappear
+     * for good — no pop-up on touch, because a stray tap during a drive test
+     * would otherwise shove a bar over the map. One small button docked at the
+     * bottom stays put as the only way out.
+     */
+    private fun applyChromeForState(streaming: Boolean) {
+        if (!::topBar.isInitialized) return
+        for (v in chromeViews()) {
+            v.visibility = if (streaming) View.GONE else View.VISIBLE
+            v.alpha = 1f
+        }
+        if (::floatExit.isInitialized) {
+            floatExit.visibility = if (streaming) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun chromeViews(): List<View> = listOf(topBar, connectBar, backBar)
+
     private fun updateVideoLayout() {
         val rootW = root.width
         val rootH = root.height
@@ -480,27 +551,64 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         video.surfaceTexture?.setDefaultBufferSize(phoneWidth, phoneHeight)
     }
 
+    /**
+     * 0 = nothing connected, higher = further along the handshake. The engine
+     * emits its channel and phase events from separate threads, so "channel
+     * open" can arrive after "version sent" and overwrite the newer text.
+     */
+    private fun stageOf(state: String): Int = when (state) {
+        "disconnected", "stopped", "reconnecting", "wireless-connecting",
+        "wireless", "watchdog", "scanning" -> 0
+        "channel-open" -> 1
+        "phase:version_sent" -> 2
+        "phase:version_matched" -> 3
+        "handshaking" -> 4
+        "phase:authen" -> 4
+        "connected" -> 5
+        "phase:encoder_init" -> 6
+        "phase:streaming" -> 7
+        else -> if (state.startsWith("phase:")) 4 else 0
+    }
+
+    private var stageRank = 0
+
     override fun onEngineState(state: String, detail: String?) {
         main.post {
+            val rank = stageOf(state)
+            if (rank != 0 && rank < stageRank) return@post   // stale, newer state already shown
+            stageRank = rank
             status.text = when {
                 state == "scanning" -> "正在扫描 USB…请用数据线连接手机并打开 CarLife+"
-                state == "connected" -> "已连接手机${detail?.let { "：$it" } ?: ""}"
+                // TCP channel up, handshake still in flight: saying "已连接手机"
+                // here showed a green light over a black screen (live 2026-11-16).
+                state == "channel-open" -> "通道已建立，等待手机握手…"
+                state == "handshaking" -> "版本匹配，正在认证与初始化画面…"
+                state == "connected" -> "已连接手机${detail?.let { "：$it" } ?: ""}，正在启动投屏…"
                 state == "reconnecting" -> "连接中断，正在重连…"
                 state == "wireless-connecting" -> "正在连接手机 ${detail ?: ""}…"
                 state == "wireless" -> "无线连接：${detail ?: ""}"
                 state == "watchdog" -> "画面中断，正在重连…"
                 state == "stopped" || state == "disconnected" -> "未连接。请检查数据线 / 手机 CarLife+ 状态"
-                state.startsWith("phase:") -> {
-                    val phase = state.removePrefix("phase:")
-                    if (phase == "streaming") "CarLife+ 已连接，正在投屏" else "握手：$phase"
+                state.startsWith("phase:") -> when (val phase = state.removePrefix("phase:")) {
+                    "streaming" -> "CarLife+ 已连接，正在投屏"
+                    "version_sent" -> "已发送版本，等待手机应答…"
+                    "version_matched" -> "版本匹配，正在认证…"
+                    "authen" -> "认证中…"
+                    "encoder_init" -> "正在初始化画面…"
+                    else -> "握手：$phase"
                 }
                 else -> state + (detail?.let { " · $it" } ?: "")
             }
-            val active = state != "stopped" && state != "disconnected"
-            setEngineActive(active, state)
+            // Only a live picture counts as connected: the dot turns green and
+            // the guidance panel disappears at the first streamed frame, not at
+            // "TCP channel open".
+            val streaming = state == "phase:streaming"
+            streamingNow = streaming
+            applyChromeForState(streaming)
+            setEngineActive(streaming, state)
             statusDot.setBackground(PageUi.rounded(this,
-                if (active) PageUi.GREEN else PageUi.GOLD, 0, 4f))
-            idlePanel.visibility = if (active) View.GONE else View.VISIBLE
+                if (streaming) PageUi.GREEN else PageUi.GOLD, 0, 4f))
+            idlePanel.visibility = if (streaming) View.GONE else View.VISIBLE
         }
     }
 

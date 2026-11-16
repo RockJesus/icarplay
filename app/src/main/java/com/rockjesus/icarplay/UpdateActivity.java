@@ -104,7 +104,7 @@ public class UpdateActivity extends FitActivity {
         title.setGravity(Gravity.CENTER_VERTICAL);
         title.addView(PageUi.text(this, "当前版本", 11f, PageUi.MUTED, false));
 
-        versionText = PageUi.text(this, IcarLauncherActivity.VERSION_LABEL + "  →  检查中…",
+        versionText = PageUi.text(this, IcarLauncherActivity.VERSION_LABEL + "  ·  检查中…",
                 13f, PageUi.TEXT, true);
         PageUi.mono(versionText);
         LinearLayout.LayoutParams vlp = PageUi.wrap(this);
@@ -225,17 +225,20 @@ public class UpdateActivity extends FitActivity {
         }
         info = got;
         boolean newer = UpdateChecker.isNewer(IcarLauncherActivity.VERSION_LABEL, got.tag);
-        versionText.setText(IcarLauncherActivity.VERSION_LABEL + "  →  " + got.tag);
         if (newer) {
+            versionText.setText(IcarLauncherActivity.VERSION_LABEL + "  →  " + got.tag);
             statePill.setText("有新版本");
             statePill.setTextColor(PageUi.GREEN);
             updateBtn.setEnabled(got.hasApk);
             log("发现 " + got.tag + "：" + fmtSize(got.size) + "，点「一键下载并安装」开始。");
         } else {
+            // No arrow here: "v1.0.9 → v1.0.8" read like a downgrade. When there
+            // is nothing newer the row shows only the installed version.
+            versionText.setText(IcarLauncherActivity.VERSION_LABEL);
             statePill.setText("已是最新");
             statePill.setTextColor(PageUi.CYAN);
             updateBtn.setEnabled(false);
-            log("当前已是最新版本，无需更新。");
+            log("已是最新版本，无需更新（GitHub 上最新为 " + got.tag + "）。");
         }
         notesText.setText(got.notes.isEmpty() ? "（这版没有写更新说明）" : got.notes);
     }
