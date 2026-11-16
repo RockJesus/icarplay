@@ -33,9 +33,10 @@ public class DiPlayBridge {
     }
 
     public static String version(Context c) {
+        // 启动时优先走内置引擎，所以状态也以内置为准；外部包只作为兜底。
+        if (hasBuiltin()) return BUILTIN_VERSION + "（内置）";
         PackageInfo pi = packageInfo(c);
         if (pi != null && pi.versionName != null) return pi.versionName + "（独立包）";
-        if (hasBuiltin()) return BUILTIN_VERSION + "（内置）";
         return "未安装";
     }
 

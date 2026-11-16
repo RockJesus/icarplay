@@ -302,8 +302,8 @@ public class CarPlayActivity extends FitActivity {
         }
         if (engineNote != null) {
             engineNote.setText(diplay
-                    ? "已检测到 DiPlay：点「启动 CarPlay」由它接手有线/无线 CarPlay。"
-                    : "未安装 DiPlay：它是独立开源接收端，自带离线 MFi 身份，装上即可补上本应用缺的引擎。");
+                    ? "引擎已内置：点「启动 CarPlay」直接进入，不再需要另外安装 DiPlay。"
+                    : "引擎缺失：本包应自带 DiPlay，若这里显示未安装说明 APK 被裁剪过。");
         }
 
         usbValue.setText(usb > 0 ? usb + " 个" : "未检测");

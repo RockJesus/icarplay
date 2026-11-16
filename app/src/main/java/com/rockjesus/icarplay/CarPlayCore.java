@@ -42,7 +42,9 @@ public final class CarPlayCore {
             case AUTH_LOCAL_CERT: return "本地证书 (.p7b + .pk8)";
             case AUTH_MFI_CHIP: return "MFi 芯片 (I2C / CH341)";
             case AUTH_REMOTE_MFI: return "远程 MFI 服务";
-            default: return "未配置";
+            default:
+                // 内置引擎自带离线身份，不必再去「认证设置」里手动选后端。
+                return hasLocalIdentity(c) ? "内置引擎（离线身份）" : "未配置";
         }
     }
 
@@ -51,9 +53,19 @@ public final class CarPlayCore {
                 && assetExists(c, "carplay/certificate.p7b")) {
             return true;
         }
+        // 内置 DiPlay 引擎的身份材料落在 offline-mfi/（引擎首启会拷到 no_backup）。
+        if (assetExists(c, "offline-mfi/identity.pk8")
+                && assetExists(c, "offline-mfi/certificate.p7b")) {
+            return true;
+        }
         File dir = new File(c.getExternalFilesDir(null), "carplay");
-        return new File(dir, "identity.pk8").isFile()
-                && new File(dir, "certificate.p7b").isFile();
+        if (new File(dir, "identity.pk8").isFile()
+                && new File(dir, "certificate.p7b").isFile()) {
+            return true;
+        }
+        File engine = new File(c.getNoBackupFilesDir(), "offline-mfi");
+        return new File(engine, "identity.pk8").isFile()
+                && new File(engine, "certificate.p7b").isFile();
     }
 
     public static boolean hasAuth(Context c) {
@@ -61,13 +73,13 @@ public final class CarPlayCore {
             case AUTH_LOCAL_CERT: return hasLocalIdentity(c);
             case AUTH_MFI_CHIP:
             case AUTH_REMOTE_MFI: return true;
-            default: return false;
+            default: return hasLocalIdentity(c);
         }
     }
 
     public static String identityHint(Context c) {
         File dir = new File(c.getExternalFilesDir(null), "carplay");
-        return "查找位置：assets/carplay/ 或 " + dir.getAbsolutePath();
+        return "查找位置：assets/carplay/ 或 assets/offline-mfi/ 或 " + dir.getAbsolutePath();
     }
 
     public static int appleUsbCount(Context c) {
