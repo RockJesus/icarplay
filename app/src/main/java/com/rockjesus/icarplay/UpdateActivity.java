@@ -289,16 +289,62 @@ public class UpdateActivity extends FitActivity {
     }
 
     private void install(File apk) {
+        Uri uri;
         try {
-            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", apk);
-            Intent i = new Intent(Intent.ACTION_VIEW);
-            i.setDataAndType(uri, "application/vnd.android.package-archive");
-            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(i);
-            updateBtn.setEnabled(true);
+            uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", apk);
         } catch (Throwable e) {
-            log("打不开安装框：" + e.getClass().getSimpleName() + "，去「允许安装」里开启后再试。");
+            log("准备安装文件失败：" + e.getClass().getSimpleName() + "。");
+            updateBtn.setEnabled(true);
+            return;
         }
+        updateBtn.setEnabled(true);
+        if (!launchInstaller(uri)) {
+            log("这台设备没有可用的系统安装器（没有 Activity 响应 APK 安装请求）。文件已保存到 "
+                    + apk.getAbsolutePath() + "，可用「传文件」页或文件管理器手动安装。");
+            toast("没有可用的系统安装器");
+            return;
+        }
+        // 安装请求发出去不代表框真的弹出来了：2.5 秒后还不回流就明说原因，别让页面干等。
+        ui.postDelayed(this::verifyInstallerShown, 2500);
+    }
+
+    /** 依次尝试 ACTION_VIEW / ACTION_INSTALL_PACKAGE，有宿主才发；都没有就返回 false。 */
+    private boolean launchInstaller(Uri uri) {
+        PackageManager pm = getPackageManager();
+        String mime = "application/vnd.android.package-archive";
+        Intent view = new Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (!pm.queryIntentActivities(view, 0).isEmpty()) {
+            try {
+                startActivity(view);
+                log("已请求系统安装框，请在弹框里点「安装」。");
+                return true;
+            } catch (Throwable ignored) {
+            }
+        }
+        Intent legacy = new Intent(Intent.ACTION_INSTALL_PACKAGE).setData(uri)
+                .putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (!pm.queryIntentActivities(legacy, 0).isEmpty()) {
+            try {
+                startActivity(legacy);
+                log("已请求系统安装框（兼容模式），请在弹框里点「安装」。");
+                return true;
+            } catch (Throwable ignored) {
+            }
+        }
+        return false;
+    }
+
+    /** 2.5 秒后仍停在更新页，说明安装框没起来或被系统拦下，给出可执行的下一步。 */
+    private void verifyInstallerShown() {
+        if (isFinishing() || isDestroyed()) return;
+        if (!hasWindowFocus()) {
+            log("系统安装框已打开，请在弹框里点「安装」。");
+            return;
+        }
+        log("系统安装框没弹出来：可能是系统拦截了安装请求，或本机安装器不可用。"
+                + "先点「允许安装」开启权限后重试；仍不行就用「传文件」页下载后用文件管理器装。");
     }
 
     /** 下载包的签名必须和当前安装的包一致，否则拒绝安装。 */
