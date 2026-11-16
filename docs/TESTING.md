@@ -103,3 +103,72 @@ adb shell dumpsys meminfo com.rockjesus.icarplay | Select-String "TOTAL"
 - 每个结论必须带：截图 / 日志片段 / 时间戳，三者至少两个；
 - 失败时同时记录：页面提示语原文、`adb logcat` 相关 tag、当时的网络状态（SSID、频段、IP）；
 - 不在仓库里留真实 SSID、IP、VIN、手机号；截图打码或替换为示例值。
+
+## 六、P1 真机测试细则
+
+P1 的 8 项（Android Auto 有线 / 无线、HiCar、车机自建热点、蓝牙分享、悬浮球无障碍层、并发与来电、长稳）分两类设备，**不必都等上车**：
+
+- **能在手机上先跑通**（把荣耀手机当"车机"，跑 iCarPlay 的车机端逻辑）：车机自建热点、蓝牙分享、悬浮球无障碍层、Android Auto 无线（Headunit Server）、并发与来电、长时间稳定性（AirPlay 除外）。
+- **必须上车**：Android Auto 有线（要车机 USB Host + 数据口）、HiCar（要车机靠近 + 手机原生 HiCar）。
+
+每条都在手机上先跑一遍的好处：上车后失败，能立刻区分"协议没通"还是"车机环境不行"。
+
+### 8. Android Auto 有线（AOA）
+
+- 准备：iCarPlay 所在设备（车机或荣耀手机）+ 第二台安卓手机装 Android Auto + **支持数据传输的 USB-OTG 线**（不是充电线）。
+- 步骤：第二台手机开 Android Auto → OTG 线接上 → iCarPlay 进 Android Auto 页点「有线连接」→ 手机弹「允许访问此设备」时点允许。
+- 判据：手机状态栏出现 Android Auto 车载通知；iCarPlay 页面从「等待设备」变「已连接」并出画面；手机端分辨率切换后画面跟着变。
+- 失败先看：`adb logcat -s UsbDeviceManager:* AOA:* Headunit:*`——没有 `accessory` 相关行 = 线或口不支持数据；有 accessory 但无会话 = 手机端 Android Auto 未授权。
+
+### 9. Android Auto 无线（Headunit Server）
+
+- 准备：第二台安卓手机 + 同一局域网（手机热点或车机热点）。
+- 步骤：手机 Android Auto 设置里连点版本号 10 次开发者模式 → 右上角菜单「Start Headunit Server」→ `adb shell ip addr` 或手机设置里查到手机 IP → iCarPlay 页填 `<手机IP>:5277` → 点连接。
+- 判据：15 秒内出画面；手机端 Headunit Server 通知保持运行。
+- 失败先看：`nc -z <手机IP> 5277`（PC 上测端口）不通 = Server 没起或防火墙；通但连不上 = TLS 握手被拒，抓 `logcat -s Headunit`。
+
+### 10. HiCar
+
+- 前提硬条件：手机侧必须有原生 HiCar（华为 EMUI 10+/HarmonyOS）。**荣耀分家后的 MagicUI 机型一般没有 HiCar**，测之前先在手机设置里搜 "HiCar"，搜不到就是这台手机不具备，不是 APK 的问题。
+- 步骤：手机连上车机蓝牙 → 手机蓝牙设置里开启「HUAWEI HiCar」→ iCarPlay 进 HiCar 页点「开始连接」→ 手机弹六位码 → 在车机上输入。
+- 判据：手机进 HiCar 驾驶模式，车机出画面；方向键/触控可用。
+- 记法：若手机无 HiCar 入口，本条记为「设备不具备，非缺陷」，不要算失败。
+
+### 11. 车机自建热点（AP 模式）
+
+- 步骤：iCarPlay 进连接中心 → 看「无线能力」胶囊是否显示"自建热点支持" → 点「开启车机热点」→ 另一台手机搜 SSID 并连接。
+- 判据：手机能连上并拿到 192.168.x.x 地址；iCarPlay 页面显示热点 SSID 与频段。
+- 失败判据：点击后页面明确提示"该设备不支持 AP 模式"→ 记为能力缺失（Android 8+ 需要 `WifiManager.startLocalOnlyHotspot` 权限与驱动支持），继续用手机热点方案。
+
+### 12. 蓝牙分享通道
+
+- 步骤：传文件页 → 文件列表里选一个 APK →「蓝牙分享」→ 系统分享面板里选蓝牙目标设备 → 对方接受。
+- 判据：对方设备收到文件并能安装；车机端只做「发送」，接收走系统蓝牙，不接管 OPP。
+- 失败判据：系统弹「没有应用可执行此操作」= 车机固件没带蓝牙 OPP 发送组件（系统层限制，不是本 App 缺陷），改走 Wi‑Fi 传文件。
+
+### 13. 悬浮球在车机桌面（无障碍层）
+
+- 步骤：iCarPlay → 悬浮按钮设置 → 跳转系统无障碍 → 开启 `iCarPlay 悬浮按钮` → 返回**车机原桌面**（不是 iCarPlay 内）。
+- 判据：悬浮球压在车机桌面上、可拖动、不越出屏幕；点按弹出菜单；点空白处自动收起；不遮挡原车图标。
+- 失败判据：桌面看不到 = 无障碍没真正开启（部分车机固件会静默关闭无障碍服务）；能看但点击穿透 = 窗口类型不是 `TYPE_ACCESSIBILITY_OVERLAY`，抓 `logcat -s FloatBall`。
+
+### 14. 并发与来电
+
+- 场景 A：AirPlay 投屏中，另一台手机请求 CarLife 无线连接 → 看是否抢 Wi‑Fi / 抢音频焦点。
+- 场景 B：CarLife 投屏中来一通电话（用另一台手机拨）→ 挂断后画面是否回来。
+- 场景 C：CarPlay 投屏中收到来电（iPhone 侧）→ CarPlay 通话界面是否正常、车机音频是否切到通话。
+- 判据：不崩、不黑屏、不出现本 App 控件；通话结束后 3 秒内画面恢复。
+- 取证：每个场景前后各截图一张 + `logcat -b crash` 为空。
+
+### 15. 长时间稳定性
+
+- 步骤：单协议连续跑 30 分钟（AirPlay 放视频、CarLife 跑导航、CarPlay 放音乐+地图），期间每 5 分钟：截图 + `dumpsys meminfo com.rockjesus.icarplay`。
+- 判据：无断连、无重连循环；内存增长 < 40MB 且不持续单调上升；`logcat` 无 ANR / OOM / crash。
+- 车机上顺手加一条：连续 30 分钟不出现车机原生界面被顶掉或黑屏。
+
+### 一次真机测试的推荐路线（约 90 分钟）
+
+1. 跑 `scripts/car-test-session.ps1 -Serial <设备> -Shots 30 -IntervalSec 120` 开抓（设备信息 + 日志 + 定时截图自动落盘）；
+2. 手机上先过：11 → 12 → 13 → 9 → 14（40 分钟，失败项当场记判据）；
+3. 上车过：8 → 10 → 14 场景 B/C → 15（40 分钟）；
+4. 收尾：`Get-Process adb | Stop-Process`，把 `car-test/<时间戳>/` 整个目录里 `session-info.txt` + `logcat.txt` + `shots/` 附到测试记录，失败项标注时间戳。

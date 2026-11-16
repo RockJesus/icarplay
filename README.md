@@ -226,6 +226,7 @@ icarplay/
 ├── docs/                                           # INSTALL / AIRPLAY / ANDROID-AUTO / HICAR / CARPLAY / CARLIFE-PLUS / TRANSFER / APP-MANAGE / UPDATE / SAFETY / BUILD / TESTING
 ├── docs/preview/                                   # README 界面预览图（1600×900，7 张）
 ├── scripts/preflight-safety.sh                      # 发布前车机安全检查
+├── scripts/car-test-session.ps1                     # 真机测试抓取：设备信息 + logcat + 定时截图
 ├── scripts/render-preview.py                        # 预览图渲染脚本（HTML 复刻 → Chromium 截图）
 ├── .github/workflows/apk.yml                        # GitHub Actions 构建
 └── README.md
