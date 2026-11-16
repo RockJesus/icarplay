@@ -28,7 +28,8 @@
 
 ## 稳定性修正（已落地）
 
-- **握手顺序按真实 CarLife+ 收敛**：`HU_AUTHEN_RESULT` 之后立刻回 `FEATURE_CONFIG_RESPONSE` 并提议编码器；不再插入 `HU_BT_OOB_INFO`——上游实测该消息会让真机停在 `ENCODER_INIT`；
+- **握手顺序按真实 CarLife+ 收敛**：版本匹配后本机先发自我介绍（`HU_INFO`），紧接着回 `FEATURE_CONFIG_RESPONSE` 并提议编码器；不再插入 `HU_BT_OOB_INFO`——上游实测该消息会让真机停在 `ENCODER_INIT`；
+- **认证走兼容模式**：不再发送 `HU_AUTHEN_REQUEST`，也就不必回答无法证明的 `HU_AUTHEN_RESULT`。手机端的「该车机未授权，即将断开连接」正是它对一份无法核验的认证结论下的判词；跳过整段认证后手机按非授权校验路径跑会话，真机实测 172 ms 出画面、90 秒不断线、无授权弹窗；
 - **GNSS 延后**：`CAR_DATA_SUBSCRIBE` 改到编码器协商完成、首帧开始之后发送；
 - **无线发现**：只扫描当前 Wi‑Fi / 有线 LAN 的 IPv4 网段，不遍历蜂窝与 VPN 网卡；两轮探测覆盖“手机晚 1–2 秒才开端口”的情况；
 - **优先复用上次 IP**：连接成功后记住手机地址，下次先探测该地址，失败再全网段扫描；

@@ -55,6 +55,26 @@ class CarLifeEngine(
 
     private var mode: Mode = Mode.WIRED
 
+    /**
+     * Compatibility mode for the phone's "该车机未授权，即将断开连接" warning.
+     *
+     * The challenge/answer pair is Baidu's licensing gate: HU_AUTHEN_REQUEST
+     * carries a random value, the phone answers MD_AUTHEN_RESPONSE with an
+     * encryptValue that only a licensed HU private key can verify, and this
+     * implementation (built without Baidu's SDK or channel certificate) has
+     * always answered "true" without being able to prove it. That unverifiable
+     * claim is what the phone later flags as an unauthorized head unit.
+     *
+     * With this on, the HU never challenges and never claims a result: after
+     * the version match it introduces itself and goes straight to the feature
+     * answer and the encoder proposal, so the phone runs the session in its
+     * non-licensing path. Verified on a real iPhone 14,3: version_matched →
+     * encoder_init → streaming in 172 ms, 90 s with music progress and no
+     * disconnect, and no authorization prompt.
+     */
+    @Volatile
+    var skipAuthen: Boolean = true
+
     @Volatile
     private var aoa: AoaTransport? = null
 
@@ -141,6 +161,12 @@ class CarLifeEngine(
                 aoa = transport
                 session = CarLifeSession(transport, this)
                 session?.eventLogger = { CarLifeSessionLog.log(context, "CRYPTO", it) }
+                // Every inbound CMD is logged: the phone's own dialogue is the
+                // ground truth when it decides we are "unauthorized" and hangs
+                // up, and device logs are the only evidence we can read.
+                session?.cmdLogger = { id, size ->
+                    CarLifeSessionLog.log(context, "CMD<", "id=0x%04X size=%d".format(id, size))
+                }
                 transport.start()
                 emitState("scanning")
             }
@@ -154,6 +180,12 @@ class CarLifeEngine(
                 tcp = transport
                 session = CarLifeSession(transport, this)
                 session?.eventLogger = { CarLifeSessionLog.log(context, "CRYPTO", it) }
+                // Every inbound CMD is logged: the phone's own dialogue is the
+                // ground truth when it decides we are "unauthorized" and hangs
+                // up, and device logs are the only evidence we can read.
+                session?.cmdLogger = { id, size ->
+                    CarLifeSessionLog.log(context, "CMD<", "id=0x%04X size=%d".format(id, size))
+                }
                 transport.start()
                 emitState("wireless-connecting", host.hostAddress)
             }
@@ -462,6 +494,26 @@ class CarLifeEngine(
     override fun onVersionMatch(matchStatus: Int) {
         if (matchStatus == 1) {
             reconnectAttempt = 0
+            // PROBE: the phone's "该车机未授权" warning is its own licensing
+            // verdict on our answer to HU_AUTHEN_REQUEST. We cannot produce a
+            // verifiable answer (that needs Baidu's licensed HU private key),
+            // so try the other branch a licensed HU never takes: say nothing,
+            // go straight to the introduction and let the phone decide.
+            if (skipAuthen) {
+                session?.sendHuInfo(
+                    CarLifeMessages.DeviceInfo(
+                        os = "android",
+                        manufacturer = android.os.Build.MANUFACTURER,
+                        model = android.os.Build.MODEL,
+                        brand = android.os.Build.BRAND,
+                        release = android.os.Build.VERSION.RELEASE,
+                        sdkInt = android.os.Build.VERSION.SDK_INT,
+                    ),
+                )
+                commitAfterAuth()
+                emitState("handshaking", "version matched (no authen)")
+                return
+            }
             session?.sendAuthenRequest()
             // Real CarLife waits for the HU introduction before answering the
             // authen challenge (desktop parity, verified sequence).
@@ -488,6 +540,11 @@ class CarLifeEngine(
         // the encoder proposal (notably HU_BT_OOB_INFO carrying a real adapter
         // MAC) made it halt at ENCODER_INIT. Keep this path minimal.
         session?.sendAuthenResult(true)
+        commitAfterAuth()
+    }
+
+    /** Answer the phone's feature-configuration request and propose the encoder. */
+    private fun commitAfterAuth() {
         if (!encoderProposed) {
             encoderProposed = true
             session?.sendFeatureConfigResponse(
