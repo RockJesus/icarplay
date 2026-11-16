@@ -31,6 +31,8 @@ public class AirPlayActivity extends FitActivity {
     private TextView networkValue;
     private Button start;
     private Button stop;
+    private LinearLayout root;
+    private MirrorOverlay mirror;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable refresh = new Runnable() {
         @Override public void run() {
@@ -42,17 +44,19 @@ public class AirPlayActivity extends FitActivity {
     private final ServiceConnection conn = new ServiceConnection() {
         @Override public void onServiceConnected(ComponentName name, IBinder binder) {
             service = ((AirPlayService.LocalBinder) binder).getService();
+            if (mirror != null) mirror.setService(service);
             refreshState();
         }
         @Override public void onServiceDisconnected(ComponentName name) {
             service = null;
+            if (mirror != null) mirror.setService(null);
             refreshState();
         }
     };
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
-        LinearLayout root = new LinearLayout(this);
+        root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackground(PageUi.background(this));
         int pad = PageUi.dp(this, 18);
@@ -166,6 +170,7 @@ public class AirPlayActivity extends FitActivity {
         PageUi.margin(backLp, this, 0, 8, 0, 0);
         root.addView(back, backLp);
 
+        mirror = new MirrorOverlay(this, root);
         bindService(new Intent(this, AirPlayService.class), conn, Context.BIND_AUTO_CREATE);
     }
 
@@ -276,6 +281,21 @@ public class AirPlayActivity extends FitActivity {
         networkValue.setText(PageUi.localNetwork(this));
         start.setEnabled(!running);
         stop.setEnabled(running);
+        if (mirror != null) {
+            Boolean mirroring = service.getMirroringActive().getValue();
+            mirror.setMirroring(Boolean.TRUE.equals(mirroring));
+        }
+    }
+
+    @Override public void onBackPressed() {
+        // 镜像全屏时返回键先结束这次投屏，再回到接收页
+        if (mirror != null && mirror.isShowing()) {
+            mirror.setMirroring(false);
+            if (service != null) service.stopServer();
+            handler.postDelayed(this::refreshState, 400);
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override protected void onResume() {

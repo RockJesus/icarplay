@@ -32,6 +32,7 @@ class VideoPipeline {
     private var uTexMatrix = 0
     private val texMatrix = FloatArray(16)
     private var hasFrame = false
+    private val quadBuffer = _fb(FloatArray(8))
 
     private var surfaceTexture: SurfaceTexture? = null
     var inputSurface: Surface? = null; private set
@@ -145,6 +146,23 @@ class VideoPipeline {
         _render()
     }
 
+    // 手机镜像多半是竖屏，直接铺满横屏画面会被拉扁；这里等比缩放并留黑边
+    private fun _fitQuad() {
+        var sx = 1f
+        var sy = 1f
+        val vw = videoW
+        val vh = videoH
+        if (vw > 0 && vh > 0 && winW > 0 && winH > 0) {
+            val videoAspect = vw.toFloat() / vh
+            val windowAspect = winW.toFloat() / winH
+            if (videoAspect > windowAspect) sy = windowAspect / videoAspect
+            else sx = videoAspect / windowAspect
+        }
+        quadBuffer.clear()
+        quadBuffer.put(floatArrayOf(-sx, -sy, sx, -sy, -sx, sy, sx, sy))
+        quadBuffer.position(0)
+    }
+
     private fun _render() {
         GLES20.glViewport(0, 0, winW, winH)
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
@@ -152,8 +170,9 @@ class VideoPipeline {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, oesTex)
         GLES20.glUniformMatrix4fv(uTexMatrix, 1, false, texMatrix, 0)
+        _fitQuad()
         GLES20.glEnableVertexAttribArray(aPos)
-        GLES20.glVertexAttribPointer(aPos, 2, GLES20.GL_FLOAT, false, 0, POS)
+        GLES20.glVertexAttribPointer(aPos, 2, GLES20.GL_FLOAT, false, 0, quadBuffer)
         GLES20.glEnableVertexAttribArray(aTex)
         GLES20.glVertexAttribPointer(aTex, 2, GLES20.GL_FLOAT, false, 0, TEX)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)

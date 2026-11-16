@@ -2,13 +2,18 @@ package com.rockjesus.icarplay;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Looper;
 import android.provider.Settings;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -27,6 +32,7 @@ import android.widget.Toast;
 import com.rockjesus.icarplay.carlife.CarLifePlusActivity;
 
 import io.github.jqssun.airplay.R;
+import io.github.jqssun.airplay.service.AirPlayService;
 import local.hicarlab.SafetyGuard;
 
 /**
@@ -37,13 +43,35 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v1.1.2";
+    public static final String VERSION_LABEL = "v1.1.3";
 
     private TextView versionPill;
     private TextView statusView;
     private View statusDot;
     private Button floatButton;
     private SharedPreferences prefs;
+
+    private LinearLayout pageRoot;
+    private MirrorOverlay mirror;
+    private AirPlayService airService;
+    private final Handler mirrorTick = new Handler(Looper.getMainLooper());
+    private final Runnable mirrorSync = new Runnable() {
+        @Override public void run() {
+            syncMirror();
+            mirrorTick.postDelayed(this, 800);
+        }
+    };
+    private final ServiceConnection airConn = new ServiceConnection() {
+        @Override public void onServiceConnected(ComponentName name, IBinder binder) {
+            airService = ((AirPlayService.LocalBinder) binder).getService();
+            if (mirror != null) mirror.setService(airService);
+            syncMirror();
+        }
+        @Override public void onServiceDisconnected(ComponentName name) {
+            airService = null;
+            if (mirror != null) { mirror.setMirroring(false); mirror.setService(null); }
+        }
+    };
 
     private TextView airplayState;
     private TextView carplayState;
@@ -66,11 +94,13 @@ public class IcarLauncherActivity extends FitActivity {
         boolean fiveAcross = dm.widthPixels >= 1100
                 && (dm.widthPixels / (float) dm.heightPixels) >= 1.5f;
 
-        LinearLayout root = new LinearLayout(this);
+        pageRoot = new LinearLayout(this);
+        LinearLayout root = pageRoot;
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackground(PageUi.background(this));
         root.setPadding(dp(18), dp(10), dp(18), dp(8));
         setFitContentView(root);
+        mirror = new MirrorOverlay(this, pageRoot);
 
         root.addView(buildHeader(), wrap());
         maybeAutoCheck();
@@ -426,6 +456,32 @@ public class IcarLauncherActivity extends FitActivity {
         super.onResume();
         refresh();
         PermissionOnboarding.onResume(this);
+        // 服务已在跑时只做绑定（flags=0），不会替用户把 AirPlay 拉起来
+        try {
+            bindService(new Intent(this, AirPlayService.class), airConn, 0);
+        } catch (Throwable ignored) {
+        }
+        mirrorTick.removeCallbacks(mirrorSync);
+        mirrorTick.post(mirrorSync);
+    }
+
+    @Override
+    protected void onPause() {
+        mirrorTick.removeCallbacks(mirrorSync);
+        try {
+            unbindService(airConn);
+        } catch (Throwable ignored) {
+        }
+        airService = null;
+        if (mirror != null) mirror.setService(null);
+        super.onPause();
+    }
+
+    private void syncMirror() {
+        if (mirror == null) return;
+        boolean mirroring = airService != null
+                && Boolean.TRUE.equals(airService.getMirroringActive().getValue());
+        if (mirror.isShowing() != mirroring) mirror.setMirroring(mirroring);
     }
 
     @Override
@@ -442,6 +498,11 @@ public class IcarLauncherActivity extends FitActivity {
 
     @Override
     public void onBackPressed() {
+        if (mirror != null && mirror.isShowing()) {
+            mirror.setMirroring(false);
+            if (airService != null) airService.stopServer();
+            return;
+        }
         goCarHome();
     }
 
