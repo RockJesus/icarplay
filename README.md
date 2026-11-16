@@ -5,7 +5,7 @@
 **2020 款福特锐际 SYNC+ 车机的第三方互联中枢**
 一个 APK：五种投屏入口 + APK 无线互传 + 应用管理 + 一键自更新 · 一套赛博朋克车机 UI
 
-`v1.1.4`　·　`Android 8.1 / API 27`　·　`1920×720 · 1600×900`　·　`arm64-v8a + armeabi-v7a`
+`v1.1.5`　·　`Android 8.1 / API 27`　·　`1920×720 · 1600×900`　·　`arm64-v8a + armeabi-v7a`
 
 </div>
 
@@ -88,7 +88,7 @@
 | 入口 | 能力 | 现状 |
 |---|---|---|
 | **AirPlay** | iPhone / iPad / Mac 屏幕镜像与音频，控制中心直接选中 `iCarPlay` | 已接入，随首页启动默认开启 |
-| **CarPlay** | 有线 / 无线，内置 DiPlay 0.2.22 引擎，iCarPlay 一个包就能跑 | 已内置（见下文「CarPlay」） |
+| **CarPlay** | 有线 / 无线，接收引擎内置在同一个包，界面统一为 iCarPlay | 已内置（见下文「CarPlay」） |
 | **CarLife+** | 百度 CarLife+ 兼容接收（有线 / 无线），接收核心内嵌在同一个 APK | 待真机复测 |
 | **Android Auto** | USB AOA 有线条目 + 手机 Headunit Server 手动无线 | 协议已接通，待实车验证 |
 | **Huawei HiCar** | 华为手机原生 HiCar 实验接收端，手机端不装第二个 APK | 实验路径（上游按 Android 10+ 设计） |
@@ -149,8 +149,9 @@
 | 传文件（蓝牙通道） | ✅ | 调系统蓝牙分享发送；接收走系统蓝牙，不接管 OPP 服务 |
 | 应用管理（卸载 App） | ✅ | 系统卸载确认框；标注设备管理员 / 无障碍 / 系统预装 / 安装包缺失；设置页闪退时仍可卸 |
 | 一键更新（应用内自更新） | ✅ | 查 Release 取版本 → 下载 → size / SHA-256 / 签名三重校验 → 系统安装确认；12 小时静默检查一次 |
-| CarPlay 有线 / 无线 | ✅ 内置引擎 | 点「启动 CarPlay」直接进引擎，无需另装 DiPlay |
+| CarPlay 有线 / 无线 | ✅ 内置引擎 | 点「开始 CarPlay 接收」直接进接收画面，无需另装接收器 |
 | CarPlay 认证 | ✅ 内置 | 引擎自带离线 MFi 身份（`assets/offline-mfi/`） |
+| CarPlay 界面品牌 | ✅ | 引擎自带的等待页 / 提示页文案与图标已覆盖为 iCarPlay，车机端不再出现第三方品牌 |
 | 车机安全约束 | ✅ | 不写系统分区、不申请设备管理员 / 系统设置权限、不抢占默认桌面 |
 | 只有一个 APK | ✅ | 悬浮球、AirPlay、CarPlay（引擎内置）、Android Auto、HiCar、CarLife+、DLNA 全在一个包里 |
 
@@ -202,7 +203,8 @@
 <summary><b>CarPlay</b></summary>
 
 - 需要 Apple MFi 认证身份，三选一：本地 `.p7b` + `.pk8`、MFi 芯片、远程 MFI 服务；
-- CarPlay 引擎已内置：`shared` / `common` 两个库模块以 AAR 编进本包，`com.shilapi.xcertplay.DiPlayActivity` 与 iCarPlay 同一个 APK；
+- CarPlay 接收引擎已内置：`shared` / `common` 两个库模块以 AAR 编进本包，与 iCarPlay 同一个 APK；
+- 车机端界面只用 iCarPlay：首页、CarPlay 页、无线向导、连接检测全部是自有 UI，点按钮直接进接收画面（不经过第三方向导）；引擎自带的等待 / 提示页文案与图标用 `app/src/main/res/values/strings_icarplay_brand.xml`、`values-zh-rCN/strings_icarplay_brand.xml`、`drawable/ic_carplay.png` 做资源覆盖，不改动第三方代码；
 - 有线：USB 接 iPhone，引擎走 USB 枚举 + MFi 认证 + AirPlay 隧道；
 - 无线：三条路径（iPhone 热点 / 车机热点 / Wi‑Fi Direct），向导页逐项实测并给把握程度；
 - 未继承引擎的 `WRITE_SETTINGS`、`REQUEST_INSTALL_PACKAGES`、`PACKAGE_USAGE_STATS` 与开机自启，因此「车机热点自动开」降级为手动开，更新由本应用更新器负责；
@@ -255,7 +257,7 @@ git submodule update --init --recursive
 - Android Auto 协议层来自 [`harryjph/android-auto-headunit`](https://github.com/harryjph/android-auto-headunit)（AGPL-3.0），保留上游版权与许可；不含 Google 私有 Android Auto APK。
 - Huawei HiCar 接收端来自 [`huducat586/hicar-android-receiver`](https://github.com/huducat586/hicar-android-receiver)（MIT，0.11.1 Preview）；原生库取自其官方 release APK，第三方许可证随包放在 `app/src/main/assets/hicar-licenses/`，来源见 [`THIRD_PARTY_NOTICES-HICAR.txt`](THIRD_PARTY_NOTICES-HICAR.txt)。
 - CarLife+ 接收核心来自 [`FF1239/Limo-carlife`](https://github.com/FF1239/Limo-carlife)（GPL-3.0），详见 [`docs/CARLIFE-PLUS.md`](docs/CARLIFE-PLUS.md)。
-- CarPlay 引擎来自 [DiPlay](https://github.com/shihabal3amri/DiPlay)（GPLv3，v0.2.22），以 AAR 形式编入，改了什么、怎么重建见 `docs/THIRD-PARTY.md`；离线 MFi 身份取自上游 release 包，**不随仓库分发**，需要自行放入 `app/src/main/assets/offline-mfi/`。
+- CarPlay 接收引擎来自 [DiPlay](https://github.com/shihabal3amri/DiPlay)（GPLv3，v0.2.22），以 AAR 形式编入，本地仅做了**界面资源覆盖**（字符串与图标换成 iCarPlay 品牌，不改代码逻辑），改了什么、怎么重建见 `docs/THIRD-PARTY.md`；离线 MFi 身份取自上游 release 包，**不随仓库分发**，需要自行放入 `app/src/main/assets/offline-mfi/`。
 - 本项目与 Apple、Ford、Baidu、Huawei 均无关联。
 
 ## 风险

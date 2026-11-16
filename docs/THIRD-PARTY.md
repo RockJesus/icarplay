@@ -26,6 +26,8 @@ cp common/build/outputs/aar/common-release.aar  <本仓库>/app/libs/diplay-comm
 - 合并进本包时用 `tools:node="remove"` 剥掉：`WRITE_SETTINGS`、`REQUEST_INSTALL_PACKAGES`、`PACKAGE_USAGE_STATS`、`WRITE_EXTERNAL_STORAGE`，以及引擎自带的 `com.shilapi.xcertplay.BootReceiver` 开机自启。
 - 移除 `DiPlayActivity` 的 `MAIN/LAUNCHER` 入口，避免 APK 出现第二个启动图标；只由 iCarPlay 的 CarPlay 页拉起。
 - 因此车机热点「自动开启」与引擎自更新属于**已知降级**：热点仍需在系统设置里手动开，更新由 iCarPlay 自己的更新器负责。
+- 界面品牌做**资源覆盖**（不改引擎代码、不改 dex）：`app/src/main/res/values/strings_icarplay_brand.xml`、`values-zh-rCN/strings_icarplay_brand.xml` 覆盖引擎两个 AAR 里值含 `DiPlay` 的全部字符串（en 97 条 / zh-rCN 96 条），把品牌字样换成 `iCarPlay`；`app/src/main/res/drawable/ic_carplay.png` 覆盖引擎等待页的图标（192×192，青→紫渐变）。覆盖走 Android 资源合并规则（app 模块同名资源优先），引擎行为不变。
+- 若上游升级版本，需按同一份清单重新生成覆盖：用 `zipfile` 读 `diplay-common.aar` 的 `res/values/values.xml`、`res/values-zh-rCN/values-zh-rCN.xml`，筛出值含 `DiPlay` 的 `<string>` 后替换品牌词即可。
 
 ### 身份材料
 

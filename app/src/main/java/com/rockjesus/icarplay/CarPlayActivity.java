@@ -79,7 +79,7 @@ public class CarPlayActivity extends FitActivity {
         LinearLayout engineHead = new LinearLayout(this);
         engineHead.setOrientation(LinearLayout.HORIZONTAL);
         engineHead.setGravity(Gravity.CENTER_VERTICAL);
-        engineHead.addView(PageUi.text(this, "CarPlay 引擎（DiPlay）", 9.5f,
+        engineHead.addView(PageUi.text(this, "CarPlay 接收", 9.5f,
                 PageUi.PURPLE, true), new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         engineBadge = PageUi.statusPill(this, "检测中", PageUi.MUTED);
@@ -91,19 +91,13 @@ public class CarPlayActivity extends FitActivity {
         LinearLayout.LayoutParams engineRowLp = PageUi.matchWrap(this);
         PageUi.margin(engineRowLp, this, 0, 6, 0, 0);
 
-        engineAction = PageUi.button(this, "启动 CarPlay", 10.5f, PageUi.PURPLE);
+        engineAction = PageUi.button(this, "开始 CarPlay 接收", 10.5f, PageUi.PURPLE);
         engineAction.setOnClickListener(v -> launchDiPlay());
         engineRow.addView(engineAction, PageUi.weight(this, 1));
-
-        Button installBtn = PageUi.button(this, "获取 DiPlay", 10.5f, PageUi.MUTED);
-        installBtn.setOnClickListener(v -> openDiPlayPage());
-        LinearLayout.LayoutParams installLp = PageUi.weight(this, 1);
-        PageUi.margin(installLp, this, 8, 0, 0, 0);
-        engineRow.addView(installBtn, installLp);
         engineCard.addView(engineRow, engineRowLp);
 
         engineNote = PageUi.text(this,
-                "DiPlay 是独立开源接收端，自带离线 MFi 身份；本应用不复制其资产，只做检测与启动。",
+                "点上面的按钮直接进 CarPlay 画面，不经过任何设置向导；iPhone 靠近后按提示配对即可。",
                 9f, PageUi.MUTED, false);
         LinearLayout.LayoutParams engineNoteLp = PageUi.matchWrap(this);
         PageUi.margin(engineNoteLp, this, 0, 6, 0, 0);
@@ -157,22 +151,14 @@ public class CarPlayActivity extends FitActivity {
 
     private void launchDiPlay() {
         if (!DiPlayBridge.isInstalled(this)) {
-            toast("先装 DiPlay：点「获取 DiPlay」打开下载页");
+            toast("接收模块缺失，正常安装包自带，请重装完整 APK");
             return;
         }
-        if (DiPlayBridge.launch(this)) {
-            toast("已启动 DiPlay CarPlay");
+        // 直接落到 CarPlay 画面，跳过接收端自带的多步设置向导
+        if (DiPlayBridge.launchCarPlayScreen(this) || DiPlayBridge.launch(this)) {
+            toast("已进入 CarPlay 接收画面");
         } else {
-            toast("DiPlay 启动失败：可能被车机限制后台启动");
-        }
-    }
-
-    private void openDiPlayPage() {
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW,
-                    android.net.Uri.parse(DiPlayBridge.installUrl())));
-        } catch (Throwable e) {
-            toast("车机没有浏览器，复制链接到手机打开：" + DiPlayBridge.installUrl());
+            toast("启动失败：可能被车机限制后台启动");
         }
     }
 
@@ -291,24 +277,24 @@ public class CarPlayActivity extends FitActivity {
         authValue.setText(auth);
         certValue.setText(local ? "已找到" : "未找到");
         certValue.setTextColor(local ? PageUi.GREEN : PageUi.RED);
-        boolean diplay = DiPlayBridge.isInstalled(this);
+        boolean engineReady = DiPlayBridge.isInstalled(this);
         if (engineBadge != null) {
-            engineBadge.setText(diplay ? "DiPlay " + DiPlayBridge.version(this) : "未安装");
-            engineBadge.setTextColor(diplay ? PageUi.GREEN : PageUi.MUTED);
+            engineBadge.setText(engineReady ? "已就绪" : "未就绪");
+            engineBadge.setTextColor(engineReady ? PageUi.GREEN : PageUi.MUTED);
         }
         if (engineAction != null) {
-            engineAction.setEnabled(diplay);
-            engineAction.setAlpha(diplay ? 1f : 0.55f);
+            engineAction.setEnabled(engineReady);
+            engineAction.setAlpha(engineReady ? 1f : 0.55f);
         }
         if (engineNote != null) {
-            engineNote.setText(diplay
-                    ? "引擎已内置：点「启动 CarPlay」直接进入，不再需要另外安装 DiPlay。"
-                    : "引擎缺失：本包应自带 DiPlay，若这里显示未安装说明 APK 被裁剪过。");
+            engineNote.setText(engineReady
+                    ? "点上面的按钮直接进 CarPlay 画面，不经过任何设置向导；iPhone 靠近后按提示配对即可。"
+                    : "接收模块缺失：正常安装包里自带，若这里显示未就绪说明 APK 被裁剪过。");
         }
 
         usbValue.setText(usb > 0 ? usb + " 个" : "未检测");
         usbValue.setTextColor(usb > 0 ? PageUi.GREEN : PageUi.GOLD);
-        engineValue.setText(hasAuth ? "认证已配置" : "未启动");
+        engineValue.setText(engineReady ? "已就绪（内置）" : "未接入");
         engineValue.setTextColor(hasAuth ? PageUi.GREEN : PageUi.MUTED);
 
         if (hasAuth) {

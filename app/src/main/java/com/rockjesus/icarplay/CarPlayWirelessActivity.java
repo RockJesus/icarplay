@@ -69,7 +69,7 @@ public class CarPlayWirelessActivity extends FitActivity {
         wifiValue = addCheck(checkList, "Wi‑Fi 开关");
         bandValue = addCheck(checkList, "当前网络 / 频段");
         p2pValue = addCheck(checkList, "Wi‑Fi Direct");
-        engineValue = addCheck(checkList, "CarPlay 引擎（DiPlay）");
+        engineValue = addCheck(checkList, "CarPlay 接收引擎");
         checkCard.addView(checkList, checkLp);
 
         LinearLayout checkBtns = new LinearLayout(this);
@@ -104,7 +104,7 @@ public class CarPlayWirelessActivity extends FitActivity {
                 "① iPhone 热点", PageUi.GREEN, "推荐 · 成功率最高",
                 "1. iPhone 打开「个人热点」，关闭「最大兼容性」争取 5GHz\n"
                         + "2. 车机 Wi‑Fi 连到该热点\n"
-                        + "3. DiPlay 选「Existing Wi‑Fi / Same LAN」\n"
+                        + "3. 接收画面里选「Existing Wi‑Fi / Same LAN」\n"
                         + "4. iPhone 上确认允许连接");
         LinearLayout.LayoutParams aLp = new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
@@ -115,7 +115,7 @@ public class CarPlayWirelessActivity extends FitActivity {
                 "② 车机热点", PageUi.GOLD, "中等 · 取决于固件",
                 "1. 车机系统设置开 WPA2 热点（8–63 位密码）\n"
                         + "2. iPhone 连到该热点\n"
-                        + "3. DiPlay 读热点名/密码，失败时手动填\n"
+                        + "3. 接收画面自动读热点名/密码，失败时手动填\n"
                         + "4. 开热点时别同时连别的无线网络");
         LinearLayout.LayoutParams bLp = new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
@@ -125,7 +125,7 @@ public class CarPlayWirelessActivity extends FitActivity {
         LinearLayout c = modeCard(
                 "③ Wi‑Fi Direct", PageUi.RED, "最低 · 8.1 未经验证",
                 "1. 两端蓝牙先配对\n"
-                        + "2. DiPlay 发起 P2P，自己生成组密钥\n"
+                        + "2. 接收端发起 P2P，自己生成组密钥\n"
                         + "3. 8.1 走固件相关旧路径，频点未校验\n"
                         + "4. 前两条都失败再试这个");
         LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(0,
@@ -139,13 +139,14 @@ public class CarPlayWirelessActivity extends FitActivity {
         LinearLayout.LayoutParams actLp = PageUi.matchWrap(this);
         PageUi.margin(actLp, this, 0, 8, 0, 0);
 
-        Button launch = PageUi.button(this, "启动 DiPlay CarPlay", 10.5f, PageUi.GREEN);
+        Button launch = PageUi.button(this, "开始 CarPlay 接收", 10.5f, PageUi.GREEN);
         launch.setOnClickListener(v -> {
             if (!DiPlayBridge.isInstalled(this)) {
-                toast("未检测到 DiPlay，先用「获取 DiPlay」安装");
+                toast("接收模块缺失，正常安装包自带");
                 return;
             }
-            toast(DiPlayBridge.launch(this) ? "已启动 DiPlay" : "启动失败：车机可能限制后台拉起");
+            toast(DiPlayBridge.launchCarPlayScreen(this) || DiPlayBridge.launch(this)
+                    ? "已进入 CarPlay 接收画面" : "启动失败：车机可能限制后台拉起");
         });
         actions.addView(launch, PageUi.weight(this, 1.4f));
 
