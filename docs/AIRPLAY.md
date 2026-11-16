@@ -59,3 +59,37 @@ AirPlay 核心来自 [`jqssun/android-airplay-server`](https://github.com/jqssun
 ## 相关文档
 
 [`INSTALL.md`](INSTALL.md) 安装与网络准备 · [`SAFETY.md`](SAFETY.md) 开机自启边界
+
+## 可发现性兜底（v1.1.2 起）
+
+系统 `NsdManager` 依赖系统守护进程 `mdnsd`。部分车机 / 模拟器上 `mdnsd` 起不来（日志里表现为
+`Unable to set property "ctl.start" to "mdnsd"`、`DNSServiceRegister -65563`），
+这时 `_airplay._tcp` 注册失败，iPhone 控制中心的「屏幕镜像」就永远看不到本机。
+
+v1.1.2 起在 `AirPlayService` 启动时额外拉起进程内应答器
+`io.github.jqssun.airplay.discovery.MiniMdnsResponder`：
+
+| 项 | 说明 |
+|---|---|
+| 监听 | UDP 5353，加入组播 `224.0.0.251` |
+| 应答 | `_airplay._tcp` / `_raop._tcp` 的 PTR、SRV、TXT，以及主机名 A 记录 |
+| TXT | 直接复用 native 层 `nativeGetRaopTxtRecords` / `nativeGetAirplayTxtRecords`，与 UxPlay 一致 |
+| 宣告 | 启动后主动组播三遍，提高 iPhone 缓存命中 |
+| 主机名 | `iCarPlay-XXXX.local`，XXXX 取 `wlan0` MAC 末四位 |
+| 与系统 NSD 关系 | 并存，不替代；系统 `mdnsd` 正常时两者同时应答 |
+
+实测（MuMu，1600×900）：服务监听 `7000`，独立主机用 DNS-SD 查询 `192.168.1.213:5353`，
+回包 862 字节、7 条记录，全部字段解析通过：
+
+```
+PTR _raop._tcp.local -> 1A20FF212288@iCarPlay._raop._tcp.local
+SRV 1A20FF212288@iCarPlay._raop._tcp.local -> iCarPlay-A7C.local:7000
+TXT （UxPlay 原生键值，含 am / pk / vv / features / pw …）
+PTR _airplay._tcp.local -> iCarPlay._airplay._tcp.local
+SRV iCarPlay._airplay._tcp.local -> iCarPlay-A7C.local:7000
+TXT features=0x5A7FFEF7,0x400  pw=false …
+A    iCarPlay-A7C.local -> 192.168.1.213
+```
+
+限制：模拟器（MuMu）网络是 NAT，主机发往 `224.0.0.251` 的组播进不到模拟器内部，
+所以 MuMu 上 iPhone 仍然发现不到，只能在真车机 / 真 Android 设备上验证组播路径。

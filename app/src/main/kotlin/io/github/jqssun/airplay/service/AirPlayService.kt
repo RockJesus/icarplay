@@ -50,6 +50,7 @@ import io.github.jqssun.airplay.bridge.LogListener
 import io.github.jqssun.airplay.bridge.NativeBridge
 import io.github.jqssun.airplay.bridge.RaopCallbackHandler
 import io.github.jqssun.airplay.discovery.MdnsService
+import io.github.jqssun.airplay.discovery.MiniMdnsResponder
 import io.github.jqssun.airplay.discovery.NsdServiceManager
 import io.github.jqssun.airplay.discovery.UsbMdnsAdvertiser
 import io.github.jqssun.airplay.download.VideoDownloader
@@ -80,6 +81,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     private var nativeHandle = 0L
     private var nsdManager: NsdServiceManager? = null
+    private var miniMdns: MiniMdnsResponder? = null
     private var usbAdvertiser: UsbMdnsAdvertiser? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var foregroundStarted = false
@@ -457,6 +459,9 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             }.apply { start() }
         } else {
             nsdManager?.register(services)
+            // 系统 mdnsd 不可用（部分车机 / 模拟器）时，用进程内应答器兜底，保证 iPhone 能发现本机
+            miniMdns?.stop()
+            miniMdns = MiniMdnsResponder(services, resolvedName).also { it.start() }
         }
 
         _serverState.value = ServerState.RUNNING
@@ -508,6 +513,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         }
         nsdManager?.release()
         nsdManager = null
+        miniMdns?.stop()
+        miniMdns = null
         wakeLock?.release()
         wakeLock = null
         _serverState.value = ServerState.ERROR
@@ -543,6 +550,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         usbAdvertiser = null
         nsdManager?.release()
         nsdManager = null
+        miniMdns?.stop()
+        miniMdns = null
         wakeLock?.release()
         wakeLock = null
         videoRenderer.release()
