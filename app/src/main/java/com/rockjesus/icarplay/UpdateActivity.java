@@ -14,6 +14,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -56,8 +57,17 @@ public class UpdateActivity extends FitActivity {
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(shell);
 
-        shell.addView(PageUi.header(this, "版本更新", IcarLauncherActivity.VERSION_LABEL),
-                PageUi.matchWrap(this));
+        // 顶栏左侧固定「返回」：车机上底部栏可能被悬浮球或手势区挡住，返回必须永远点得到。
+        FrameLayout headerWrap = new FrameLayout(this);
+        headerWrap.addView(PageUi.header(this, "版本更新", IcarLauncherActivity.VERSION_LABEL),
+                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT));
+        Button backTop = PageUi.button(this, "← 返回", 10.5f, PageUi.BLUE);
+        backTop.setOnClickListener(v -> finish());
+        headerWrap.addView(backTop, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.START | Gravity.CENTER_VERTICAL));
+        shell.addView(headerWrap, PageUi.matchWrap(this));
 
         TextView sub = PageUi.text(this,
                 "一键检查并安装新版本 · 来源 GitHub Releases · 下载后校验 SHA-256 与签名",
