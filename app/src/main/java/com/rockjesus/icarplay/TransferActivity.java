@@ -398,15 +398,54 @@ public class TransferActivity extends FitActivity {
     }
 
     private void install(File apk) {
+        Uri uri;
         try {
-            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", apk);
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(uri, "application/vnd.android.package-archive");
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            toast("已调起系统安装确认：请核对版本后再确认");
+            uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", apk);
         } catch (Throwable e) {
-            toast("调起安装失败：" + e.getClass().getSimpleName());
+            toast("准备安装文件失败：" + e.getClass().getSimpleName());
+            return;
+        }
+        if (!launchInstaller(uri)) {
+            toast("这台设备没有可用的系统安装器；文件已保存在 " + apk.getAbsolutePath()
+                    + "，可用文件管理器手动安装");
+            return;
+        }
+        // 发出去不等于框弹出来了，2.5 秒后自检一次，别像旧版那样无条件报「已调起」。
+        new Handler(Looper.getMainLooper()).postDelayed(this::verifyInstallerShown, 2500);
+    }
+
+    /** 依次尝试 ACTION_VIEW / ACTION_INSTALL_PACKAGE，有宿主才发；都没有就返回 false。 */
+    private boolean launchInstaller(Uri uri) {
+        String mime = "application/vnd.android.package-archive";
+        Intent view = new Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (!getPackageManager().queryIntentActivities(view, 0).isEmpty()) {
+            try {
+                startActivity(view);
+                return true;
+            } catch (Throwable ignored) {
+            }
+        }
+        Intent legacy = new Intent(Intent.ACTION_INSTALL_PACKAGE).setData(uri)
+                .putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (!getPackageManager().queryIntentActivities(legacy, 0).isEmpty()) {
+            try {
+                startActivity(legacy);
+                return true;
+            } catch (Throwable ignored) {
+            }
+        }
+        return false;
+    }
+
+    /** 2.5 秒后本页仍在前台，说明安装框没起来：给原因，不发假成功提示。 */
+    private void verifyInstallerShown() {
+        if (isFinishing() || isDestroyed()) return;
+        if (!hasWindowFocus()) {
+            toast("系统安装框已打开，请在弹框里点「安装」");
+        } else {
+            toast("安装框没弹出来：可能被系统拦截，或本机没有安装器");
         }
     }
 

@@ -371,6 +371,12 @@ public class AppManageActivity extends FitActivity {
             intent.putExtra(Intent.EXTRA_RETURN_RESULT, true);
             startActivityForResult(intent, REQ_UNINSTALL);
             return;
+        } catch (SecurityException se) {
+            // Android 11+ 起，没声明 REQUEST_DELETE_PACKAGES 就会被 UninstallerActivity 直接拒掉。
+            resultText.setText("系统拒绝了卸载请求（缺少卸载发起权限）：" + app.pkg
+                    + "。装 v1.0.8 及以上版本可修复。");
+            toast("系统拒绝了卸载请求");
+            return;
         } catch (Throwable ignored) {
         }
         try {
@@ -418,7 +424,9 @@ public class AppManageActivity extends FitActivity {
     }
 
     private void showAbout() {
-        resultText.setText("本页只调用系统卸载确认框，不申请系统级安装 / 卸载权限，也不会静默删你的应用。");
+        resultText.setText("本页只调用系统卸载确认框：清单只声明 REQUEST_DELETE_PACKAGES"
+                + "（Android 11+ 发起卸载的必要条件，装包/卸包仍需你在系统弹框里确认），"
+                + "不申请 DELETE_PACKAGES，也不会静默删你的应用。");
     }
 
     @Override

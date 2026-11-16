@@ -83,7 +83,11 @@ public class UpdateActivity extends FitActivity {
         shell.addView(main, mainLp);
 
         LinearLayout notes = buildNotesCard();
-        LinearLayout.LayoutParams notesLp = PageUi.weight(this, 1);
+        // 这里不能用 weight：shell 被 FitActivity 塞进 ScrollView 且高度是 WRAP_CONTENT，
+        // 没有剩余空间可分，weight 会算成 0，连带把下面的「允许安装」和返回栏一起挤出可视区。
+        // 给固定高度，notes 卡内部自己滚动；整页仍然高于一屏时由外层 ScrollView 兜底。
+        LinearLayout.LayoutParams notesLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 132));
         PageUi.margin(notesLp, this, 0, 0, 0, 8);
         shell.addView(notes, notesLp);
 
