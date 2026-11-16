@@ -32,6 +32,10 @@ class VideoPipeline {
     private var uTexMatrix = 0
     private val texMatrix = FloatArray(16)
     private var hasFrame = false
+    private var firstFrameVerified = false
+    private var drawnFrames = 0L
+    private var noDisplayFrames = 0L
+    private var lastReportMs = 0L
     private val quadBuffer = _fb(FloatArray(8))
 
     private var surfaceTexture: SurfaceTexture? = null
@@ -117,14 +121,16 @@ class VideoPipeline {
             window = EGL14.EGL_NO_SURFACE
         }
         if (surface == null || !surface.isValid) return
+        val requested = EGL14.EGL_NO_SURFACE
         window = egl.windowSurface(surface)
-        if (window == EGL14.EGL_NO_SURFACE) {
-            Log.w(TAG, "eglCreateWindowSurface failed: ${EGL14.eglGetError()}")
+        if (window == requested) {
+            Log.w(TAG, "eglCreateWindowSurface failed: 0x${Integer.toHexString(EGL14.eglGetError())}")
             return
         }
         egl.makeCurrent(window)
         winW = egl.query(window, EGL14.EGL_WIDTH)
         winH = egl.query(window, EGL14.EGL_HEIGHT)
+        Log.i(TAG, "display bound ${winW}x$winH video=${videoW}x$videoH")
         // an idle source sends no new frames, so repaint last one or new surface stays black
         if (hasFrame) _render()
     }
@@ -137,6 +143,10 @@ class VideoPipeline {
             egl.makeCurrent()
             st.updateTexImage()
             hasFrame = true
+            noDisplayFrames++
+            if (noDisplayFrames == 1L || noDisplayFrames % 120L == 0L) {
+                Log.w(TAG, "no display surface, consumed $noDisplayFrames frames")
+            }
             return
         }
         egl.makeCurrent(window)
@@ -144,6 +154,12 @@ class VideoPipeline {
         st.getTransformMatrix(texMatrix)
         hasFrame = true
         _render()
+        drawnFrames++
+        val now = System.currentTimeMillis()
+        if (drawnFrames == 1L || now - lastReportMs >= 2000L) {
+            lastReportMs = now
+            Log.i(TAG, "drawing frames=$drawnFrames video=${videoW}x$videoH win=${winW}x$winH")
+        }
     }
 
     // 手机镜像多半是竖屏，直接铺满横屏画面会被拉扁；这里等比缩放并留黑边
@@ -178,7 +194,15 @@ class VideoPipeline {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(aPos)
         GLES20.glDisableVertexAttribArray(aTex)
-        egl?.swap(window)
+        val swapped = egl?.swap(window) ?: false
+        if (!firstFrameVerified) {
+            firstFrameVerified = true
+            val px = ByteBuffer.allocateDirect(4)
+            GLES20.glReadPixels(winW / 2, winH / 2, 1, 1,
+                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, px)
+            Log.i(TAG, "first frame swap=$swapped err=${GLES20.glGetError()} "
+                + "center=${px.get(0)},${px.get(1)},${px.get(2)},${px.get(3)}")
+        }
     }
 
     private fun _initGl() {

@@ -31,6 +31,10 @@ public class MirrorOverlay implements SurfaceHolder.Callback {
         ViewGroup content = activity.findViewById(android.R.id.content);
         surfaceView = new SurfaceView(activity);
         surfaceView.setBackgroundColor(0xFF000000);
+        // 画面必须压在窗口之上：默认的“窗口后面 + 打洞”在动态加进来的 SurfaceView 上
+        // 不一定能合出来，表现就是连接成功、日志在画帧、屏幕却是纯黑
+        surfaceView.setZOrderOnTop(true);
+        surfaceView.getHolder().setFormat(android.graphics.PixelFormat.OPAQUE);
         surfaceView.setVisibility(View.GONE);
         if (content != null) {
             content.addView(surfaceView, new ViewGroup.LayoutParams(
@@ -69,10 +73,17 @@ public class MirrorOverlay implements SurfaceHolder.Callback {
     }
 
     private void attach() {
-        if (!showing || service == null || !surfaceReady) return;
+        if (!showing || service == null || !surfaceReady) {
+            android.util.Log.i("MirrorOverlay", "attach skipped showing=" + showing
+                    + " service=" + (service != null) + " surfaceReady=" + surfaceReady);
+            return;
+        }
         try {
+            android.util.Log.i("MirrorOverlay", "attach surface valid="
+                    + surfaceView.getHolder().getSurface().isValid());
             service.setVideoSurface(surfaceView.getHolder().getSurface());
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            android.util.Log.w("MirrorOverlay", "attach failed", t);
         }
     }
 
@@ -87,6 +98,7 @@ public class MirrorOverlay implements SurfaceHolder.Callback {
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         surfaceReady = true;
+        android.util.Log.i("MirrorOverlay", "surfaceCreated");
         attach();
     }
 
