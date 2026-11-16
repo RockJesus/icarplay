@@ -223,7 +223,7 @@ icarplay/
 │   ├── src/main/java/info/anodsplace/headunit/     # Android Auto AAP/TLS/解码/触控协议层
 │   ├── src/main/cpp/                               # UxPlay / FFmpeg / OpenSSL 原生栈
 │   └── src/main/AndroidManifest.xml
-├── docs/                                           # INSTALL / AIRPLAY / ANDROID-AUTO / HICAR / CARPLAY / CARLIFE-PLUS / TRANSFER / APP-MANAGE / UPDATE / SAFETY / BUILD
+├── docs/                                           # INSTALL / AIRPLAY / ANDROID-AUTO / HICAR / CARPLAY / CARLIFE-PLUS / TRANSFER / APP-MANAGE / UPDATE / SAFETY / BUILD / TESTING
 ├── docs/preview/                                   # README 界面预览图（1600×900，7 张）
 ├── scripts/preflight-safety.sh                      # 发布前车机安全检查
 ├── scripts/render-preview.py                        # 预览图渲染脚本（HTML 复刻 → Chromium 截图）
