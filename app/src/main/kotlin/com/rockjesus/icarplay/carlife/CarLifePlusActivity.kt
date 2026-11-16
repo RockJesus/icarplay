@@ -23,6 +23,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import com.diplay.carlife.core.CarLife
 import com.diplay.carlife.core.CarLifeMessages
 import com.rockjesus.icarplay.PageUi
@@ -53,7 +54,6 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
     private lateinit var topBar: LinearLayout
     private lateinit var backBar: View
     private var streamingNow = false
-    private lateinit var floatExit: TextView
     private lateinit var idlePanel: LinearLayout
     private lateinit var statusDot: View
 
@@ -230,25 +230,6 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
             bottomMargin = dp(10)
         })
 
-        floatExit = TextView(this).apply {
-            text = "结束投屏"
-            setTextColor(PageUi.CYAN)
-            textSize = 11.5f
-            gravity = Gravity.CENTER
-            background = PageUi.surface(this@CarLifePlusActivity, PageUi.CYAN, 20f)
-            alpha = 0.92f
-            visibility = View.GONE
-            setOnClickListener { stopEngine() }
-            setOnLongClickListener {
-                showLogDialog()
-                true
-            }
-        }
-        root.addView(floatExit, FrameLayout.LayoutParams(
-            dp(96), dp(38), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL,
-        ).apply {
-            bottomMargin = dp(10)
-        })
 
         status.setOnLongClickListener {
             showLogDialog()
@@ -368,6 +349,16 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
         } else {
             "正在连接手机 ${host?.hostAddress ?: ""}…"
         }
+    }
+
+    override fun onBackPressed() {
+        // With no on-screen control, back is the way out of a live projection.
+        if (streamingNow) {
+            stopEngine()
+            Toast.makeText(this, "已结束投屏", Toast.LENGTH_SHORT).show()
+            return
+        }
+        super.onBackPressed()
     }
 
     private fun stopEngine() {
@@ -520,9 +511,6 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
             v.visibility = if (streaming) View.GONE else View.VISIBLE
             v.alpha = 1f
         }
-        if (::floatExit.isInitialized) {
-            floatExit.visibility = if (streaming) View.VISIBLE else View.GONE
-        }
     }
 
     private fun chromeViews(): List<View> = listOf(topBar, connectBar, backBar)
@@ -603,6 +591,16 @@ class CarLifePlusActivity : Activity(), CarLifeEngine.UiListener {
             // the guidance panel disappears at the first streamed frame, not at
             // "TCP channel open".
             val streaming = state == "phase:streaming"
+            if (streaming && !streamingNow) {
+                // The projected picture is deliberately chrome-free, so the only
+                // remaining gesture is the system back key. Tell the user once,
+                // as a toast that disappears by itself rather than as another bar.
+                Toast.makeText(
+                    this,
+                    "投屏中：按返回键或手机端 CarLife+ 结束投屏",
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
             streamingNow = streaming
             applyChromeForState(streaming)
             setEngineActive(streaming, state)
