@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -29,6 +30,12 @@ public final class EngineExtra {
 
     /** 引擎蓝牙电话联动接收器（ACL_CONNECTED）。 */
     public static final String BT_RECEIVER = "com.shilapi.xcertplay.PhoneBluetoothReceiver";
+
+    /** 开机静默待命开关对应的接收器（默认静态关闭，开关打开后才动态启用）。 */
+    public static final String AUTO_LISTEN_RECEIVER = "com.rockjesus.icarplay.AutoListenBootReceiver";
+
+    private static final String PREFS = "icarplay_engine";
+    private static final String KEY_AUTO_LISTEN = "auto_listen_boot";
 
     private EngineExtra() {
     }
@@ -133,11 +140,51 @@ public final class EngineExtra {
         }
     }
 
+    private static SharedPreferences prefs(Context c) {
+        return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    }
+
+    /** 开机静默待命是否已开启。 */
+    public static boolean autoListenEnabled(Context c) {
+        try {
+            return prefs(c).getBoolean(KEY_AUTO_LISTEN, false);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    /**
+     * 开关「开机静默待命」。
+     *
+     * <p>打开时同时启用开机接收器并立刻起一次待命服务（方便用户当场看到常驻通知，
+     * 确认功能真的生效）；关闭时停掉服务并禁用接收器。
+     */
+    public static boolean setAutoListen(Context c, boolean on) {
+        try {
+            boolean ok = setEnabled(c, AUTO_LISTEN_RECEIVER, on);
+            prefs(c).edit().putBoolean(KEY_AUTO_LISTEN, on).apply();
+            Intent service = new Intent(c, AutoListenService.class);
+            if (on) {
+                if (Build.VERSION.SDK_INT >= 26) {
+                    c.startForegroundService(service);
+                } else {
+                    c.startService(service);
+                }
+            } else {
+                c.stopService(service);
+            }
+            return ok;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
     /** 复制报告用的一行摘要。 */
     public static String summaryLine(Context c) {
         return "自启=" + (enabled(c, BOOT_RECEIVER) ? "开" : "关")
                 + " 蓝牙电话=" + (enabled(c, BT_RECEIVER) ? "开" : "关")
                 + " 使用情况访问=" + (hasUsageAccess(c) ? "已授权" : "未授权")
-                + " 修改系统设置=" + (canWriteSettings(c) ? "已授权" : "未授权");
+                + " 修改系统设置=" + (canWriteSettings(c) ? "已授权" : "未授权")
+                + " 开机静默待命=" + (autoListenEnabled(c) ? "开" : "关");
     }
 }

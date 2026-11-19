@@ -41,6 +41,7 @@ public class CarPlayDetectActivity extends FitActivity {
     private TextView btPill;
     private TextView usagePill;
     private TextView writePill;
+    private TextView listenPill;
     private BroadcastReceiver usbReceiver;
 
     @Override
@@ -213,6 +214,16 @@ public class CarPlayDetectActivity extends FitActivity {
                 }), writeLp);
         card.addView(row2, rowLp2);
 
+        LinearLayout row3 = new LinearLayout(this);
+        row3.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams rowLp3 = PageUi.matchWrap(this);
+        PageUi.margin(rowLp3, this, 0, 6, 0, 0);
+
+        listenPill = PageUi.statusPill(this, "关", PageUi.MUTED);
+        row3.addView(cell("开机静默待命（连上才出画面）", listenPill, this::toggleAutoListen),
+                PageUi.weight(this, 1));
+        card.addView(row3, rowLp3);
+
         return card;
     }
 
@@ -252,6 +263,28 @@ public class CarPlayDetectActivity extends FitActivity {
         }
     }
 
+    /** 开机静默待命：不抢前台，iPhone 连上后才把画面顶上来。 */
+    private void toggleAutoListen() {
+        boolean on = EngineExtra.autoListenEnabled(this);
+        if (!on) {
+            new AlertDialog.Builder(this)
+                    .setTitle("开启开机静默待命？")
+                    .setMessage("开机后只起一个前台服务开始监听，车机原生界面不受影响；"
+                            + "只有 iPhone 真的连上来时才显示投屏画面。会多一条常驻通知。")
+                    .setNegativeButton("保持关闭", null)
+                    .setPositiveButton("确认开启", (d, w) -> {
+                        boolean ok = EngineExtra.setAutoListen(this, true);
+                        toast(ok ? "已开启：每次开机自动待命" : "开启失败，车机可能限制了组件状态");
+                        refreshEngine();
+                    })
+                    .show();
+        } else {
+            EngineExtra.setAutoListen(this, false);
+            toast("已关闭开机静默待命");
+            refreshEngine();
+        }
+    }
+
     private void toggleBt() {
         applyReceiver(EngineExtra.BT_RECEIVER, !EngineExtra.enabled(this, EngineExtra.BT_RECEIVER));
     }
@@ -284,6 +317,10 @@ public class CarPlayDetectActivity extends FitActivity {
         boolean write = EngineExtra.canWriteSettings(this);
         writePill.setText(write ? "已授权" : "未授权");
         writePill.setTextColor(write ? PageUi.GREEN : PageUi.MUTED);
+
+        boolean listen = EngineExtra.autoListenEnabled(this);
+        listenPill.setText(listen ? "开" : "关");
+        listenPill.setTextColor(listen ? PageUi.GREEN : PageUi.MUTED);
     }
 
     private void refresh() {

@@ -81,7 +81,8 @@ else:
 # Engine receivers may be packaged, but they must never be on by default: the
 # head unit must boot exactly as before unless the user opts in on screen.
 for name in ("com.shilapi.xcertplay.BootReceiver",
-             "com.shilapi.xcertplay.PhoneBluetoothReceiver"):
+             "com.shilapi.xcertplay.PhoneBluetoothReceiver",
+             "com.rockjesus.icarplay.AutoListenBootReceiver"):
     for node in [n for n in root.iter("receiver") if n.get(AND + "name") == name]:
         if node.get(AND + "enabled") != "false":
             problems.append(f"{name} must be android:enabled=\"false\" by default")
