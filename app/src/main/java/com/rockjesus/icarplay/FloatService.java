@@ -276,6 +276,15 @@ public class FloatService extends Service {
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
 
+        content.addView(panelButton("系统设置", new View.OnClickListener() {
+            public void onClick(View v) { openSystemSettings(); }
+        }));
+        content.addView(panelButton("iCarPlay主界面", new View.OnClickListener() {
+            public void onClick(View v) { open(IcarLauncherActivity.class); }
+        }));
+        content.addView(panelButton("车机主屏幕", new View.OnClickListener() {
+            public void onClick(View v) { goCarHome(); }
+        }));
         content.addView(panelButton("AirPlay", new View.OnClickListener() {
             public void onClick(View v) { open(AirPlayActivity.class); }
         }));
@@ -305,15 +314,6 @@ public class FloatService extends Service {
         }));
         content.addView(panelButton("网页投屏", new View.OnClickListener() {
             public void onClick(View v) { open(MirrorActivity.class); }
-        }));
-        content.addView(panelButton("系统设置", new View.OnClickListener() {
-            public void onClick(View v) { openSystemSettings(); }
-        }));
-        content.addView(panelButton("iCarPlay主界面", new View.OnClickListener() {
-            public void onClick(View v) { open(IcarLauncherActivity.class); }
-        }));
-        content.addView(panelButton("车机主屏幕", new View.OnClickListener() {
-            public void onClick(View v) { goCarHome(); }
         }));
 
         ScrollView scroller = new ScrollView(this);
