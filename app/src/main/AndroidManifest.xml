@@ -3,8 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools">
 
 
-    <!-- 并入 DiPlay 引擎后，仍然剥掉的权限：引擎自带更新器要静默装包，与我们自己的更新通道冲突 -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <!-- 自更新必须声明这条权限，否则系统安装器会直接拒绝（InstallStart:
+         "needs to declare permission android.permission.REQUEST_INSTALL_PACKAGES"）。
+         它只允许本应用拉起系统安装框，装不装仍由用户确认；静默安装所需的
+         INSTALL_PACKAGES 依然被安全闸拦着。 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
 
     <!-- 两项特殊权限改为「声明但不默认授予」，由检测页里的开关引导用户按需打开。
