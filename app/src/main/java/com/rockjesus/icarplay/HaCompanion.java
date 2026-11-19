@@ -114,7 +114,7 @@ public final class HaCompanion {
             String hookId = opt(o, "webhook_id");
             String cloud = opt(o, "cloudhook_url");
             String hook;
-            if (!cloud.isEmpty()) {
+            if (cloud.startsWith("http")) {
                 hook = cloud;
             } else if (!hookId.isEmpty()) {
                 hook = HaApi.baseUrl(ctx) + "/api/webhook/" + hookId;
@@ -267,6 +267,13 @@ public final class HaCompanion {
 
     private static String opt(JSONObject o, String key) {
         String v = o.optString(key, "");
-        return v == null ? "" : v.trim();
+        if (v == null) return "";
+        v = v.trim();
+        // HA 会把不存在的 cloudhook_url 返回成 JSON null，optString 会变成字符串 "null"
+        if ("null".equalsIgnoreCase(v) || "undefined".equalsIgnoreCase(v)) return "";
+        return v;
     }
 }
+
+
+
