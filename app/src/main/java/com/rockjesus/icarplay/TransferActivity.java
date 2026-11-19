@@ -74,16 +74,8 @@ public class TransferActivity extends FitActivity {
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(shell);
 
-        shell.addView(PageUi.header(this, "无线传文件", IcarLauncherActivity.VERSION_LABEL),
+        shell.addView(PageUi.header(this, "无线传文件", "手机 ⇄ 车机互传 APK · 同一 Wi‑Fi / 热点 · 蓝牙兜底", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this,
-                "手机 ⇄ 车机互传 APK · 同一 Wi‑Fi / 手机热点 / 车机热点 · 蓝牙分享兜底",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 7);
-        shell.addView(sub, subLp);
 
         LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.HORIZONTAL);

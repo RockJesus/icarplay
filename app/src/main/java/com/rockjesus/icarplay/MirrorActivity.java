@@ -26,6 +26,17 @@ public class MirrorActivity extends FitActivity {
 
     private MirrorServer server;
     private WebView web;
+    private static final long BAR_AUTO_HIDE_MS = 10000L;
+    private LinearLayout topBar;
+    private final Runnable hideTopTask = new Runnable() {
+        @Override
+        public void run() {
+            if (topBar == null) return;
+            topBar.animate().alpha(0f).setDuration(160).withEndAction(() -> {
+                if (topBar != null) topBar.setVisibility(View.GONE);
+            }).start();
+        }
+    };
     private TextView linkLabel;
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -68,31 +79,55 @@ public class MirrorActivity extends FitActivity {
         });
 
         String url = "http://127.0.0.1:" + port + "/car?t=" + server.token();
+        web.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) showTopBar();
+            return false;
+        });
         root.addView(web, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         web.loadUrl(url);
 
-        LinearLayout bar = new LinearLayout(this);
-        bar.setOrientation(LinearLayout.HORIZONTAL);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(PageUi.dp(this, 10), 0, PageUi.dp(this, 10), 0);
-        bar.setBackgroundColor(0xCC04050A);
+        LinearLayout top = new LinearLayout(this);
+        topBar = top;
+        top.setOrientation(LinearLayout.VERTICAL);
+        top.setPadding(PageUi.dp(this, 12), PageUi.dp(this, 6),
+                PageUi.dp(this, 12), PageUi.dp(this, 6));
+        top.setBackgroundColor(0xF80A0E18);
+        top.addView(PageUi.header(this, "网页投屏", "手机浏览器打开地址 · 共享屏幕直连车机",
+                        IcarLauncherActivity.VERSION_LABEL),
+                PageUi.matchWrap(this));
 
-        TextView title = PageUi.text(this, "网页投屏", 10f, PageUi.CYAN, true);
-        PageUi.mono(title);
-        bar.addView(title, PageUi.weight(this, 0.5f));
+        LinearLayout tools = new LinearLayout(this);
+        tools.setOrientation(LinearLayout.HORIZONTAL);
+        tools.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams toolsLp = PageUi.matchWrap(this);
+        PageUi.margin(toolsLp, this, 0, 5, 0, 0);
+        top.addView(tools, toolsLp);
 
         linkLabel = PageUi.text(this, "http://" + server.lanIp() + ":" + port
                 + "/send?t=" + server.token(), 8.5f, PageUi.GREEN, false);
         PageUi.mono(linkLabel);
-        bar.addView(linkLabel, PageUi.weight(this, 2.6f));
+        tools.addView(linkLabel, PageUi.weight(this, 3f));
+        tools.addView(barButton("复制地址", PageUi.GOLD, v -> copyLink()),
+                PageUi.weight(this, 1f));
+        tools.addView(barButton("重连", PageUi.CYAN, v -> web.reload()),
+                PageUi.weight(this, 0.8f));
+        tools.addView(barButton("← 返回主界面", PageUi.BLUE, v -> finish()),
+                PageUi.weight(this, 1.5f));
 
-        bar.addView(barButton("复制地址", PageUi.GOLD, v -> copyLink()));
-        bar.addView(barButton("重连", PageUi.CYAN, v -> web.reload()));
-        bar.addView(barButton("返回", PageUi.RED, v -> finish()));
+        root.addView(topBar, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP));
+        showTopBar();
+    }
 
-        root.addView(bar, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 40), Gravity.TOP));
+    private void showTopBar() {
+        if (topBar == null) return;
+        topBar.animate().cancel();
+        topBar.setAlpha(1f);
+        topBar.setVisibility(View.VISIBLE);
+        topBar.removeCallbacks(hideTopTask);
+        topBar.postDelayed(hideTopTask, BAR_AUTO_HIDE_MS);
     }
 
     private TextView barButton(String label, int accent, View.OnClickListener onClick) {

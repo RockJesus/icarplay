@@ -36,19 +36,12 @@ public class CarPlayActivity extends FitActivity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackground(PageUi.background(this));
-        root.setPadding(PageUi.dp(this, 18), PageUi.dp(this, 10),
-                PageUi.dp(this, 18), PageUi.dp(this, 8));
+        root.setPadding(PageUi.dp(this, 16), PageUi.dp(this, 8),
+                PageUi.dp(this, 16), PageUi.dp(this, 6));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "CarPlay 接收", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "CarPlay 接收", "iPhone → 车机 · 有线 USB / 无线 Wi‑Fi", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this, "iPhone → 车机 · 有线 USB / 无线 Wi‑Fi", 11f,
-                PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 7);
-        root.addView(sub, subLp);
 
         LinearLayout metrics = PageUi.card(this, PageUi.BLUE, 10, 9);
         LinearLayout.LayoutParams metricsLp = PageUi.matchWrap(this);
@@ -74,7 +67,7 @@ public class CarPlayActivity extends FitActivity {
 
         LinearLayout engineCard = PageUi.card(this, PageUi.PURPLE, 12, 9);
         LinearLayout.LayoutParams engineLp = PageUi.matchWrap(this);
-        PageUi.margin(engineLp, this, 0, 8, 0, 0);
+        PageUi.margin(engineLp, this, 0, 6, 0, 0);
 
         LinearLayout engineHead = new LinearLayout(this);
         engineHead.setOrientation(LinearLayout.HORIZONTAL);
@@ -109,7 +102,7 @@ public class CarPlayActivity extends FitActivity {
         grid.setMinimumHeight(PageUi.dp(this, 96));
         LinearLayout.LayoutParams gridLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
-        PageUi.margin(gridLp, this, 0, 8, 0, 0);
+        PageUi.margin(gridLp, this, 0, 6, 0, 0);
         root.addView(grid, gridLp);
 
         grid.addView(row(
@@ -139,13 +132,13 @@ public class CarPlayActivity extends FitActivity {
                 PageUi.dp(this, 10), PageUi.dp(this, 6));
         note.setBackground(PageUi.rounded(this, PageUi.CARD, PageUi.BORDER, 8));
         LinearLayout.LayoutParams noteLp = PageUi.matchWrap(this);
-        PageUi.margin(noteLp, this, 0, 6, 0, 0);
+        PageUi.margin(noteLp, this, 0, 4, 0, 0);
         root.addView(note, noteLp);
 
         Button back = PageUi.back(this);
         back.setOnClickListener(v -> finish());
         LinearLayout.LayoutParams backLp = PageUi.fixed(this, 44);
-        PageUi.margin(backLp, this, 0, 8, 0, 0);
+        PageUi.margin(backLp, this, 0, 6, 0, 0);
         root.addView(back, backLp);
     }
 

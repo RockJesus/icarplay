@@ -164,13 +164,15 @@ public class DiagnosticsActivity extends FitActivity {
         tools.addView(tool("保存报告", PageUi.GREEN, v -> saveReport()));
         tools.addView(tool("复制全文", PageUi.PURPLE, v -> copyReport()));
         tools.addView(tool("上报到 HA", PageUi.GOLD, v -> pushToHa()));
+        Button backTop = tool("← 返回", PageUi.BLUE, v -> finish());
+        tools.addView(backTop);
 
         setFitContentView(root);
         rescan();
     }
 
     private Button tool(String label, int accent, View.OnClickListener l) {
-        Button b = PageUi.button(this, label, 11.5f, accent);
+        Button b = PageUi.button(this, label, 10.5f, accent);
         b.setOnClickListener(l);
         b.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,

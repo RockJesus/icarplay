@@ -63,15 +63,8 @@ public class AirPlayActivity extends FitActivity {
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "AirPlay 接收", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "AirPlay 接收", "iPhone / iPad 镜像与音频 · 同一局域网", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this, "iPhone / iPad 镜像与音频 · 同一局域网", 11f,
-                PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 7);
-        root.addView(sub, subLp);
 
         LinearLayout statusCard = PageUi.card(this, PageUi.GREEN, 14, 9);
         LinearLayout.LayoutParams slp = PageUi.matchWrap(this);

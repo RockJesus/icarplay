@@ -58,16 +58,17 @@ public class AppManageActivity extends FitActivity {
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(shell);
 
-        shell.addView(PageUi.header(this, "应用管理", IcarLauncherActivity.VERSION_LABEL),
+        shell.addView(PageUi.header(this, "应用管理", "卸载多余 App · 系统预装通常只能停用", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
 
-        TextView sub = PageUi.text(this,
-                "卸载车载多余的 App · 设置里点应用会闪退的，本页直接调卸载框 · 系统预装通常只能停用",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 7);
-        shell.addView(sub, subLp);
+        LinearLayout backRow = new LinearLayout(this);
+        backRow.setOrientation(LinearLayout.HORIZONTAL);
+        Button backTop = PageUi.button(this, "← 返回主界面", 10f, PageUi.BLUE);
+        backTop.setOnClickListener(v -> finish());
+        backRow.addView(backTop, PageUi.weight(this, 1));
+        LinearLayout.LayoutParams backRowLp = PageUi.matchWrap(this);
+        PageUi.margin(backRowLp, this, 0, 4, 0, 6);
+        shell.addView(backRow, backRowLp);
 
         LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.HORIZONTAL);
@@ -93,11 +94,6 @@ public class AppManageActivity extends FitActivity {
         PageUi.margin(resultLp, this, 0, 4, 0, 0);
         shell.addView(resultText, resultLp);
 
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 42);
-        PageUi.margin(backLp, this, 0, 6, 0, 0);
-        shell.addView(back, backLp);
 
         refresh();
     }

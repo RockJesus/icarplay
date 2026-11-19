@@ -41,16 +41,8 @@ public class WirelessGuideActivity extends FitActivity {
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "一键无线投屏", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "一键无线投屏", "手机开热点 → 车机加入 → 打开接收页", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this,
-                "手机开热点 → 车机加入 → 打开接收页 · 没有外置路由器也能投",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 7);
-        root.addView(sub, subLp);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);

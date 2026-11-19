@@ -48,15 +48,8 @@ public class LinkBoostActivity extends FitActivity {
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "连接补强", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "连接补强", "没有外置路由器 · 无线 / 有线 / 适配器三条路", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this, "没有外置路由器 · 无线 / 有线 / 适配器三条路",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 7);
-        root.addView(sub, subLp);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);

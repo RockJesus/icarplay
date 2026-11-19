@@ -84,15 +84,8 @@ public class DlnaActivity extends FitActivity {
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "DLNA 投送接收", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "DLNA 投送接收", "安卓手机 / 电脑投音乐 · 视频 · 图片 · 同一局域网", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this, "安卓手机 / 电脑把音乐 · 视频 · 图片投送到车机 · 同一局域网",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 7);
-        root.addView(sub, subLp);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);

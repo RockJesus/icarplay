@@ -114,15 +114,8 @@ public class NetworkCenterActivity extends FitActivity {
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "连接中心", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "连接中心", "Wi‑Fi / 蓝牙 / USB / 热点 · 网络体检与自检", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this, "Wi‑Fi / 蓝牙 / USB / 热点 · 网络体检与 AirPlay 自检共用",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 7);
-        root.addView(sub, subLp);
 
         scroll = new ScrollView(this);
         scroll.setFillViewport(true);

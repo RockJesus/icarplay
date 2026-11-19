@@ -25,6 +25,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.shilapi.xcertplay.carlife.WirelessNetwork;
+import io.github.jqssun.airplay.R;
 
 /**
  * 赛博朋克车机 UI：近黑底色、霓虹强调色、彩虹渐变描边与统一字阶。
@@ -352,14 +353,48 @@ public final class PageUi {
 
     /** 顶部标题栏：与首页一致，紫青渐变标题居中，版本胶囊固定在右上角。 */
     public static FrameLayout header(Context c, String title, String version) {
-        FrameLayout header = new FrameLayout(c);
+        return header(c, title, null, version);
+    }
 
-        TextView t = text(c, title, 24f, TEXT, true);
+    /**
+     * 统一页头：左侧 App 图标徽章、中间渐变标题（可选一行副标题）、右侧版本胶囊。
+     * 二级页与首页共用同一套视觉，副标题并进页头可以省掉页内单独一行说明。
+     */
+    public static FrameLayout header(Context c, String title, String subtitle, String version) {
+        FrameLayout header = new FrameLayout(c);
+        boolean hasSub = subtitle != null && !subtitle.isEmpty();
+        header.setMinimumHeight(dp(c, hasSub ? 40 : 32));
+
+        LinearLayout center = new LinearLayout(c);
+        center.setOrientation(LinearLayout.VERTICAL);
+        center.setGravity(Gravity.CENTER_HORIZONTAL);
+        TextView t = text(c, title, 20f, TEXT, true);
         display(t);
         gradientText(t, TITLE_GRADIENT);
-        header.addView(t, new FrameLayout.LayoutParams(
+        t.setGravity(Gravity.CENTER_HORIZONTAL);
+        center.addView(t, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        if (hasSub) {
+            TextView s = text(c, subtitle, 9f, MUTED, false);
+            s.setGravity(Gravity.CENTER_HORIZONTAL);
+            LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            margin(slp, c, 0, 1, 0, 0);
+            center.addView(s, slp);
+        }
+        header.addView(center, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL));
+                Gravity.CENTER));
+
+        ImageView icon = new ImageView(c);
+        icon.setImageResource(R.drawable.ic_carplay);
+        icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        int side = dp(c, 30);
+        icon.setPadding(dp(c, 5), dp(c, 5), dp(c, 5), dp(c, 5));
+        icon.setBackground(rounded(c, blend(CARD, PURPLE, 0.20f),
+                blend(PURPLE, CYAN, 0.50f), 9));
+        header.addView(icon, new FrameLayout.LayoutParams(side, side,
+                Gravity.START | Gravity.CENTER_VERTICAL));
 
         if (version != null && !version.isEmpty()) {
             TextView pill = text(c, version, 10f, CYAN, true);

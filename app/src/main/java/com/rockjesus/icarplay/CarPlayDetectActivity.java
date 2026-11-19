@@ -55,16 +55,8 @@ public class CarPlayDetectActivity extends FitActivity {
                 PageUi.dp(this, 16), PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "CarPlay 连接检测", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "CarPlay 连接检测", "先检测车机能力，再发起连接 · 有线 USB / 无线 Wi‑Fi + 蓝牙", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this,
-                "先检测车机能力，再发起连接 · 有线走 USB，无线走 Wi‑Fi + 蓝牙",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 8);
-        root.addView(sub, subLp);
 
         LinearLayout columns = new LinearLayout(this);
         columns.setOrientation(LinearLayout.HORIZONTAL);

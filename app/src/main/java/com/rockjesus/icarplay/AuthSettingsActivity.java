@@ -33,16 +33,7 @@ public class AuthSettingsActivity extends FitActivity {
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "认证与连接设置",
-                IcarLauncherActivity.VERSION_LABEL), PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this,
-                "CarPlay 能不能连取决于认证后端；有没有声音取决于音频通道。",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 6);
-        root.addView(sub, subLp);
+        root.addView(PageUi.header(this, "认证与连接设置", "认证后端 · 音频通道 · 网络模式", IcarLauncherActivity.VERSION_LABEL), PageUi.matchWrap(this));
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.HORIZONTAL);

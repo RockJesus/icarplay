@@ -97,16 +97,8 @@ public class HaPanelActivity extends FitActivity {
         int pad = PageUi.dp(this, 18);
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
 
-        shell.addView(PageUi.header(this, "HA 面板", IcarLauncherActivity.VERSION_LABEL),
+        shell.addView(PageUi.header(this, "HA 面板", "内置 HA 客户端 · 不依赖官方 App · 面板在 HA 里自建", IcarLauncherActivity.VERSION_LABEL),
                 PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this,
-                "内置 HA 客户端 · 不依赖官方 App · 面板由你在 HA 里自建",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 10);
-        shell.addView(sub, subLp);
 
         // ---------- 地址 ----------
         LinearLayout card = PageUi.card(this, PageUi.CYAN, 16, 14);
@@ -527,26 +519,38 @@ public class HaPanelActivity extends FitActivity {
             return false;
         });
 
-        // 顶部细工具条：刷新 / 首页 / 设置 / 返回（10 秒后自动隐藏）
+        // 顶部浮层：统一页头 + 工具行（10 秒自动隐藏，点屏幕唤回）
         bar = new LinearLayout(this);
-        bar.setOrientation(LinearLayout.HORIZONTAL);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(PageUi.dp(this, 10), 0, PageUi.dp(this, 10), 0);
-        bar.setBackgroundColor(0xCC04050A);
+        bar.setOrientation(LinearLayout.VERTICAL);
+        bar.setPadding(PageUi.dp(this, 12), PageUi.dp(this, 6),
+                PageUi.dp(this, 12), PageUi.dp(this, 6));
+        bar.setBackgroundColor(0xF80A0E18);
+        bar.addView(PageUi.header(this, "HA 面板", "点屏幕唤回工具条 · 10 秒自动隐藏",
+                        IcarLauncherActivity.VERSION_LABEL),
+                PageUi.matchWrap(this));
 
-        TextView title = PageUi.text(this, "HA 面板", 10f, PageUi.CYAN, true);
-        PageUi.mono(title);
-        bar.addView(title, PageUi.weight(this, 1));
+        LinearLayout tools = new LinearLayout(this);
+        tools.setOrientation(LinearLayout.HORIZONTAL);
+        tools.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams toolsLp = PageUi.matchWrap(this);
+        PageUi.margin(toolsLp, this, 0, 5, 0, 0);
+        bar.addView(tools, toolsLp);
 
-        bar.addView(smallBarButton("刷新", PageUi.CYAN, v -> {
+        LinearLayout.LayoutParams bw = PageUi.weight(this, 1f);
+        TextView t1 = smallBarButton("刷新", PageUi.CYAN, v -> {
             if (web != null) web.reload();
-        }));
-        bar.addView(smallBarButton("首页", PageUi.GREEN, v -> loadPanel()));
-        bar.addView(smallBarButton("设置", PageUi.GOLD, v -> showSetup()));
-        bar.addView(smallBarButton("返回", PageUi.RED, v -> finish()));
+        });
+        tools.addView(t1, bw);
+        TextView t2 = smallBarButton("首页", PageUi.GREEN, v -> loadPanel());
+        tools.addView(t2, PageUi.weight(this, 1f));
+        TextView t3 = smallBarButton("设置", PageUi.GOLD, v -> showSetup());
+        tools.addView(t3, PageUi.weight(this, 1f));
+        TextView t4 = smallBarButton("← 返回主界面", PageUi.BLUE, v -> finish());
+        tools.addView(t4, PageUi.weight(this, 1.6f));
 
         FrameLayout.LayoutParams barLp = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 40), Gravity.TOP);
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP);
         root.addView(bar, barLp);
 
         showBar();

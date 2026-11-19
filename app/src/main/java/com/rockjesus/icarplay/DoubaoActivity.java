@@ -36,6 +36,17 @@ public class DoubaoActivity extends FitActivity {
                     + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     private WebView web;
+    private static final long BAR_AUTO_HIDE_MS = 10000L;
+    private LinearLayout topBar;
+    private final Runnable hideTopTask = new Runnable() {
+        @Override
+        public void run() {
+            if (topBar == null) return;
+            topBar.animate().alpha(0f).setDuration(160).withEndAction(() -> {
+                if (topBar != null) topBar.setVisibility(View.GONE);
+            }).start();
+        }
+    };
     private TextView statePill;
     private static final int REQ_MIC = 1001;
 
@@ -123,33 +134,55 @@ public class DoubaoActivity extends FitActivity {
         cm.setAcceptCookie(true);
         if (Build.VERSION.SDK_INT >= 21) cm.setAcceptThirdPartyCookies(web, true);
 
+        web.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) showTopBar();
+            return false;
+        });
         root.addView(web, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        LinearLayout bar = new LinearLayout(this);
-        bar.setOrientation(LinearLayout.HORIZONTAL);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(PageUi.dp(this, 10), 0, PageUi.dp(this, 10), 0);
-        bar.setBackgroundColor(0xCC04050A);
+        LinearLayout top = new LinearLayout(this);
+        topBar = top;
+        top.setOrientation(LinearLayout.VERTICAL);
+        top.setPadding(PageUi.dp(this, 12), PageUi.dp(this, 6),
+                PageUi.dp(this, 12), PageUi.dp(this, 6));
+        top.setBackgroundColor(0xF80A0E18);
+        top.addView(PageUi.header(this, "豆包", "网页版 · 手机扫码登录 · 支持语音",
+                        IcarLauncherActivity.VERSION_LABEL),
+                PageUi.matchWrap(this));
 
-        TextView title = PageUi.text(this, "豆包", 10f, PageUi.PURPLE, true);
-        PageUi.mono(title);
-        bar.addView(title, PageUi.weight(this, 0.6f));
+        LinearLayout tools = new LinearLayout(this);
+        tools.setOrientation(LinearLayout.HORIZONTAL);
+        tools.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams toolsLp = PageUi.matchWrap(this);
+        PageUi.margin(toolsLp, this, 0, 5, 0, 0);
+        top.addView(tools, toolsLp);
 
         statePill = PageUi.text(this, "未登录 · 手机扫码", 8.5f, PageUi.MUTED, false);
-        bar.addView(statePill, PageUi.weight(this, 1.6f));
+        tools.addView(statePill, PageUi.weight(this, 1.3f));
+        tools.addView(barButton("刷新", PageUi.CYAN, v -> web.reload()), PageUi.weight(this, 0.7f));
+        tools.addView(barButton("首页", PageUi.GREEN, v -> web.loadUrl(HOME_URL)),
+                PageUi.weight(this, 0.7f));
+        tools.addView(barButton("麦克风", PageUi.GOLD, v -> ensureMicThenHint()),
+                PageUi.weight(this, 1f));
+        tools.addView(barButton("← 返回主界面", PageUi.BLUE, v -> finish()),
+                PageUi.weight(this, 1.5f));
 
-        bar.addView(barButton("刷新", PageUi.CYAN, v -> web.reload()));
-        bar.addView(barButton("首页", PageUi.GREEN, v -> web.loadUrl(HOME_URL)));
-        bar.addView(barButton("麦克风", PageUi.GOLD, v -> {
-            ensureMicThenHint();
-        }));
-        bar.addView(barButton("返回", PageUi.RED, v -> finish()));
-
-        root.addView(bar, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 40), Gravity.TOP));
+        root.addView(topBar, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP));
+        showTopBar();
 
         web.loadUrl(HOME_URL);
+    }
+
+    private void showTopBar() {
+        if (topBar == null) return;
+        topBar.animate().cancel();
+        topBar.setAlpha(1f);
+        topBar.setVisibility(View.VISIBLE);
+        topBar.removeCallbacks(hideTopTask);
+        topBar.postDelayed(hideTopTask, BAR_AUTO_HIDE_MS);
     }
 
     private TextView barButton(String label, int accent, View.OnClickListener onClick) {

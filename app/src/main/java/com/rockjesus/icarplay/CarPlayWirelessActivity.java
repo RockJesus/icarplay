@@ -48,16 +48,7 @@ public class CarPlayWirelessActivity extends FitActivity {
                 PageUi.dp(this, 16), PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "无线 CarPlay 向导",
-                IcarLauncherActivity.VERSION_LABEL), PageUi.matchWrap(this));
-
-        TextView sub = PageUi.text(this,
-                "蓝牙负责配对，Wi‑Fi 负责音视频 · 8.1 车机优先走 iPhone 热点",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 8);
-        root.addView(sub, subLp);
+        root.addView(PageUi.header(this, "无线 CarPlay 向导", "蓝牙配对，Wi‑Fi 传音视频 · 8.1 车机优先 iPhone 热点", IcarLauncherActivity.VERSION_LABEL), PageUi.matchWrap(this));
 
         // 前置条件实测
         LinearLayout checkCard = PageUi.card(this, PageUi.GREEN, 12, 10);

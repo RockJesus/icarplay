@@ -59,25 +59,20 @@ public class UpdateActivity extends FitActivity {
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(shell);
 
-        // 顶栏左侧固定「返回」：车机上底部栏可能被悬浮球或手势区挡住，返回必须永远点得到。
-        FrameLayout headerWrap = new FrameLayout(this);
-        headerWrap.addView(PageUi.header(this, "版本更新", IcarLauncherActivity.VERSION_LABEL),
-                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT));
-        Button backTop = PageUi.button(this, "← 返回", 10.5f, PageUi.BLUE);
-        backTop.setOnClickListener(v -> finish());
-        headerWrap.addView(backTop, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.START | Gravity.CENTER_VERTICAL));
-        shell.addView(headerWrap, PageUi.matchWrap(this));
+        // 页头 + 一行返回：车机上底部栏可能被悬浮球或手势区挡住，返回必须永远点得到。
+        shell.addView(PageUi.header(this, "版本更新",
+                        "一键检查并安装新版本 · 来源 GitHub Releases · 校验 SHA-256 与签名",
+                        IcarLauncherActivity.VERSION_LABEL),
+                PageUi.matchWrap(this));
 
-        TextView sub = PageUi.text(this,
-                "一键检查并安装新版本 · 来源 GitHub Releases · 下载后校验 SHA-256 与签名",
-                10.5f, PageUi.MUTED, false);
-        sub.setGravity(Gravity.CENTER_HORIZONTAL);
-        LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
-        PageUi.margin(subLp, this, 0, 3, 0, 7);
-        shell.addView(sub, subLp);
+        LinearLayout backRow = new LinearLayout(this);
+        backRow.setOrientation(LinearLayout.HORIZONTAL);
+        Button backTop = PageUi.button(this, "← 返回主界面", 10f, PageUi.BLUE);
+        backTop.setOnClickListener(v -> finish());
+        backRow.addView(backTop, PageUi.weight(this, 1));
+        LinearLayout.LayoutParams backRowLp = PageUi.matchWrap(this);
+        PageUi.margin(backRowLp, this, 0, 4, 0, 6);
+        shell.addView(backRow, backRowLp);
 
         LinearLayout main = buildMainCard();
         LinearLayout.LayoutParams mainLp = PageUi.matchWrap(this);
