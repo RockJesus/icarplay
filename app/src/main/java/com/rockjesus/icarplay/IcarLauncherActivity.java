@@ -43,7 +43,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v1.3.2";
+    public static final String VERSION_LABEL = "v1.3.3";
 
     private TextView versionPill;
     private TextView statusView;
@@ -587,10 +587,8 @@ public class IcarLauncherActivity extends FitActivity {
         boolean running = prefs.getBoolean("float_running", false);
         boolean defaultHome = HomeSafety.isDefaultHome(this);
         boolean safeMode = SafetyGuard.safeMode(this);
-        String auth = CarPlayCore.authLabel(this);
         int usb = CarPlayCore.appleUsbCount(this);
 
-        boolean airplayRunning = isAirPlayServiceRunning();
         boolean autoRunning = isAndroidAutoServiceRunning();
         boolean hicarRunning = isHiCarServiceRunning();
         boolean carlifeRunning = prefs.getBoolean("carlife_active", false);
@@ -628,13 +626,11 @@ public class IcarLauncherActivity extends FitActivity {
 
         String carlifeStateLabel = prefs.getString("carlife_state", "");
 
-        // 状态胶囊统一语义：蓝=待启动、金=待连接、绿=已就绪/运行中、红=不可用。
-        setPill(airplayState, airplayRunning ? "待连接" : "待启动",
-                airplayRunning ? PageUi.GOLD : PageUi.BLUE);
+        // 状态胶囊统一语义：金=待连接（等手机/等启动，六卡一律同一文案）、绿=已连上/运行中。
+        setPill(airplayState, "待连接", PageUi.GOLD);
 
-        boolean carplayReady = CarPlayCore.hasAuth(this) || CarPlayCore.hasLocalIdentity(this);
-        setPill(carplayState, carplayReady ? "已配置" : shortAuth(auth),
-                carplayReady ? PageUi.GREEN : PageUi.RED);
+        // CarPlay 未握手前一律「待连接」：有无证书只影响能不能握手，不写在胶囊上。
+        setPill(carplayState, "待连接", PageUi.GOLD);
 
         String carlifeText = !carlifeRunning ? "待连接"
                 : (carlifeStateLabel == null || carlifeStateLabel.isEmpty() ? "运行中" : carlifeStateLabel);
@@ -667,16 +663,16 @@ public class IcarLauncherActivity extends FitActivity {
         }
     }
 
-    /** 首页第六卡：未配置=青、探测中=金、连通=绿、连不上=金（提示未连上）。 */
+    /** 首页第六卡：未配置/连不上都是「待连接」，连上了变「已连接」，探测期间「连接中…」。 */
     private void refreshHaPill() {
         if (haState == null) return;
         if (HaApi.baseUrl(this).isEmpty()) {
-            setPill(haState, "未配置", PageUi.CYAN);
+            setPill(haState, "待连接", PageUi.GOLD);
             return;
         }
         long now = System.currentTimeMillis();
         if (now - haPingedAt < 20_000) {
-            setPill(haState, haReachable ? "已连接" : "未连上",
+            setPill(haState, haReachable ? "已连接" : "待连接",
                     haReachable ? PageUi.GREEN : PageUi.GOLD);
             return;
         }
@@ -687,7 +683,7 @@ public class IcarLauncherActivity extends FitActivity {
             haReachable = body != null;
             runOnUiThread(() -> {
                 if (isFinishing() || haState == null) return;
-                setPill(haState, haReachable ? "已连接" : "未连上",
+                setPill(haState, haReachable ? "已连接" : "待连接",
                         haReachable ? PageUi.GREEN : PageUi.GOLD);
             });
         }, "ha-home-ping").start();
@@ -698,15 +694,6 @@ public class IcarLauncherActivity extends FitActivity {
         builder.append("● ").append(text);
         builder.setSpan(new ForegroundColorSpan(color), start, builder.length(),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-    }
-
-    /** 把「本地证书 (.p7b + .pk8)」这类长串压成能塞进胶囊的短标签。 */
-    private String shortAuth(String auth) {
-        if (auth == null) return "未配置";
-        if (auth.startsWith("本地证书")) return "本地证书";
-        if (auth.startsWith("MFi 芯片")) return "MFi 芯片";
-        if (auth.startsWith("远程 MFI")) return "远程 MFi";
-        return auth.length() > 6 ? auth.substring(0, 6) : auth;
     }
 
     private void setPill(TextView view, String text, int accent) {
