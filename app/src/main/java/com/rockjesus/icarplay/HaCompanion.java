@@ -264,7 +264,7 @@ public final class HaCompanion {
     private static JSONArray toArray(List<HaSensors.Item> items) throws JSONException {
         JSONArray arr = new JSONArray();
         for (HaSensors.Item item : items) {
-            arr.put(item.toJson());
+            arr.put(item.toUpdateJson());
         }
         return arr;
     }

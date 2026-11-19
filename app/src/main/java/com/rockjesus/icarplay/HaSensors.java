@@ -58,11 +58,17 @@ public final class HaSensors {
          * update 时同样带上（HA 会 merge，不会丢定义）。
          */
         JSONObject toJson() throws JSONException {
+            JSONObject o = toUpdateJson();
+            o.put("name", name);
+            return o;
+        }
+
+        /** update_sensor_states 用：schema 不允许 name 字段（带了会 invalid_format）。 */
+        JSONObject toUpdateJson() throws JSONException {
             JSONObject o = new JSONObject();
             o.put("unique_id", uniqueId);
             o.put("type", type);
             o.put("state", state);
-            o.put("name", name);
             if (icon != null) o.put("icon", icon);
             JSONObject attrs = new JSONObject();
             if (unit != null) attrs.put("unit_of_measurement", unit);
