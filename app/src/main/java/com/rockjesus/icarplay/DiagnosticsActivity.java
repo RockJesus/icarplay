@@ -41,7 +41,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -139,27 +138,23 @@ public class DiagnosticsActivity extends FitActivity {
         PageUi.margin(summaryLp, this, 0, 2, 0, 4);
         root.addView(summary, summaryLp);
 
-        ScrollView scroll = new ScrollView(this);
-        scroll.setVerticalScrollBarEnabled(false);
-        LinearLayout.LayoutParams scrollLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
-        root.addView(scroll, scrollLp);
-
-        body = new LinearLayout(this);
-        body.setOrientation(LinearLayout.VERTICAL);
-        scroll.addView(body, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        tip = PageUi.text(this, "", 9f, PageUi.MUTED, false);
-        LinearLayout.LayoutParams tipLp = PageUi.matchWrap(this);
-        PageUi.margin(tipLp, this, 2, 4, 0, 4);
-        root.addView(tip, tipLp);
-
+        // 注意：FitActivity 会把整页再包一层滚动容器，所以这里不能再嵌套 ScrollView，
+        // 否则内层的 weight 高度会塌成 0、底部按钮被顶到屏幕外。操作条放在页头下方。
         LinearLayout tools = new LinearLayout(this);
         tools.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams toolsLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 42));
+        PageUi.margin(toolsLp, this, 0, 0, 0, 6);
         root.addView(tools, toolsLp);
+
+        body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        root.addView(body, PageUi.matchWrap(this));
+
+        tip = PageUi.text(this, "", 9f, PageUi.MUTED, false);
+        LinearLayout.LayoutParams tipLp = PageUi.matchWrap(this);
+        PageUi.margin(tipLp, this, 2, 6, 0, 0);
+        root.addView(tip, tipLp);
 
         rescanButton = tool("重新扫描", PageUi.BLUE, v -> rescan());
         tools.addView(rescanButton);
@@ -868,6 +863,8 @@ public class DiagnosticsActivity extends FitActivity {
                     message = "已上报 sensor.icarplay_diagnostics";
                 } else if (resp.code == 0) {
                     message = "连不上 HA，检查地址/网络";
+                } else if (resp.code == 401 || resp.code == 403) {
+                    message = "令牌无效或过期，请粘贴长期访问令牌";
                 } else {
                     message = "上报失败 HTTP " + resp.code;
                 }
@@ -875,6 +872,7 @@ public class DiagnosticsActivity extends FitActivity {
                 message = "上报异常：" + t.getClass().getSimpleName();
             }
             final String finalMessage = message;
+            android.util.Log.i("icarplay-diag", "push to HA: " + message);
             runOnUiThread(() -> toast(finalMessage));
         }, "diagnostics-ha").start();
     }
