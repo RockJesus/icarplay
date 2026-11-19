@@ -3,12 +3,19 @@
     xmlns:tools="http://schemas.android.com/tools">
 
 
-    <!-- 并入 DiPlay 引擎后，剥掉我们拒绝的权限与自启组件 -->
-    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:node="remove" />
+    <!-- 并入 DiPlay 引擎后，仍然剥掉的权限：引擎自带更新器要静默装包，与我们自己的更新通道冲突 -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:node="remove" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
+
+    <!-- 两项特殊权限改为「声明但不默认授予」，由检测页里的开关引导用户按需打开。
+         它们都不能在运行时静默获取，必须用户在系统设置里手动勾选。 -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 应用管理里卸载别的 App：这只是「发起卸载」，仍由系统卸载确认框完成，不是静默卸载。
          Android 11+ 不声明它，UninstallerActivity 会直接以 Uid 无权限拒绝。 -->
@@ -322,8 +329,27 @@
                 android:resource="@xml/file_paths" />
         </provider>
     
-    <!-- 引擎自带自启/悬浮组件一律不继承，保持「不接管系统」的底线 -->
-    <receiver android:name="com.shilapi.xcertplay.BootReceiver" tools:node="remove" />
+    <!-- 引擎的开机自启与蓝牙电话联动：打包保留，但静态默认关闭，
+         由检测页的开关按需动态启用（setComponentEnabledSetting），避免开机抢占车机前台。 -->
+    <receiver
+        android:name="com.shilapi.xcertplay.BootReceiver"
+        android:enabled="false"
+        android:exported="true"
+        tools:replace="android:enabled">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+        </intent-filter>
+    </receiver>
+
+    <receiver
+        android:name="com.shilapi.xcertplay.PhoneBluetoothReceiver"
+        android:enabled="false"
+        android:exported="true"
+        tools:replace="android:enabled">
+        <intent-filter>
+            <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+        </intent-filter>
+    </receiver>
 
     <activity android:name="com.shilapi.xcertplay.DiPlayActivity">
         <intent-filter tools:node="remove">

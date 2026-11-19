@@ -1,5 +1,6 @@
 package com.rockjesus.icarplay;
 
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
@@ -36,6 +37,10 @@ public class CarPlayDetectActivity extends FitActivity {
     private TextView wiredSummary;
     private TextView wirelessSummary;
     private TextView hint;
+    private TextView bootPill;
+    private TextView btPill;
+    private TextView usagePill;
+    private TextView writePill;
     private BroadcastReceiver usbReceiver;
 
     @Override
@@ -76,6 +81,10 @@ public class CarPlayDetectActivity extends FitActivity {
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         PageUi.margin(rightLp, this, 6, 0, 0, 0);
         columns.addView(buildColumn("无线 CarPlay", PageUi.GREEN, false), rightLp);
+
+        LinearLayout.LayoutParams engineLp = PageUi.matchWrap(this);
+        PageUi.margin(engineLp, this, 0, 8, 0, 0);
+        root.addView(buildEngineCard(), engineLp);
 
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
@@ -150,9 +159,137 @@ public class CarPlayDetectActivity extends FitActivity {
         return card;
     }
 
+    /**
+     * 引擎增强卡片：把 DiPlay 里「代码在包里、入口默认关」的四项摆出来。
+     *
+     * <p>自启与蓝牙电话联动是组件开关（点一下即时生效，不重启进程）；
+     * 使用情况访问、修改系统设置是特殊权限，只能跳系统设置页让用户手动勾选。
+     */
+    private LinearLayout buildEngineCard() {
+        LinearLayout card = PageUi.card(this, PageUi.PURPLE, 12, 8);
+
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        head.addView(PageUi.text(this, "引擎增强 · 默认关，按需开", 10f, PageUi.PURPLE, true),
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        head.addView(PageUi.text(this, "DiPlay 内置能力", 9f, PageUi.MUTED, false),
+                PageUi.wrap(this));
+        card.addView(head, PageUi.matchWrap(this));
+
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams rowLp = PageUi.matchWrap(this);
+        PageUi.margin(rowLp, this, 0, 6, 0, 0);
+
+        bootPill = PageUi.statusPill(this, "关", PageUi.MUTED);
+        row1.addView(cell("引擎开机自启", bootPill, this::toggleBoot), PageUi.weight(this, 1));
+
+        btPill = PageUi.statusPill(this, "关", PageUi.MUTED);
+        LinearLayout.LayoutParams btLp = PageUi.weight(this, 1);
+        PageUi.margin(btLp, this, 8, 0, 0, 0);
+        row1.addView(cell("蓝牙电话联动", btPill, this::toggleBt), btLp);
+        card.addView(row1, rowLp);
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams rowLp2 = PageUi.matchWrap(this);
+        PageUi.margin(rowLp2, this, 0, 6, 0, 0);
+
+        usagePill = PageUi.statusPill(this, "未授权", PageUi.MUTED);
+        row2.addView(cell("使用情况访问", usagePill,
+                () -> {
+                    EngineExtra.openUsageAccess(this);
+                    toast("在系统列表里给 iCarPlay 打开「使用情况访问」后返回");
+                }), PageUi.weight(this, 1));
+
+        writePill = PageUi.statusPill(this, "未授权", PageUi.MUTED);
+        LinearLayout.LayoutParams writeLp = PageUi.weight(this, 1);
+        PageUi.margin(writeLp, this, 8, 0, 0, 0);
+        row2.addView(cell("修改系统设置", writePill,
+                () -> {
+                    EngineExtra.openWriteSettings(this);
+                    toast("在系统列表里给 iCarPlay 打开「修改系统设置」后返回");
+                }), writeLp);
+        card.addView(row2, rowLp2);
+
+        return card;
+    }
+
+    private LinearLayout cell(String label, TextView pill, Runnable onClick) {
+        LinearLayout cell = new LinearLayout(this);
+        cell.setOrientation(LinearLayout.HORIZONTAL);
+        cell.setGravity(Gravity.CENTER_VERTICAL);
+        int px = PageUi.dp(this, 10);
+        int py = PageUi.dp(this, 7);
+        cell.setPadding(px, py, px, py);
+        cell.setBackground(PageUi.rounded(this, PageUi.CARD_ALT, PageUi.BORDER, 10));
+
+        TextView name = PageUi.text(this, label, 9.5f, PageUi.TEXT, false);
+        name.setSingleLine(true);
+        name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        cell.addView(name, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        cell.addView(pill, PageUi.wrap(this));
+        cell.setOnClickListener(v -> onClick.run());
+        return cell;
+    }
+
+    /** 开机自启会抢开机前台，必须二次确认，绝不静默打开。 */
+    private void toggleBoot() {
+        boolean on = EngineExtra.enabled(this, EngineExtra.BOOT_RECEIVER);
+        if (!on) {
+            new AlertDialog.Builder(this)
+                    .setTitle("开启引擎开机自启？")
+                    .setMessage("开启后，车机每次开机时引擎会自己尝试拉起 CarPlay 会话，"
+                            + "可能抢占开机后的前台画面。只有在确认不会影响车机正常启动时才建议打开。")
+                    .setNegativeButton("保持关闭", null)
+                    .setPositiveButton("确认开启", (d, w) -> applyReceiver(
+                            EngineExtra.BOOT_RECEIVER, true))
+                    .show();
+        } else {
+            applyReceiver(EngineExtra.BOOT_RECEIVER, false);
+        }
+    }
+
+    private void toggleBt() {
+        applyReceiver(EngineExtra.BT_RECEIVER, !EngineExtra.enabled(this, EngineExtra.BT_RECEIVER));
+    }
+
+    private void applyReceiver(String cls, boolean on) {
+        if (!EngineExtra.present(this, cls)) {
+            toast("这个 APK 里没有该引擎组件（可能被裁剪）");
+            refreshEngine();
+            return;
+        }
+        boolean ok = EngineExtra.setEnabled(this, cls, on);
+        toast(ok ? (on ? "已开启" : "已关闭") : "切换失败，车机可能限制了组件状态修改");
+        refreshEngine();
+    }
+
+    private void refreshEngine() {
+        if (bootPill == null) return;
+        boolean bootOn = EngineExtra.enabled(this, EngineExtra.BOOT_RECEIVER);
+        bootPill.setText(bootOn ? "开" : "关");
+        bootPill.setTextColor(bootOn ? PageUi.GOLD : PageUi.MUTED);
+
+        boolean btOn = EngineExtra.enabled(this, EngineExtra.BT_RECEIVER);
+        btPill.setText(btOn ? "开" : "关");
+        btPill.setTextColor(btOn ? PageUi.GREEN : PageUi.MUTED);
+
+        boolean usage = EngineExtra.hasUsageAccess(this);
+        usagePill.setText(usage ? "已授权" : "未授权");
+        usagePill.setTextColor(usage ? PageUi.GREEN : PageUi.MUTED);
+
+        boolean write = EngineExtra.canWriteSettings(this);
+        writePill.setText(write ? "已授权" : "未授权");
+        writePill.setTextColor(write ? PageUi.GREEN : PageUi.MUTED);
+    }
+
     private void refresh() {
         fill(wiredList, CarPlayCheck.wired(this), wiredSummary);
         fill(wirelessList, CarPlayCheck.wireless(this), wirelessSummary);
+        refreshEngine();
         boolean auth = CarPlayCore.hasAuth(this);
         hint.setText(auth
                 ? "认证材料已就位。下一步缺的是协议引擎：有了引擎，认证通过后才能出画面。"

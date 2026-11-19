@@ -199,6 +199,7 @@ public class CarPlayCheck {
         for (Item i : wireless(c)) {
             sb.append("  - ").append(i.name).append("：").append(i.value).append("\n");
         }
+        sb.append("\n【引擎增强】").append(EngineExtra.summaryLine(c)).append("\n");
         return sb.toString();
     }
 }
