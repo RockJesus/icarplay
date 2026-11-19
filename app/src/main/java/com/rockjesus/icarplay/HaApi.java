@@ -198,6 +198,57 @@ public final class HaApi {
         }
     }
 
+    /**
+     * 直接对一个绝对 URL 发 POST，不带 Authorization。
+     * 专供 mobile_app 的 webhook 使用：webhook 地址可能落在 cloudhook 域名上，
+     * 不能用 baseUrl 拼。返回响应体（成功）或 null（失败）。必须在工作线程调用。
+     */
+    public static String postAbsolute(Context ctx, String fullUrl, String body, int timeoutMs) {
+        if (fullUrl == null || !(fullUrl.startsWith("http://") || fullUrl.startsWith("https://"))) {
+            return null;
+        }
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URL(fullUrl);
+            conn = (HttpURLConnection) url.openConnection();
+            if (conn instanceof HttpsURLConnection
+                    && prefs(ctx).getBoolean(PREF_INSECURE, false)) {
+                HttpsURLConnection https = (HttpsURLConnection) conn;
+                https.setSSLSocketFactory(trustAll().getSocketFactory());
+                https.setHostnameVerifier((hostname, session) -> true);
+            }
+            int timeout = timeoutMs <= 0 ? 6000 : timeoutMs;
+            conn.setConnectTimeout(Math.min(timeout, 6000));
+            conn.setReadTimeout(timeout);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setRequestProperty("Content-Type", "application/json");
+            if (body != null) {
+                conn.setDoOutput(true);
+                byte[] payload = body.getBytes(StandardCharsets.UTF_8);
+                conn.setFixedLengthStreamingMode(payload.length);
+                try (OutputStream out = conn.getOutputStream()) {
+                    out.write(payload);
+                }
+            }
+            int code = conn.getResponseCode();
+            InputStream in = code >= 200 && code < 300
+                    ? conn.getInputStream() : conn.getErrorStream();
+            String text = in == null ? "" : readAll(in);
+            if (code < 200 || code >= 300) return null;
+            return text;
+        } catch (Throwable ignored) {
+            return null;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.disconnect();
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+    }
+
     private static String readAll(InputStream in) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();

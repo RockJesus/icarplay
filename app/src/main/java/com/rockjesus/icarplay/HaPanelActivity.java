@@ -282,6 +282,128 @@ public class HaPanelActivity extends FitActivity {
 
         shell.addView(pathCard, pathLp);
 
+        // ---------- 车机状态上报（Companion 的传感器一侧） ----------
+        LinearLayout syncCard = PageUi.card(this, PageUi.GREEN, 14, 12);
+        LinearLayout.LayoutParams syncLp = PageUi.matchWrap(this);
+        PageUi.margin(syncLp, this, 0, 10, 0, 0);
+
+        LinearLayout syncRow = new LinearLayout(this);
+        syncRow.setOrientation(LinearLayout.HORIZONTAL);
+        syncRow.setGravity(Gravity.CENTER_VERTICAL);
+        syncRow.addView(PageUi.text(this, "车机状态 → Home Assistant", 11f,
+                PageUi.GREEN, true));
+        boolean syncOn = HaCompanion.enabled(this);
+        TextView syncPill = PageUi.statusPill(this,
+                syncOn ? (HaCompanion.registered(this) ? "已注册" : "待注册") : "已关闭",
+                syncOn ? (HaCompanion.registered(this) ? PageUi.GREEN : PageUi.GOLD)
+                        : PageUi.MUTED);
+        LinearLayout.LayoutParams splp = PageUi.wrap(this);
+        PageUi.margin(splp, this, 10, 0, 0, 0);
+        syncRow.addView(syncPill, splp);
+        syncCard.addView(syncRow, PageUi.matchWrap(this));
+
+        TextView syncTip = PageUi.text(this,
+                "像官方 Companion 一样把车机状态推到 HA：电量/充电、联网与 WiFi 名、存储、内存、"
+                        + "开机时长、屏幕、音量、USB、前台应用、各投屏引擎运行态。只上报状态，不传画面。",
+                9.5f, PageUi.MUTED, false);
+        LinearLayout.LayoutParams stlp2 = PageUi.matchWrap(this);
+        PageUi.margin(stlp2, this, 0, 8, 0, 0);
+        syncCard.addView(syncTip, stlp2);
+
+        TextView syncStatus = PageUi.text(this, HaCompanion.lastText(this),
+                9.5f, PageUi.CYAN, false);
+        LinearLayout.LayoutParams sslp = PageUi.matchWrap(this);
+        PageUi.margin(sslp, this, 0, 8, 0, 0);
+        syncCard.addView(syncStatus, sslp);
+
+        LinearLayout syncRow2 = new LinearLayout(this);
+        syncRow2.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams sr2lp = PageUi.matchWrap(this);
+        PageUi.margin(sr2lp, this, 0, 10, 0, 0);
+
+        Button syncBtn = PageUi.button(this, syncOn ? "关闭状态上报" : "开启状态上报",
+                11.5f, PageUi.GREEN);
+        syncBtn.setOnClickListener(v -> {
+            if (HaCompanion.enabled(this)) {
+                prefs.edit().putBoolean(HaCompanion.P_ENABLED, false).apply();
+                HaSyncService.stop(this);
+                syncBtn.setText("开启状态上报");
+                syncBtn.setTextColor(PageUi.GREEN);
+                syncPill.setText("已关闭");
+                syncPill.setTextColor(PageUi.MUTED);
+                syncStatus.setText("已关闭，不再上报");
+                toast("已关闭状态上报");
+            } else {
+                prefs.edit().putBoolean(HaCompanion.P_ENABLED, true).apply();
+                HaSyncService.startIfEnabled(this);
+                syncBtn.setText("关闭状态上报");
+                syncBtn.setTextColor(PageUi.GOLD);
+                syncPill.setText(HaCompanion.registered(this) ? "已注册" : "待注册");
+                syncPill.setTextColor(HaCompanion.registered(this) ? PageUi.GREEN : PageUi.GOLD);
+                syncStatus.setText("已开启，首次上报请稍候…");
+                toast("已开启，正在向 HA 注册车机设备");
+            }
+        });
+        syncRow2.addView(syncBtn, PageUi.weight(this, 1.2f));
+
+        Button syncNow = PageUi.button(this, "立即上报", 11f, PageUi.CYAN);
+        syncNow.setOnClickListener(v -> {
+            if (!HaCompanion.enabled(this)) {
+                toast("先开启状态上报");
+                return;
+            }
+            syncNow.setEnabled(false);
+            syncNow.setText("上报中…");
+            new Thread(() -> {
+                String err = HaCompanion.push(this);
+                runOnUiThread(() -> {
+                    syncNow.setEnabled(true);
+                    syncNow.setText("立即上报");
+                    syncStatus.setText(HaCompanion.lastText(this));
+                    boolean ok = HaCompanion.registered(this);
+                    syncPill.setText(ok ? "已注册" : "待注册");
+                    syncPill.setTextColor(ok ? PageUi.GREEN : PageUi.GOLD);
+                    toast(err == null ? "已上报到 HA" : "上报失败：" + err);
+                });
+            }).start();
+        });
+        LinearLayout.LayoutParams snlp = PageUi.weight(this, 1);
+        PageUi.margin(snlp, this, 8, 0, 0, 0);
+        syncRow2.addView(syncNow, snlp);
+        syncCard.addView(syncRow2, sr2lp);
+
+        LinearLayout syncRow3 = new LinearLayout(this);
+        syncRow3.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams sr3lp = PageUi.matchWrap(this);
+        PageUi.margin(sr3lp, this, 0, 8, 0, 0);
+
+        Button intervalBtn = PageUi.button(this,
+                "间隔 " + intervalLabel(HaCompanion.intervalSec(this)),
+                11f, PageUi.PURPLE);
+        intervalBtn.setOnClickListener(v -> {
+            int now = HaCompanion.intervalSec(this);
+            int next = now < 60 ? 60 : (now < 300 ? 300 : 30);
+            prefs.edit().putInt(HaCompanion.P_INTERVAL, next).apply();
+            intervalBtn.setText("间隔 " + intervalLabel(next));
+            toast("上报间隔已设为 " + intervalLabel(next));
+        });
+        syncRow3.addView(intervalBtn, PageUi.weight(this, 1));
+
+        Button reReg = PageUi.button(this, "重新注册", 11f, PageUi.GOLD);
+        reReg.setOnClickListener(v -> {
+            HaCompanion.reset(this);
+            syncPill.setText("待注册");
+            syncPill.setTextColor(PageUi.GOLD);
+            syncStatus.setText("已清除注册信息，下次上报会重新注册");
+            toast("已清除注册信息");
+        });
+        LinearLayout.LayoutParams rrlp = PageUi.weight(this, 1);
+        PageUi.margin(rrlp, this, 8, 0, 0, 0);
+        syncRow3.addView(reReg, rrlp);
+        syncCard.addView(syncRow3, sr3lp);
+
+        shell.addView(syncCard, syncLp);
+
         TextView foot = PageUi.text(this,
                 "面板本身由 HA 自己的 Lovelace 渲染；本应用只负责登录态、连通性与全屏显示。",
                 9.5f, PageUi.MUTED, false);
@@ -540,6 +662,12 @@ public class HaPanelActivity extends FitActivity {
         destroyWeb();
         ui.removeCallbacksAndMessages(null);
         super.onDestroy();
+    }
+
+    private String intervalLabel(int sec) {
+        if (sec < 60) return sec + " 秒";
+        if (sec < 3600) return (sec / 60) + " 分钟";
+        return (sec / 3600) + " 小时";
     }
 
     private void toast(String msg) {

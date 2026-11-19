@@ -26,6 +26,8 @@ public final class FloatBootReceiver extends BroadcastReceiver {
         }
         try {
             PermissionOnboarding.startFloatOnBoot(context);
+            // 车机开机顺带恢复 HA 状态上报（开关开着才起，不会多出常驻服务）
+            HaSyncService.startIfEnabled(context);
             Log.i(TAG, "boot received, float restore requested");
         } catch (Throwable t) {
             Log.w(TAG, "boot float restore failed: " + t.getClass().getSimpleName());

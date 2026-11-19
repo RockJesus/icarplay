@@ -43,7 +43,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v1.3.3";
+    public static final String VERSION_LABEL = "v1.4.0";
 
     private TextView versionPill;
     private TextView statusView;
@@ -89,6 +89,8 @@ public class IcarLauncherActivity extends FitActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         prefs = getSharedPreferences("icarplay", MODE_PRIVATE);
+        // 用户开过状态上报就顺带把同步服务恢复起来（冷启动 / 车机重启都靠这一句）
+        HaSyncService.startIfEnabled(this);
 
         android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
         float widthDp = dm.widthPixels / dm.density;
@@ -807,4 +809,5 @@ public class IcarLauncherActivity extends FitActivity {
     }
 
 }
+
 
