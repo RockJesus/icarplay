@@ -14,8 +14,11 @@ from pathlib import Path
 manifest, gradle = map(Path, sys.argv[1:3])
 AND = "{http://schemas.android.com/apk/res/android}"
 TOOLS = "{http://schemas.android.com/tools}"
+# WRITE_SETTINGS is NOT forbidden any more: Android exposes it only as special
+# access (Settings.System.canWrite), the user must tick it manually in system
+# settings and the app can never obtain it silently. WRITE_SECURE_SETTINGS stays
+# banned because it has no user-facing grant path at all.
 forbidden_permissions = {
-    "android.permission.WRITE_SETTINGS",
     "android.permission.WRITE_SECURE_SETTINGS",
     "android.permission.BIND_DEVICE_ADMIN",
     "android.permission.MANAGE_USB",
@@ -74,6 +77,14 @@ else:
     for node in float_boot:
         if node.get(AND + "enabled") != "true":
             problems.append("FloatBootReceiver must be android:enabled=\"true\"")
+
+# Engine receivers may be packaged, but they must never be on by default: the
+# head unit must boot exactly as before unless the user opts in on screen.
+for name in ("com.shilapi.xcertplay.BootReceiver",
+             "com.shilapi.xcertplay.PhoneBluetoothReceiver"):
+    for node in [n for n in root.iter("receiver") if n.get(AND + "name") == name]:
+        if node.get(AND + "enabled") != "false":
+            problems.append(f"{name} must be android:enabled=\"false\" by default")
 
 gradle_text = gradle.read_text(errors="replace")
 for needle in ("deviceAdmin", "DeviceAdminReceiver", "sharedUserId"):
