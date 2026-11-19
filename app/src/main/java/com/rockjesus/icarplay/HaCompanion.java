@@ -91,10 +91,16 @@ public final class HaCompanion {
         } catch (JSONException ignored) {
             return "组装注册信息失败";
         }
-        String resp = HaApi.request(ctx, "POST", "/api/mobile_app/registrations",
-                body.toString(), 15000);
-        if (resp == null) {
-            // 注册被拒：降级为 REST 直写，仍然能把状态送进 HA
+        HaApi.Resp r = HaApi.send(ctx, "POST", "/api/mobile_app/registrations",
+                body.toString(), 12000);
+        if (r.code < 200 || r.code >= 300) {
+            if (r.code == 401 || r.code == 403) {
+                return "令牌无效或已过期：请到 HA「个人资料 → 长期访问令牌」新建一条粘贴保存"
+                        + "（网页登录自动取到的令牌只有 30 分钟）";
+            }
+            if (r.code == 0) return "连不上 HA：检查地址、网络或证书设置";
+            if (r.code == 400) return "注册被拒（400）：HA 的 mobile_app 集成可能被禁用";
+            // 接口不存在 / 未启用 mobile_app：降级为 REST 直写，仍然把状态送进 HA
             HaApi.prefs(ctx).edit()
                     .putString(P_MODE, "states")
                     .putString(P_WEBHOOK, HaApi.baseUrl(ctx) + "/api/states")
@@ -104,7 +110,7 @@ public final class HaCompanion {
             return null;
         }
         try {
-            JSONObject o = new JSONObject(resp);
+            JSONObject o = new JSONObject(r.body);
             String hookId = opt(o, "webhook_id");
             String cloud = opt(o, "cloudhook_url");
             String hook;
@@ -213,9 +219,19 @@ public final class HaCompanion {
                 body.put("attributes", attrs);
                 String path = "/api/states/" + (binary ? "binary_sensor.icarplay_"
                         : "sensor.icarplay_") + item.uniqueId;
-                String r = HaApi.request(ctx, "POST", path, body.toString(), 8000);
-                if (r != null) ok++;
-                else fail++;
+                HaApi.Resp r = HaApi.send(ctx, "POST", path, body.toString(), 6000);
+                if (r.code >= 200 && r.code < 300) {
+                    ok++;
+                    continue;
+                }
+                // 第一条就 401 / 连不上，没必要把十几条都撞一遍墙
+                if (r.code == 401 || r.code == 403) {
+                    return ok == 0
+                            ? "令牌无效或已过期：请粘贴长期访问令牌后再试"
+                            : ("上报了 " + ok + " 项后令牌失效");
+                }
+                if (r.code == 0 && ok == 0) return "连不上 HA：检查地址、网络或证书设置";
+                fail++;
             } catch (Throwable ignored) {
                 fail++;
             }

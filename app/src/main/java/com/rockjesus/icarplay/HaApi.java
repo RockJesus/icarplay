@@ -145,13 +145,34 @@ public final class HaApi {
     }
 
     /**
+     * 带状态码的请求结果：code=0 表示连不上（地址错 / 断网 / 证书问题）。
+     * 上面要区分「令牌过期」和「接口不存在」时用这个，别去解析响应体。
+     */
+    public static final class Resp {
+        public final int code;
+        public final String body;
+
+        Resp(int code, String body) {
+            this.code = code;
+            this.body = body == null ? "" : body;
+        }
+    }
+
+    /**
      * 发出一个 REST 请求。apiPath 以 / 开头；返回响应体（成功）或 null（失败）。
      * 必须在工作线程调用。
      */
     public static String request(Context ctx, String method, String apiPath, String body,
                                  int timeoutMs) {
+        Resp r = send(ctx, method, apiPath, body, timeoutMs);
+        return r.code >= 200 && r.code < 300 ? r.body : null;
+    }
+
+    /** 同 {@link #request}，但把状态码一起带回来。必须在工作线程调用。 */
+    public static Resp send(Context ctx, String method, String apiPath, String body,
+                            int timeoutMs) {
         String base = baseUrl(ctx);
-        if (base.isEmpty()) return null;
+        if (base.isEmpty()) return new Resp(0, null);
         HttpURLConnection conn = null;
         try {
             URL url = new URL(base + apiPath);
@@ -184,10 +205,9 @@ public final class HaApi {
             InputStream in = code >= 200 && code < 300
                     ? conn.getInputStream() : conn.getErrorStream();
             String text = in == null ? "" : readAll(in);
-            if (code < 200 || code >= 300) return null;
-            return text;
+            return new Resp(code, text);
         } catch (Throwable ignored) {
-            return null;
+            return new Resp(0, null);
         } finally {
             if (conn != null) {
                 try {
