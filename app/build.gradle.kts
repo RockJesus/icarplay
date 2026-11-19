@@ -33,8 +33,8 @@ android {
         applicationId = "com.rockjesus.icarplay"
         minSdk = 24
         targetSdk = 37
-        versionCode = 83
-        versionName = "1.4.2"
+        versionCode = 84
+        versionName = "1.4.3"
 
         externalNativeBuild {
             cmake {
@@ -167,6 +167,7 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.11.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.11.1")
 }
+
 
 
 

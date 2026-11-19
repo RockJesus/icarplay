@@ -160,26 +160,30 @@ public final class HaCompanion {
         if (hook.isEmpty()) return "没有 webhook";
         SharedPreferences p = HaApi.prefs(ctx);
 
-        // 第一次先登记传感器定义（名字 / 单位 / device_class），之后只发状态
+        // 第一次先登记传感器定义（名字 / 单位 / device_class），之后只发状态。
+        // 注意：HA 的 register_sensor 只接受「单个」传感器对象，一次发数组会被
+        // payload schema 拒掉且仍返回 200 空响应，所以必须逐条注册。
         if (!p.getBoolean(P_DEFINED, false)) {
-            JSONObject reg = new JSONObject();
-            try {
-                reg.put("type", "register_sensor");
-                reg.put("data", toArray(items));
-            } catch (JSONException ignored) {
-                return "组装传感器定义失败";
+            for (HaSensors.Item item : items) {
+                JSONObject reg = new JSONObject();
+                try {
+                    reg.put("type", "register_sensor");
+                    reg.put("data", item.toJson());
+                } catch (JSONException ignored) {
+                    return "组装传感器定义失败";
+                }
+                String rr = HaApi.postAbsolute(ctx, hook, reg.toString(), 10000);
+                if (rr == null) {
+                    if (retry) {
+                        reset(ctx);
+                        if (register(ctx) == null) return pushWebhook(ctx, items, false);
+                        return "webhook 失效且重注册失败";
+                    }
+                    return "webhook 不可用";
+                }
+                if (!okBody(rr)) return "传感器注册被拒：" + item.uniqueId;
             }
-            String r = HaApi.postAbsolute(ctx, hook, reg.toString(), 10000);
-            if (r != null) {
-                p.edit().putBoolean(P_DEFINED, true).apply();
-            } else if (retry) {
-                // webhook 失效（HA 重装 / 集成重载）：重注册再试一次
-                reset(ctx);
-                if (register(ctx) == null) return pushWebhook(ctx, items, false);
-                return "webhook 失效且重注册失败";
-            } else {
-                return "webhook 不可用";
-            }
+            p.edit().putBoolean(P_DEFINED, true).apply();
         }
 
         JSONObject upd = new JSONObject();
@@ -192,13 +196,30 @@ public final class HaCompanion {
         String r = HaApi.postAbsolute(ctx, hook, upd.toString(), 10000);
         if (r == null) {
             if (retry) {
+                // webhook 失效（HA 重装 / 集成重载）：重注册再试一次
                 reset(ctx);
                 if (register(ctx) == null) return pushWebhook(ctx, items, false);
                 return "webhook 失效且重注册失败";
             }
             return "webhook 上报失败";
         }
+        if (r.contains("\"success\":false") || r.contains("\"success\": false")) {
+            return "状态被拒：" + brief(r);
+        }
         return null;
+    }
+
+    /** HA 的 register_sensor 正常返回 {"success":true}；其它都当失败。 */
+    private static boolean okBody(String body) {
+        String b = body.replace(" ", "");
+        return b.contains("\"success\":true");
+    }
+
+    /** 截一段响应体给 UI 显示。 */
+    private static String brief(String body) {
+        String b = body == null ? "" : body.trim();
+        if (b.length() > 60) b = b.substring(0, 60) + "…";
+        return b.isEmpty() ? "空响应" : b;
     }
 
     /** 降级路径：逐条 POST /api/states/<entity_id>。 */
