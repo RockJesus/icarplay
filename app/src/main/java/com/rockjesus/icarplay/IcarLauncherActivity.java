@@ -43,7 +43,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v1.4.4";
+    public static final String VERSION_LABEL = "v1.5.0";
 
     private TextView versionPill;
     private TextView statusView;
@@ -168,6 +168,8 @@ public class IcarLauncherActivity extends FitActivity {
                 startActivity(new Intent(IcarLauncherActivity.this, NetworkCenterActivity.class))));
         tools.addView(makeToolButton("传文件", v ->
                 startActivity(new Intent(IcarLauncherActivity.this, TransferActivity.class))));
+        tools.addView(makeToolButton("设备诊断", v ->
+                startActivity(new Intent(IcarLauncherActivity.this, DiagnosticsActivity.class))));
         tools.addView(makeToolButton("悬浮窗权限", v -> openOverlayPermission()));
         tools.addView(makeToolButton("认证设置", v ->
                 startActivity(new Intent(IcarLauncherActivity.this, AuthSettingsActivity.class))));
