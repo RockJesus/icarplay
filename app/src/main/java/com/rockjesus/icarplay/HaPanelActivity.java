@@ -38,9 +38,20 @@ public class HaPanelActivity extends FitActivity {
                     + "if(!raw)return '';var t=JSON.parse(raw);"
                     + "return (t&&t.access_token)?t.access_token:'';}catch(e){return '';}})()";
 
+    /** 工具条 10 秒无操作自动隐藏，触摸屏幕任意位置再唤出。 */
+    private static final long BAR_AUTO_HIDE_MS = 10000L;
+
     private SharedPreferences prefs;
     private WebView web;
+    private LinearLayout bar;
+    private boolean barVisible = true;
     private final Handler ui = new Handler(Looper.getMainLooper());
+    private final Runnable hideBarTask = new Runnable() {
+        @Override
+        public void run() {
+            hideBar();
+        }
+    };
 
     /** 本次会话是否已经尝试过取令牌，避免每次翻页都执行。 */
     private boolean tokenTried;
@@ -76,6 +87,8 @@ public class HaPanelActivity extends FitActivity {
 
     private void showSetup() {
         destroyWeb();
+        bar = null;
+        ui.removeCallbacks(hideBarTask);
         tokenTried = false;
 
         LinearLayout shell = new LinearLayout(this);
@@ -384,8 +397,16 @@ public class HaPanelActivity extends FitActivity {
         root.addView(web, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        // 顶部细工具条：刷新 / 首页 / 设置 / 返回
-        LinearLayout bar = new LinearLayout(this);
+        // 点一下屏幕就把工具条唤回来（不拦截事件，页面照常接收）
+        web.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                showBar();
+            }
+            return false;
+        });
+
+        // 顶部细工具条：刷新 / 首页 / 设置 / 返回（10 秒后自动隐藏）
+        bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(PageUi.dp(this, 10), 0, PageUi.dp(this, 10), 0);
@@ -406,7 +427,33 @@ public class HaPanelActivity extends FitActivity {
                 ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 40), Gravity.TOP);
         root.addView(bar, barLp);
 
+        showBar();
         loadPanel();
+    }
+
+    /** 显示工具条并重置 10 秒倒计时。 */
+    private void showBar() {
+        if (bar == null) return;
+        ui.removeCallbacks(hideBarTask);
+        if (!barVisible) {
+            barVisible = true;
+            bar.setVisibility(View.VISIBLE);
+            bar.setAlpha(0f);
+            bar.animate().alpha(1f).setDuration(160).start();
+        }
+        ui.postDelayed(hideBarTask, BAR_AUTO_HIDE_MS);
+    }
+
+    /** 淡出并收回工具条，让页面顶部区域完整可点。 */
+    private void hideBar() {
+        if (bar == null || !barVisible) return;
+        barVisible = false;
+        bar.animate().alpha(0f).setDuration(200).withEndAction(new Runnable() {
+            @Override
+            public void run() {
+                if (bar != null && !barVisible) bar.setVisibility(View.GONE);
+            }
+        }).start();
     }
 
     private void loadPanel() {
@@ -456,7 +503,10 @@ public class HaPanelActivity extends FitActivity {
                 PageUi.dp(this, 12), PageUi.dp(this, 4));
         b.setBackground(PageUi.rounded(this, PageUi.blend(PageUi.CARD, accent, 0.18f),
                 PageUi.blend(accent, PageUi.TEXT, 0.2f), 9));
-        b.setOnClickListener(onClick);
+        b.setOnClickListener(v -> {
+            onClick.onClick(v);
+            showBar();
+        });
         LinearLayout.LayoutParams lp = PageUi.wrap(this);
         PageUi.margin(lp, this, 6, 0, 0, 0);
         b.setLayoutParams(lp);

@@ -33,8 +33,8 @@ android {
         applicationId = "com.rockjesus.icarplay"
         minSdk = 24
         targetSdk = 37
-        versionCode = 77
-        versionName = "1.3.0"
+        versionCode = 78
+        versionName = "1.3.1"
 
         externalNativeBuild {
             cmake {
