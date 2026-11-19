@@ -1,5 +1,6 @@
 package com.rockjesus.icarplay;
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -13,6 +14,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -145,14 +148,18 @@ public class CarPlayWirelessActivity extends FitActivity {
                 toast("接收模块缺失，正常安装包自带");
                 return;
             }
-            toast(DiPlayBridge.launchCarPlayScreen(this) || DiPlayBridge.launch(this)
-                    ? "已进入 CarPlay 接收画面" : "启动失败：车机可能限制后台拉起");
+            toast(DiPlayBridge.launchSafely(this));
         });
-        actions.addView(launch, PageUi.weight(this, 1.4f));
+        Button hotspot = PageUi.button(this, "无线配置", 10.5f, PageUi.GOLD);
+        hotspot.setOnClickListener(v -> showHotspotDialog());
+        LinearLayout.LayoutParams hsLp = PageUi.weight(this, 1);
+        PageUi.margin(hsLp, this, 6, 0, 0, 0);
+        actions.addView(launch, PageUi.weight(this, 1.2f));
+        actions.addView(hotspot, hsLp);
 
         Button back = PageUi.back(this);
         back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.weight(this, 1);
+        LinearLayout.LayoutParams backLp = PageUi.weight(this, 0.8f);
         PageUi.margin(backLp, this, 8, 0, 0, 0);
         actions.addView(back, backLp);
         root.addView(actions, actLp);
@@ -197,6 +204,81 @@ public class CarPlayWirelessActivity extends FitActivity {
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         parent.addView(row);
         return value;
+    }
+
+
+    /** 直接把车机热点名/密码写进内置引擎，省得每次进引擎里手填。 */
+    private void showHotspotDialog() {
+        final int pad = PageUi.dp(this, 16);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(pad, PageUi.dp(this, 10), pad, 0);
+
+        final EditText ssid = new EditText(this);
+        ssid.setHint("车机热点名 / Wi-Fi 名（≤32 字节）");
+        String cur = DiPlayBridge.enginePrefs(this).getString("manual_hotspot_ssid", "");
+        if (cur == null) cur = "";
+        if (cur.isEmpty()) {
+            String live = currentWifiSsid();
+            if (live != null) cur = live;
+        }
+        ssid.setText(cur);
+        box.addView(ssid);
+
+        final EditText pass = new EditText(this);
+        pass.setHint("密码（WPA2，8–63 位；开放热点留空）");
+        pass.setText(DiPlayBridge.enginePrefs(this).getString("manual_hotspot_passphrase", ""));
+        box.addView(pass);
+
+        final CheckBox sameLan = new CheckBox(this);
+        sameLan.setText("同网模式：车机与 iPhone 连同一个路由器，不用车机开热点");
+        sameLan.setChecked("EXISTING_WIFI".equals(DiPlayBridge.engineMode(this)));
+        box.addView(sameLan);
+
+        new AlertDialog.Builder(this)
+                .setTitle("无线 CarPlay 配置")
+                .setView(box)
+                .setPositiveButton("保存并启用无线", (d, w) -> {
+                    String s1 = ssid.getText().toString().trim();
+                    String s2 = pass.getText().toString();
+                    if (s1.isEmpty()) {
+                        toast("热点名不能为空，否则接收画面会直接闪退");
+                        return;
+                    }
+                    if (s1.getBytes().length > 32) {
+                        toast("热点名太长（超过 32 字节）");
+                        return;
+                    }
+                    if (!s2.isEmpty() && (s2.length() < 8 || s2.length() > 63)) {
+                        toast("密码需 8–63 位，或留空用开放热点");
+                        return;
+                    }
+                    if (sameLan.isChecked()) DiPlayBridge.useExistingWifi(this, s1, s2);
+                    else DiPlayBridge.useCarHotspot(this, s1, s2);
+                    toast("已保存，点「开始 CarPlay 接收」走无线");
+                    refresh();
+                })
+                .setNeutralButton("改回有线", (d, w) -> {
+                    DiPlayBridge.useWired(this);
+                    toast("已切回有线（USB）");
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private String currentWifiSsid() {
+        try {
+            WifiManager wm = (WifiManager) getApplicationContext()
+                    .getSystemService(Context.WIFI_SERVICE);
+            if (wm == null) return null;
+            WifiInfo info = wm.getConnectionInfo();
+            if (info == null) return null;
+            String raw = info.getSSID();
+            if (raw == null || raw.isEmpty() || "<unknown ssid>".equals(raw)) return null;
+            return raw.replace("\"", "");
+        } catch (Throwable e) {
+            return null;
+        }
     }
 
     private void refresh() {

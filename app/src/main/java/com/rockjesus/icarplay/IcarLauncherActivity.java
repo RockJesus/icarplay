@@ -1,5 +1,7 @@
 package com.rockjesus.icarplay;
 
+import io.github.jqssun.airplay.BuildConfig;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ComponentName;
@@ -43,7 +45,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v1.5.3";
+    public static final String VERSION_LABEL = "v" + BuildConfig.VERSION_NAME;
 
     private TextView versionPill;
     private TextView statusView;

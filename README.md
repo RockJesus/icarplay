@@ -235,6 +235,8 @@
 - 车机端界面只用 iCarPlay：首页、CarPlay 页、无线向导、连接检测全部是自有 UI，点按钮直接进接收画面（不经过第三方向导）；引擎自带的等待 / 提示页文案与图标用 `app/src/main/res/values/strings_icarplay_brand.xml`、`values-zh-rCN/strings_icarplay_brand.xml`、`drawable/ic_carplay.png` 做资源覆盖，不改动第三方代码；
 - 有线：USB 接 iPhone，引擎走 USB 枚举 + MFi 认证 + AirPlay 隧道；
 - 无线：三条路径（iPhone 热点 / 车机热点 / Wi‑Fi Direct），向导页逐项实测并给把握程度；
+- 无线首次使用要先在「无线向导 → 无线配置」里保存一次网络：车机热点填热点名 + WPA2 密码，同一个路由器则勾「同网模式」填 Wi‑Fi 名 + 密码；保存后接收引擎直接按无线启动；
+- 没配无线时会自动按有线（USB）启动，不会白屏或闪退；想改回有线也可在同一个对话框点「改回有线」；
 - 未继承引擎的 `WRITE_SETTINGS`、`REQUEST_INSTALL_PACKAGES`、`PACKAGE_USAGE_STATS` 与开机自启，因此「车机热点自动开」降级为手动开，更新由本应用更新器负责；
 - 接入协议栈的路线见 [`docs/CARPLAY.md`](docs/CARPLAY.md)。
 

@@ -2,6 +2,7 @@ package com.rockjesus.icarplay;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 
@@ -70,6 +71,87 @@ public class DiPlayBridge {
         } catch (Throwable e) {
             return false;
         }
+    }
+
+
+    // ---- 引擎（内置 DiPlay）自身的无线配置 ----
+    // 引擎默认 transport=WIRELESS、mode=MANUAL：SSID 为空时 CarPlayRuntimeConfig
+    // 会 require 失败并在启动线程里抛 IllegalArgumentException，直接闪退。
+    // 所以直达 CarPlay 画面前必须先确认无线参数齐，否则切成有线。
+
+    public static final String ENGINE_PREFS = "xcertplay_airplay";
+    private static final String K_WIRELESS = "wireless_enabled";
+    private static final String K_MODE = "wireless_hotspot_mode";
+    private static final String K_MANUAL_SSID = "manual_hotspot_ssid";
+    private static final String K_MANUAL_PASS = "manual_hotspot_passphrase";
+    private static final String K_EXIST_SSID = "existing_wifi_ssid";
+    private static final String K_EXIST_PASS = "existing_wifi_passphrase";
+
+    public static SharedPreferences enginePrefs(Context c) {
+        return c.getSharedPreferences(ENGINE_PREFS, Context.MODE_PRIVATE);
+    }
+
+    public static boolean engineWireless(Context c) {
+        return enginePrefs(c).getBoolean(K_WIRELESS, true);
+    }
+
+    public static String engineMode(Context c) {
+        String m = enginePrefs(c).getString(K_MODE, "MANUAL");
+        return m == null ? "MANUAL" : m;
+    }
+
+    /** 无线参数够不够引擎启动（不够就会闪退）。 */
+    public static boolean engineWirelessReady(Context c) {
+        if (!engineWireless(c)) return true;
+        String mode = engineMode(c);
+        if ("MANUAL".equals(mode)) {
+            String ssid = enginePrefs(c).getString(K_MANUAL_SSID, "");
+            return ssid != null && !ssid.trim().isEmpty();
+        }
+        if ("EXISTING_WIFI".equals(mode)) {
+            String ssid = enginePrefs(c).getString(K_EXIST_SSID, "");
+            return ssid != null && !ssid.trim().isEmpty();
+        }
+        return true;
+    }
+
+    /** 把车机热点名/密码写进引擎，并切到无线。 */
+    public static void useCarHotspot(Context c, String ssid, String pass) {
+        enginePrefs(c).edit()
+                .putBoolean(K_WIRELESS, true)
+                .putString(K_MODE, "MANUAL")
+                .putString(K_MANUAL_SSID, ssid == null ? "" : ssid.trim())
+                .putString(K_MANUAL_PASS, pass == null ? "" : pass)
+                .apply();
+    }
+
+    /** 同局域网模式：车机和 iPhone 都连同一个路由。 */
+    public static void useExistingWifi(Context c, String ssid, String pass) {
+        enginePrefs(c).edit()
+                .putBoolean(K_WIRELESS, true)
+                .putString(K_MODE, "EXISTING_WIFI")
+                .putString(K_EXIST_SSID, ssid == null ? "" : ssid.trim())
+                .putString(K_EXIST_PASS, pass == null ? "" : pass)
+                .apply();
+    }
+
+    /** 切到有线（USB）。引擎不再走无线，也就不会做 SSID 校验。 */
+    public static void useWired(Context c) {
+        enginePrefs(c).edit().putBoolean(K_WIRELESS, false).apply();
+    }
+
+    /**
+     * 安全启动：无线没配好就先降到有线，避免引擎启动线程抛异常闪退。
+     * 返回给用户看的提示。
+     */
+    public static String launchSafely(Context c) {
+        String prefix = "";
+        if (!engineWirelessReady(c)) {
+            useWired(c);
+            prefix = "无线还没配好，先按有线（USB）启动；要无线请到「无线向导」保存热点名。\n";
+        }
+        if (launchCarPlayScreen(c) || launch(c)) return prefix + "已进入 CarPlay 接收画面";
+        return prefix + "启动失败：车机可能限制后台拉起";
     }
 
     private static boolean hasBuiltin() {

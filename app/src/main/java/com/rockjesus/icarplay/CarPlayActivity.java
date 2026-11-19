@@ -154,12 +154,9 @@ public class CarPlayActivity extends FitActivity {
             toast("接收模块缺失，正常安装包自带，请重装完整 APK");
             return;
         }
-        // 直接落到 CarPlay 画面，跳过接收端自带的多步设置向导
-        if (DiPlayBridge.launchCarPlayScreen(this) || DiPlayBridge.launch(this)) {
-            toast("已进入 CarPlay 接收画面");
-        } else {
-            toast("启动失败：可能被车机限制后台启动");
-        }
+        // 引擎默认走无线且要求 SSID，缺配置会在启动线程抛异常闪退；
+        // launchSafely 会先补/降级，再落到 CarPlay 画面。
+        toast(DiPlayBridge.launchSafely(this));
     }
 
     private void openWireless() {
