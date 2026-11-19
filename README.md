@@ -3,9 +3,9 @@
 # iCarPlay
 
 **2020 款福特锐际 SYNC+ 车机的第三方互联中枢**
-一个 APK：五种投屏入口 + APK 无线互传 + 应用管理 + 一键自更新 · 一套赛博朋克车机 UI
+一个 APK：五种投屏入口 + Home Assistant + APK 无线互传 + 应用管理 + 一键自更新 · 一套赛博朋克车机 UI
 
-`v1.1.5`　·　`Android 8.1 / API 27`　·　`1920×720 · 1600×900`　·　`arm64-v8a + armeabi-v7a`
+`v1.1.9`　·　`Android 8.1 / API 27`　·　`1920×720 · 1600×900`　·　`arm64-v8a + armeabi-v7a`
 
 </div>
 
@@ -25,9 +25,16 @@
 
 内嵌豆包网页版：手机扫码登录、登录态留在车机、麦克风权限透传给网页做语音对话（详见 [docs/DOUBAO.md](docs/DOUBAO.md)）。
 
-## HA 面板
+## Home Assistant
 
-车机没有 GMS，官方 Home Assistant 伴侣应用装得上但推送/定位/传感器都是空的；这里内置了一个只走 WebView 的 HA 面板：填一次地址，强制横屏、隐藏侧边栏、屏幕常亮，不申请任何系统权限（详见 [docs/HA-PANEL.md](docs/HA-PANEL.md)）。
+首页第六卡「Home Assistant」，一条入口两种用法：
+
+| 用法 | 说明 |
+|---|---|
+| **内置面板（默认）** | 走系统 WebView 打开 HA 前端：填一次地址、强制横屏、隐藏侧边栏（kiosk）、屏幕常亮，不申请任何系统权限（详见 [docs/HA-PANEL.md](docs/HA-PANEL.md)） |
+| **官方 App 桥接** | 已装官方伴侣应用（`io.homeassistant.companion.android`）时，面板页顶部与设置页都能一键切过去；未装则给官方 Release 下载页，建议下 `app-minimal-release.apk`（无 Google 服务依赖，minSdk 24） |
+
+车机没有 GMS，官方 App 的推送、定位、传感器上报是空的，能用的主要就是前端界面本身，所以**日常建议用内置面板**，官方 App 当作可选补充。本应用不内嵌、不打包官方 APK，也不申请安装类权限。
 
 ## 屏幕适配
 

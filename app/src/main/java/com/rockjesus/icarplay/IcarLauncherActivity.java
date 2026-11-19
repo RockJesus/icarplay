@@ -43,7 +43,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v1.1.8";
+    public static final String VERSION_LABEL = "v1.1.9";
 
     private TextView versionPill;
     private TextView statusView;
@@ -124,6 +124,7 @@ public class IcarLauncherActivity extends FitActivity {
             addCard(row, cardCarLife());
             addCard(row, cardAuto());
             addCard(row, cardHiCar());
+            addCard(row, cardHa());
         } else {
             LinearLayout row1 = new LinearLayout(this);
             row1.setOrientation(LinearLayout.HORIZONTAL);
@@ -141,12 +142,9 @@ public class IcarLauncherActivity extends FitActivity {
             addCard(row1, cardCarPlay());
             addCard(row1, cardCarLife());
 
-            View leftPad = new View(this);
-            row2.addView(leftPad, new LinearLayout.LayoutParams(0, 1, 0.5f));
             addCard(row2, cardAuto());
             addCard(row2, cardHiCar());
-            View rightPad = new View(this);
-            row2.addView(rightPad, new LinearLayout.LayoutParams(0, 1, 0.5f));
+            addCard(row2, cardHa());
         }
 
         root.addView(buildStatusPanel(), statusLp());
@@ -303,6 +301,16 @@ public class IcarLauncherActivity extends FitActivity {
                 });
     }
 
+    /** 第六卡：Home Assistant。已装官方 App 显示绿色，否则提示内置面板可用。 */
+    private View cardHa() {
+        boolean official = HaApp.isInstalled(this);
+        return makeCard("Home Assistant", "面板 · 官方 App", PageUi.CYAN,
+                R.drawable.ic_ui_ha, R.drawable.ic_ui_ha,
+                official ? "官方 App 已装" : "内置面板",
+                official ? PageUi.GREEN : PageUi.CYAN,
+                v -> startActivity(new Intent(this, HaPanelActivity.class)));
+    }
+
     private LinearLayout makeCard(String title, String subtitle, int accent, int iconRes,
                                   int brandRes, String initialStatus, int statusAccent,
                                   View.OnClickListener listener) {
@@ -383,7 +391,7 @@ public class IcarLauncherActivity extends FitActivity {
         else if ("CarPlay".equals(title)) carplayState = state;
         else if ("CarLife+".equals(title)) carlifeState = state;
         else if ("Android Auto".equals(title)) autoState = state;
-        else hicarState = state;
+        else if ("Huawei HiCar".equals(title)) hicarState = state;
 
         return card;
     }

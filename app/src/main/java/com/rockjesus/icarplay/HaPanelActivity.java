@@ -153,6 +153,54 @@ public class HaPanelActivity extends FitActivity {
 
         shell.addView(card, PageUi.matchWrap(this));
 
+        // ---------- 官方 App 桥接（可选，不影响内置面板） ----------
+        boolean appInstalled = HaApp.isInstalled(this);
+        String appVersion = HaApp.versionLabel(this);
+
+        LinearLayout appCard = PageUi.card(this, PageUi.PURPLE, 14, 12);
+        LinearLayout.LayoutParams appLp = PageUi.matchWrap(this);
+        PageUi.margin(appLp, this, 0, 10, 0, 0);
+
+        LinearLayout appRow = new LinearLayout(this);
+        appRow.setOrientation(LinearLayout.HORIZONTAL);
+        appRow.setGravity(Gravity.CENTER_VERTICAL);
+        appRow.addView(PageUi.text(this, "官方 HA App（可选）", 11f, PageUi.PURPLE, true));
+        TextView appPill = PageUi.statusPill(this,
+                appInstalled ? ("已装 " + appVersion) : "未安装",
+                appInstalled ? PageUi.GREEN : PageUi.MUTED);
+        LinearLayout.LayoutParams aplp = PageUi.wrap(this);
+        PageUi.margin(aplp, this, 10, 0, 0, 0);
+        appRow.addView(appPill, aplp);
+        appCard.addView(appRow, PageUi.matchWrap(this));
+
+        TextView appTip = PageUi.text(this,
+                appInstalled
+                        ? "已检测到官方伴侣应用，可直接切过去；车载仪表盘仍建议用上面的内置面板。"
+                        : "车机没装官方 App 时，内置面板已能完整使用。要装官方 App 就下载 app-minimal-release.apk"
+                        + "（无 Google 服务依赖，minSdk 24，与本车机兼容）。",
+                9.5f, PageUi.MUTED, false);
+        LinearLayout.LayoutParams atlp = PageUi.matchWrap(this);
+        PageUi.margin(atlp, this, 0, 8, 0, 0);
+        appCard.addView(appTip, atlp);
+
+        LinearLayout appBtnRow = new LinearLayout(this);
+        appBtnRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams abLp = PageUi.matchWrap(this);
+        PageUi.margin(abLp, this, 0, 10, 0, 0);
+
+        Button openApp = PageUi.button(this, "启动官方 App", 11.5f, PageUi.PURPLE);
+        openApp.setOnClickListener(v -> launchOfficialApp());
+        appBtnRow.addView(openApp, PageUi.weight(this, 1));
+
+        Button getApp = PageUi.button(this, "下载官方 APK", 11.5f, PageUi.CYAN);
+        getApp.setOnClickListener(v -> openOfficialDownload());
+        LinearLayout.LayoutParams galp = PageUi.weight(this, 1);
+        PageUi.margin(galp, this, 8, 0, 0, 0);
+        appBtnRow.addView(getApp, galp);
+        appCard.addView(appBtnRow, abLp);
+
+        shell.addView(appCard, appLp);
+
         TextView foot = PageUi.text(this,
                 "建议先在 HA 里给车机单独做一个宽屏 dashboard，横屏 8:3 才排得好看。",
                 9.5f, PageUi.MUTED, false);
@@ -223,6 +271,7 @@ public class HaPanelActivity extends FitActivity {
         bar.addView(smallBarButton("首页", PageUi.GREEN, v -> {
             if (web != null) web.loadUrl(targetUrl(prefs.getString(PREF_URL, "")));
         }));
+        bar.addView(smallBarButton("官方 App", PageUi.PURPLE, v -> launchOfficialApp()));
         bar.addView(smallBarButton("设置", PageUi.GOLD, v -> showSetup()));
         bar.addView(smallBarButton("返回", PageUi.RED, v -> finish()));
 
@@ -256,6 +305,28 @@ public class HaPanelActivity extends FitActivity {
         String base = hash >= 0 ? raw.substring(0, hash) : raw;
         String tail = hash >= 0 ? raw.substring(hash) : "";
         return base + (base.contains("?") ? "&" : "?") + "kiosk" + tail;
+    }
+
+    /** 拉起官方 HA App；未安装时给出去哪里装。 */
+    private void launchOfficialApp() {
+        if (HaApp.open(this)) {
+            toast("已切到官方 HA App");
+            return;
+        }
+        if (!HaApp.isInstalled(this)) {
+            toast("未安装官方 App；点「设置 → 下载官方 APK」先装它");
+        } else {
+            toast("官方 App 启动失败，请在车机应用列表里手动打开一次");
+        }
+    }
+
+    /** 打开官方 APK 的下载页；车机无浏览器时把地址提示出来。 */
+    private void openOfficialDownload() {
+        if (HaApp.openDownloadPage(this)) {
+            toast("已在浏览器打开官方 Release 页，下载 app-minimal-release.apk");
+        } else {
+            toast("车机没有可用浏览器，请用手机访问：\n" + HaApp.DOWNLOAD_PAGE);
+        }
     }
 
     private void destroyWeb() {
