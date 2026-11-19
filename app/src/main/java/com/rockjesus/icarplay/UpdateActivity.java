@@ -40,6 +40,8 @@ public class UpdateActivity extends FitActivity {
     private TextView logText;
     private Button checkBtn;
     private Button updateBtn;
+    private TextView cacheText;
+    private Button cacheBtn;
     private ProgressBar bar;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -93,7 +95,41 @@ public class UpdateActivity extends FitActivity {
 
         shell.addView(buildFoot(), PageUi.matchWrap(this));
 
+        refreshCache();
         startCheck();
+    }
+
+    /** 更新页底部的缓存占用：只统计我们自己下载的包。 */
+    private void refreshCache() {
+        if (cacheText == null) return;
+        new Thread(() -> {
+            int count = UpdateCache.apks(this).size();
+            long bytes = UpdateCache.totalBytes(this);
+            ui.post(() -> {
+                if (isFinishing()) return;
+                cacheText.setText(count == 0
+                        ? "安装包缓存：无"
+                        : "安装包缓存：" + count + " 个 · " + UpdateCache.human(bytes));
+                cacheText.setTextColor(count == 0 ? PageUi.MUTED : PageUi.GOLD);
+                if (cacheBtn != null) cacheBtn.setEnabled(count > 0);
+            });
+        }, "update-cache-refresh").start();
+    }
+
+    private void clearCache() {
+        if (busy) {
+            toast("正在下载/安装，等这一步结束再清理");
+            return;
+        }
+        new Thread(() -> {
+            long freed = UpdateCache.clearAll(this);
+            ui.post(() -> {
+                if (isFinishing()) return;
+                log("已清理安装包缓存，释放 " + UpdateCache.human(freed));
+                toast("已释放 " + UpdateCache.human(freed));
+                refreshCache();
+            });
+        }, "update-cache-clear").start();
     }
 
     private LinearLayout buildMainCard() {
@@ -146,6 +182,20 @@ public class UpdateActivity extends FitActivity {
         LinearLayout.LayoutParams llp = PageUi.matchWrap(this);
         PageUi.margin(llp, this, 0, 6, 0, 0);
         card.addView(logText, llp);
+
+        LinearLayout cacheRow = new LinearLayout(this);
+        cacheRow.setOrientation(LinearLayout.HORIZONTAL);
+        cacheRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams crlp = PageUi.matchWrap(this);
+        PageUi.margin(crlp, this, 0, 6, 0, 0);
+
+        cacheText = PageUi.text(this, "安装包缓存：计算中…", 9.5f, PageUi.MUTED, false);
+        cacheRow.addView(cacheText, PageUi.weight(this, 1));
+
+        cacheBtn = PageUi.button(this, "清理旧包", 9.5f, PageUi.RED);
+        cacheBtn.setOnClickListener(v -> clearCache());
+        cacheRow.addView(cacheBtn, PageUi.wrap(this));
+        card.addView(cacheRow, crlp);
         return card;
     }
 
@@ -293,6 +343,7 @@ public class UpdateActivity extends FitActivity {
         }
         log("下载完成并校验通过，正在打开系统安装框…");
         install(apk);
+        refreshCache();
     }
 
     private void install(File apk) {

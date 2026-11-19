@@ -43,7 +43,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v1.1.7";
+    public static final String VERSION_LABEL = "v1.1.8";
 
     private TextView versionPill;
     private TextView statusView;
@@ -241,6 +241,15 @@ public class IcarLauncherActivity extends FitActivity {
             }
         });
         version.setText(VERSION_LABEL);
+
+        // 冷启动清一次更新包缓存：此时版本号已变说明上一份确实装上了，
+        // 旧包留在私有目录里只会白占空间（每版约 33 MB）。
+        new Thread(() -> {
+            try {
+                UpdateCache.cleanup(this);
+            } catch (Throwable ignored) {
+            }
+        }, "update-cache-cleanup").start();
         version.setTextColor(PageUi.CYAN);
         sp(version, 10f);
         PageUi.mono(version);
