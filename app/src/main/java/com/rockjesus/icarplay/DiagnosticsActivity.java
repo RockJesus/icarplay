@@ -11,6 +11,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -44,6 +45,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -835,6 +838,9 @@ public class DiagnosticsActivity extends FitActivity {
         }
     }
 
+    private static final String DIAG_UID = "icarplay_diagnostics";
+    private static final String P_DIAG_REG = "ha_diag_registered";
+
     private void pushToHa() {
         String text = report;
         if (text == null || text.isEmpty()) {
@@ -849,32 +855,128 @@ public class DiagnosticsActivity extends FitActivity {
         new Thread(() -> {
             String message;
             try {
-                JSONObject payload = new JSONObject();
-                payload.put("state", "扫描 " + reportItems + " 项 · "
-                        + Build.MANUFACTURER + " " + Build.MODEL);
-                JSONObject attrs = new JSONObject();
-                attrs.put("friendly_name", "iCarPlay 设备诊断");
-                attrs.put("icon", "mdi:stethoscope");
-                attrs.put("report", text.length() > 8000 ? text.substring(0, 8000) : text);
-                payload.put("attributes", attrs);
-                HaApi.Resp resp = HaApi.send(DiagnosticsActivity.this, "POST",
-                        "/api/states/sensor.icarplay_diagnostics", payload.toString(), 8000);
-                if (resp.code >= 200 && resp.code < 300) {
-                    message = "已上报 sensor.icarplay_diagnostics";
-                } else if (resp.code == 0) {
-                    message = "连不上 HA，检查地址/网络";
-                } else if (resp.code == 401 || resp.code == 403) {
-                    message = "令牌无效或过期，请粘贴长期访问令牌";
-                } else {
-                    message = "上报失败 HTTP " + resp.code;
-                }
+                message = pushCompanion(text);
             } catch (Throwable t) {
                 message = "上报异常：" + t.getClass().getSimpleName();
             }
             final String finalMessage = message;
-            android.util.Log.i("icarplay-diag", "push to HA: " + message);
+            android.util.Log.i("icarplay-diag", "push to HA: " + finalMessage);
             runOnUiThread(() -> toast(finalMessage));
         }, "diagnostics-ha").start();
+    }
+
+    /**
+     * 走 mobile_app 的 register_sensor / update_sensor_states，
+     * 这样实体是「正式注册」的：进实体列表、挂在 iCarPlay 设备下、HA 重启不丢。
+     * 若 HA 侧 mobile_app 不可用（注册降级到 REST），退回 /api/states 直写。
+     */
+    private String pushCompanion(String text) {
+        SharedPreferences p = HaApi.prefs(this);
+        if (!HaCompanion.registered(this)) {
+            String err = HaCompanion.register(this);
+            if (err != null) return err;
+        }
+        String state = "扫描 " + reportItems + " 项 · " + Build.MANUFACTURER + " " + Build.MODEL;
+        JSONObject attrs = new JSONObject();
+        try {
+            attrs.put("friendly_name", "iCarPlay 设备诊断");
+            attrs.put("icon", "mdi:stethoscope");
+            attrs.put("扫描项数", reportItems);
+            attrs.put("report", text.length() > 8000 ? text.substring(0, 8000) : text);
+        } catch (JSONException ignored) {
+            return "组装属性失败";
+        }
+
+        if (!"mobile_app".equals(p.getString(HaCompanion.P_MODE, "mobile_app"))) {
+            return pushStates(text, state, attrs);
+        }
+
+        String hook = p.getString(HaCompanion.P_WEBHOOK, "");
+        if (hook.isEmpty()) return "没有 webhook";
+
+        // 1) 首次登记这个传感器的定义（HA 只接受单个对象，不能发数组）
+        if (!p.getBoolean(P_DIAG_REG, false)) {
+            JSONObject reg = new JSONObject();
+            try {
+                reg.put("type", "register_sensor");
+                JSONObject d = new JSONObject();
+                d.put("type", "sensor");
+                d.put("unique_id", DIAG_UID);
+                d.put("name", "设备诊断");
+                d.put("icon", "mdi:stethoscope");
+                reg.put("data", d);
+            } catch (JSONException ignored) {
+                return "组装注册信息失败";
+            }
+            String rr = HaApi.postAbsolute(this, hook, reg.toString(), 10000);
+            if (rr == null) {
+                // webhook 失效（HA 重装 / 集成重载）：重注册一次再发
+                HaCompanion.reset(this);
+                String err = HaCompanion.register(this);
+                if (err != null) return err;
+                hook = p.getString(HaCompanion.P_WEBHOOK, "");
+                rr = HaApi.postAbsolute(this, hook, reg.toString(), 10000);
+                if (rr == null) return "webhook 不可用";
+            }
+            if (!rr.replace(" ", "").contains("\"success\":true")) {
+                return "传感器注册被拒：" + brief(rr);
+            }
+            p.edit().putBoolean(P_DIAG_REG, true).apply();
+        }
+
+        // 2) 推状态 + 属性；若 HA 不收额外属性，退回只推状态
+        String r = sendDiagUpdate(hook, state, attrs);
+        if (r == null) return "已上报 sensor.icarplay_diagnostics";
+        String r2 = sendDiagUpdate(hook, state, null);
+        if (r2 == null) return "已上报 sensor.icarplay_diagnostics（HA 不接受属性，全文见车机报告）";
+        return r2;
+    }
+
+    /** 返回 null 表示成功，否则为错误文案。 */
+    private String sendDiagUpdate(String hook, String state, JSONObject attrs) {
+        JSONObject upd = new JSONObject();
+        try {
+            upd.put("type", "update_sensor_states");
+            JSONArray arr = new JSONArray();
+            JSONObject one = new JSONObject();
+            one.put("type", "sensor");
+            one.put("unique_id", DIAG_UID);
+            one.put("state", state);
+            if (attrs != null) one.put("attributes", attrs);
+            arr.put(one);
+            upd.put("data", arr);
+        } catch (JSONException ignored) {
+            return "组装状态失败";
+        }
+        String r = HaApi.postAbsolute(this, hook, upd.toString(), 10000);
+        if (r == null) return "webhook 上报失败";
+        if (r.contains("\"success\":false") || r.contains("\"success\": false")) {
+            return "状态被拒：" + brief(r);
+        }
+        return null;
+    }
+
+    /** 把 HA 的错误响应截成一行，便于在提示里看。 */
+    private static String brief(String body) {
+        if (body == null) return "";
+        String b = body.replace("\n", " ").trim();
+        return b.length() > 90 ? b.substring(0, 90) + "…" : b;
+    }
+
+    private String pushStates(String text, String state, JSONObject attrs) {
+        JSONObject payload = new JSONObject();
+        try {
+            payload.put("state", state);
+            payload.put("attributes", attrs);
+        } catch (JSONException ignored) {
+            return "组装状态失败";
+        }
+        HaApi.Resp resp = HaApi.send(this, "POST",
+                "/api/states/sensor.icarplay_diagnostics", payload.toString(), 8000);
+        if (resp.code >= 200 && resp.code < 300) return "已上报 sensor.icarplay_diagnostics";
+        if (resp.code == 0) return "连不上 HA，检查地址/网络";
+        if (resp.code == 401 || resp.code == 403) return "令牌无效或过期，请粘贴长期访问令牌";
+        return "上报失败 HTTP " + resp.code;
     }
 
     private void toast(String text) {
