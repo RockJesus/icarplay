@@ -94,7 +94,7 @@ public class MirrorActivity extends FitActivity {
                 PageUi.dp(this, 12), PageUi.dp(this, 6));
         top.setBackgroundColor(0xF80A0E18);
         top.addView(PageUi.header(this, "网页投屏", "手机浏览器打开地址 · 共享屏幕直连车机",
-                        IcarLauncherActivity.VERSION_LABEL),
+                        IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         LinearLayout tools = new LinearLayout(this);
@@ -112,8 +112,6 @@ public class MirrorActivity extends FitActivity {
                 PageUi.weight(this, 1f));
         tools.addView(barButton("重连", PageUi.CYAN, v -> web.reload()),
                 PageUi.weight(this, 0.8f));
-        tools.addView(barButton("← 返回主界面", PageUi.BLUE, v -> finish()),
-                PageUi.weight(this, 1.5f));
 
         root.addView(topBar, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,

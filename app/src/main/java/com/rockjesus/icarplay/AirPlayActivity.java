@@ -63,7 +63,7 @@ public class AirPlayActivity extends FitActivity {
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "AirPlay 接收", "iPhone / iPad 镜像与音频 · 同一局域网", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "AirPlay 接收", "iPhone / iPad 镜像与音频 · 同一局域网", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         LinearLayout statusCard = PageUi.card(this, PageUi.GREEN, 14, 9);
@@ -156,12 +156,6 @@ public class AirPlayActivity extends FitActivity {
         buttons.addView(start, lp);
         LinearLayout.LayoutParams lp2 = new LinearLayout.LayoutParams(0, PageUi.dp(this, 48), 1f);
         buttons.addView(stop, lp2);
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 44);
-        PageUi.margin(backLp, this, 0, 8, 0, 0);
-        root.addView(back, backLp);
 
         mirror = new MirrorOverlay(this, root);
         bindService(new Intent(this, AirPlayService.class), conn, Context.BIND_AUTO_CREATE);

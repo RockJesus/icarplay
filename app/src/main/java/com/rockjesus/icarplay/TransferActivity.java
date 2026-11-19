@@ -74,7 +74,7 @@ public class TransferActivity extends FitActivity {
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(shell);
 
-        shell.addView(PageUi.header(this, "无线传文件", "手机 ⇄ 车机互传 APK · 同一 Wi‑Fi / 热点 · 蓝牙兜底", IcarLauncherActivity.VERSION_LABEL),
+        shell.addView(PageUi.header(this, "无线传文件", "手机 ⇄ 车机互传 APK · 同一 Wi‑Fi / 热点 · 蓝牙兜底", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         LinearLayout body = new LinearLayout(this);
@@ -105,12 +105,6 @@ public class TransferActivity extends FitActivity {
         PageUi.margin(logLp, this, 0, 4, 0, 0);
         shell.addView(log, logLp);
         logText = log;
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 42);
-        PageUi.margin(backLp, this, 0, 6, 0, 0);
-        shell.addView(back, backLp);
 
         copyOwnApk();
         refresh();

@@ -114,7 +114,7 @@ public class NetworkCenterActivity extends FitActivity {
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "连接中心", "Wi‑Fi / 蓝牙 / USB / 热点 · 网络体检与自检", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "连接中心", "Wi‑Fi / 蓝牙 / USB / 热点 · 网络体检与自检", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         scroll = new ScrollView(this);
@@ -264,12 +264,6 @@ public class NetworkCenterActivity extends FitActivity {
                 9.5f, PageUi.MUTED, false);
         mdnsView.setPadding(0, PageUi.dp(this, 3), 0, 0);
         resultCard.addView(mdnsView, PageUi.matchWrap(this));
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 38);
-        PageUi.margin(backLp, this, 0, 6, 0, 0);
-        root.addView(back, backLp);
 
         refresh();
     }

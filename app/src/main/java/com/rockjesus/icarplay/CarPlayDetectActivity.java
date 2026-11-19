@@ -55,7 +55,7 @@ public class CarPlayDetectActivity extends FitActivity {
                 PageUi.dp(this, 16), PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "CarPlay 连接检测", "先检测车机能力，再发起连接 · 有线 USB / 无线 Wi‑Fi + 蓝牙", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "CarPlay 连接检测", "先检测车机能力，再发起连接 · 有线 USB / 无线 Wi‑Fi + 蓝牙", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         LinearLayout columns = new LinearLayout(this);
@@ -106,12 +106,6 @@ public class CarPlayDetectActivity extends FitActivity {
         LinearLayout.LayoutParams hintLp = PageUi.matchWrap(this);
         PageUi.margin(hintLp, this, 0, 6, 0, 0);
         root.addView(hint, hintLp);
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.matchWrap(this);
-        PageUi.margin(backLp, this, 0, 6, 0, 0);
-        root.addView(back, backLp);
 
         usbReceiver = new BroadcastReceiver() {
             @Override

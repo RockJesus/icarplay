@@ -48,7 +48,7 @@ public class LinkBoostActivity extends FitActivity {
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "连接补强", "没有外置路由器 · 无线 / 有线 / 适配器三条路", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "连接补强", "没有外置路由器 · 无线 / 有线 / 适配器三条路", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         ScrollView scroll = new ScrollView(this);
@@ -132,12 +132,6 @@ public class LinkBoostActivity extends FitActivity {
                             + "替代：安卓手机可用 DLNA 音频、或视频 App 自带投送；iPhone 用 AirPlay。\n"
                             + "如果你的车机以后刷到支持 Cast 的系统，这条才有意义。");
         });
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 42);
-        PageUi.margin(backLp, this, 0, 8, 0, 0);
-        root.addView(back, backLp);
 
         refresh();
     }

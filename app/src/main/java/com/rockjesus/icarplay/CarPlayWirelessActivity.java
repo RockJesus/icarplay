@@ -48,7 +48,7 @@ public class CarPlayWirelessActivity extends FitActivity {
                 PageUi.dp(this, 16), PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "无线 CarPlay 向导", "蓝牙配对，Wi‑Fi 传音视频 · 8.1 车机优先 iPhone 热点", IcarLauncherActivity.VERSION_LABEL), PageUi.matchWrap(this));
+        root.addView(PageUi.header(this, "无线 CarPlay 向导", "蓝牙配对，Wi‑Fi 传音视频 · 8.1 车机优先 iPhone 热点", IcarLauncherActivity.VERSION_LABEL, v -> finish()), PageUi.matchWrap(this));
 
         // 前置条件实测
         LinearLayout checkCard = PageUi.card(this, PageUi.GREEN, 12, 10);
@@ -147,12 +147,6 @@ public class CarPlayWirelessActivity extends FitActivity {
         PageUi.margin(hsLp, this, 6, 0, 0, 0);
         actions.addView(launch, PageUi.weight(this, 1.2f));
         actions.addView(hotspot, hsLp);
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.weight(this, 0.8f);
-        PageUi.margin(backLp, this, 8, 0, 0, 0);
-        actions.addView(back, backLp);
         root.addView(actions, actLp);
 
         refresh();

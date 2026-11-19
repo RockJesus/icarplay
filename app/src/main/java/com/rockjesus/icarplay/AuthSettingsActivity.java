@@ -33,7 +33,7 @@ public class AuthSettingsActivity extends FitActivity {
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "认证与连接设置", "认证后端 · 音频通道 · 网络模式", IcarLauncherActivity.VERSION_LABEL), PageUi.matchWrap(this));
+        root.addView(PageUi.header(this, "认证与连接设置", "认证后端 · 音频通道 · 网络模式", IcarLauncherActivity.VERSION_LABEL, v -> finish()), PageUi.matchWrap(this));
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.HORIZONTAL);
@@ -80,7 +80,6 @@ public class AuthSettingsActivity extends FitActivity {
             Toast.makeText(this, "已重置认证后端", Toast.LENGTH_SHORT).show();
             finish();
         }));
-        tools.addView(tool("返回主界面", PageUi.GREEN, v -> finish()));
     }
 
     private LinearLayout.LayoutParams columnLp() {

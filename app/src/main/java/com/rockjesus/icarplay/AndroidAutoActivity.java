@@ -107,7 +107,7 @@ public class AndroidAutoActivity extends FitActivity {
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "Android Auto 接收", "USB 有线 / 手机 Headunit Server 无线", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "Android Auto 接收", "USB 有线 / 手机 Headunit Server 无线", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         LinearLayout statusCard = PageUi.card(this, PageUi.GREEN, 14, 9);
@@ -168,12 +168,6 @@ public class AndroidAutoActivity extends FitActivity {
         LinearLayout.LayoutParams noteLp = PageUi.matchWrap(this);
         PageUi.margin(noteLp, this, 0, 6, 0, 0);
         root.addView(note, noteLp);
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 44);
-        PageUi.margin(backLp, this, 0, 8, 0, 0);
-        root.addView(back, backLp);
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_USB_PERMISSION);

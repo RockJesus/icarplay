@@ -361,6 +361,15 @@ public final class PageUi {
      * 二级页与首页共用同一套视觉，副标题并进页头可以省掉页内单独一行说明。
      */
     public static FrameLayout header(Context c, String title, String subtitle, String version) {
+        return header(c, title, subtitle, version, null);
+    }
+
+    /**
+     * 五参版本：传了 onBack 就把左侧图标徽章换成「←」返回键，整个应用所有二级页的
+     * 返回都固定在这一处（车机宽屏左上角不会被悬浮球挡住），页内不再重复放返回按钮。
+     */
+    public static FrameLayout header(Context c, String title, String subtitle, String version,
+                                     View.OnClickListener onBack) {
         FrameLayout header = new FrameLayout(c);
         boolean hasSub = subtitle != null && !subtitle.isEmpty();
         header.setMinimumHeight(dp(c, hasSub ? 40 : 32));
@@ -386,15 +395,25 @@ public final class PageUi {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
                 Gravity.CENTER));
 
-        ImageView icon = new ImageView(c);
-        icon.setImageResource(R.drawable.ic_carplay);
-        icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        int side = dp(c, 30);
-        icon.setPadding(dp(c, 5), dp(c, 5), dp(c, 5), dp(c, 5));
-        icon.setBackground(rounded(c, blend(CARD, PURPLE, 0.20f),
-                blend(PURPLE, CYAN, 0.50f), 9));
-        header.addView(icon, new FrameLayout.LayoutParams(side, side,
-                Gravity.START | Gravity.CENTER_VERTICAL));
+        if (onBack != null) {
+            TextView backBtn = text(c, "\u2190", 17f, BLUE, true);
+            backBtn.setGravity(Gravity.CENTER);
+            backBtn.setBackground(rounded(c, blend(CARD, BLUE, 0.18f),
+                    blend(BLUE, TEXT, 0.40f), 9));
+            backBtn.setOnClickListener(onBack);
+            header.addView(backBtn, new FrameLayout.LayoutParams(dp(c, 36), dp(c, 28),
+                    Gravity.START | Gravity.CENTER_VERTICAL));
+        } else {
+            ImageView icon = new ImageView(c);
+            icon.setImageResource(R.drawable.ic_carplay);
+            icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            int side = dp(c, 30);
+            icon.setPadding(dp(c, 5), dp(c, 5), dp(c, 5), dp(c, 5));
+            icon.setBackground(rounded(c, blend(CARD, PURPLE, 0.20f),
+                    blend(PURPLE, CYAN, 0.50f), 9));
+            header.addView(icon, new FrameLayout.LayoutParams(side, side,
+                    Gravity.START | Gravity.CENTER_VERTICAL));
+        }
 
         if (version != null && !version.isEmpty()) {
             TextView pill = text(c, version, 10f, CYAN, true);

@@ -40,7 +40,7 @@ public class CarPlayActivity extends FitActivity {
                 PageUi.dp(this, 16), PageUi.dp(this, 6));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "CarPlay 接收", "iPhone → 车机 · 有线 USB / 无线 Wi‑Fi", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "CarPlay 接收", "iPhone → 车机 · 有线 USB / 无线 Wi‑Fi", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         LinearLayout metrics = PageUi.card(this, PageUi.BLUE, 10, 9);
@@ -134,12 +134,6 @@ public class CarPlayActivity extends FitActivity {
         LinearLayout.LayoutParams noteLp = PageUi.matchWrap(this);
         PageUi.margin(noteLp, this, 0, 4, 0, 0);
         root.addView(note, noteLp);
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 44);
-        PageUi.margin(backLp, this, 0, 6, 0, 0);
-        root.addView(back, backLp);
     }
 
     private void launchDiPlay() {

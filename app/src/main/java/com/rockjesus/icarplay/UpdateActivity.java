@@ -62,17 +62,8 @@ public class UpdateActivity extends FitActivity {
         // 页头 + 一行返回：车机上底部栏可能被悬浮球或手势区挡住，返回必须永远点得到。
         shell.addView(PageUi.header(this, "版本更新",
                         "一键检查并安装新版本 · 来源 GitHub Releases · 校验 SHA-256 与签名",
-                        IcarLauncherActivity.VERSION_LABEL),
+                        IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
-
-        LinearLayout backRow = new LinearLayout(this);
-        backRow.setOrientation(LinearLayout.HORIZONTAL);
-        Button backTop = PageUi.button(this, "← 返回主界面", 10f, PageUi.BLUE);
-        backTop.setOnClickListener(v -> finish());
-        backRow.addView(backTop, PageUi.weight(this, 1));
-        LinearLayout.LayoutParams backRowLp = PageUi.matchWrap(this);
-        PageUi.margin(backRowLp, this, 0, 4, 0, 6);
-        shell.addView(backRow, backRowLp);
 
         LinearLayout main = buildMainCard();
         LinearLayout.LayoutParams mainLp = PageUi.matchWrap(this);
@@ -230,12 +221,6 @@ public class UpdateActivity extends FitActivity {
             }
         });
         box.addView(allow, PageUi.wrap(this));
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams blp = PageUi.wrap(this);
-        PageUi.margin(blp, this, 8, 0, 0, 0);
-        box.addView(back, blp);
         return box;
     }
 

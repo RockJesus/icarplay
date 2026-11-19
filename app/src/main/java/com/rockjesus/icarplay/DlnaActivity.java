@@ -84,7 +84,7 @@ public class DlnaActivity extends FitActivity {
         root.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
         setFitContentView(root);
 
-        root.addView(PageUi.header(this, "DLNA 投送接收", "安卓手机 / 电脑投音乐 · 视频 · 图片 · 同一局域网", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "DLNA 投送接收", "安卓手机 / 电脑投音乐 · 视频 · 图片 · 同一局域网", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         ScrollView scroll = new ScrollView(this);
@@ -210,12 +210,6 @@ public class DlnaActivity extends FitActivity {
         lp2.setMargins(0, 0, PageUi.dp(this, 7), 0);
         buttons.addView(stop, lp2);
         buttons.addView(copy, new LinearLayout.LayoutParams(0, PageUi.dp(this, 48), 1f));
-
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams backLp = PageUi.fixed(this, 42);
-        PageUi.margin(backLp, this, 0, 6, 0, 0);
-        root.addView(back, backLp);
 
         stageVideo.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override

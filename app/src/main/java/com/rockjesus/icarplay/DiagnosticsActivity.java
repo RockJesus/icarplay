@@ -132,7 +132,7 @@ public class DiagnosticsActivity extends FitActivity {
         root.setPadding(PageUi.dp(this, 18), PageUi.dp(this, 10),
                 PageUi.dp(this, 18), PageUi.dp(this, 8));
 
-        root.addView(PageUi.header(this, "设备诊断", IcarLauncherActivity.VERSION_LABEL),
+        root.addView(PageUi.header(this, "设备诊断", "扫描车机传感器与网络 · 一键上报 HA", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         summary = PageUi.text(this, "正在扫描车机…", 10.5f, PageUi.CYAN, false);
@@ -164,8 +164,6 @@ public class DiagnosticsActivity extends FitActivity {
         tools.addView(tool("保存报告", PageUi.GREEN, v -> saveReport()));
         tools.addView(tool("复制全文", PageUi.PURPLE, v -> copyReport()));
         tools.addView(tool("上报到 HA", PageUi.GOLD, v -> pushToHa()));
-        Button backTop = tool("← 返回", PageUi.BLUE, v -> finish());
-        tools.addView(backTop);
 
         setFitContentView(root);
         rescan();

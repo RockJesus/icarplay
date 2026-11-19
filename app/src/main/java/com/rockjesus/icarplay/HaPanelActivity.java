@@ -97,7 +97,7 @@ public class HaPanelActivity extends FitActivity {
         int pad = PageUi.dp(this, 18);
         shell.setPadding(pad, PageUi.dp(this, 10), pad, PageUi.dp(this, 8));
 
-        shell.addView(PageUi.header(this, "HA 面板", "内置 HA 客户端 · 不依赖官方 App · 面板在 HA 里自建", IcarLauncherActivity.VERSION_LABEL),
+        shell.addView(PageUi.header(this, "HA 面板", "内置 HA 客户端 · 不依赖官方 App · 面板在 HA 里自建", IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         // ---------- 地址 ----------
@@ -403,14 +403,6 @@ public class HaPanelActivity extends FitActivity {
         PageUi.margin(flp, this, 2, 10, 2, 0);
         shell.addView(foot, flp);
 
-        LinearLayout bottom = new LinearLayout(this);
-        bottom.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams blp = PageUi.matchWrap(this);
-        PageUi.margin(blp, this, 0, 10, 0, 0);
-        Button back = PageUi.back(this);
-        back.setOnClickListener(v -> finish());
-        bottom.addView(back, PageUi.weight(this, 1));
-        shell.addView(bottom, blp);
 
         setFitContentView(shell);
     }
@@ -526,7 +518,7 @@ public class HaPanelActivity extends FitActivity {
                 PageUi.dp(this, 12), PageUi.dp(this, 6));
         bar.setBackgroundColor(0xF80A0E18);
         bar.addView(PageUi.header(this, "HA 面板", "点屏幕唤回工具条 · 10 秒自动隐藏",
-                        IcarLauncherActivity.VERSION_LABEL),
+                        IcarLauncherActivity.VERSION_LABEL, v -> finish()),
                 PageUi.matchWrap(this));
 
         LinearLayout tools = new LinearLayout(this);
@@ -545,8 +537,6 @@ public class HaPanelActivity extends FitActivity {
         tools.addView(t2, PageUi.weight(this, 1f));
         TextView t3 = smallBarButton("设置", PageUi.GOLD, v -> showSetup());
         tools.addView(t3, PageUi.weight(this, 1f));
-        TextView t4 = smallBarButton("← 返回主界面", PageUi.BLUE, v -> finish());
-        tools.addView(t4, PageUi.weight(this, 1.6f));
 
         FrameLayout.LayoutParams barLp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
