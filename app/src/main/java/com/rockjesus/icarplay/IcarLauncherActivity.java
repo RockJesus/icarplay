@@ -43,7 +43,7 @@ import local.hicarlab.SafetyGuard;
  */
 public class IcarLauncherActivity extends FitActivity {
 
-    public static final String VERSION_LABEL = "v1.2.0";
+    public static final String VERSION_LABEL = "v1.3.0";
 
     private TextView versionPill;
     private TextView statusView;
@@ -78,6 +78,10 @@ public class IcarLauncherActivity extends FitActivity {
     private TextView carlifeState;
     private TextView autoState;
     private TextView hicarState;
+    private TextView haState;
+    /** HA 连通性探测结果（仅用于首页第六卡的状态胶囊）。 */
+    private boolean haReachable;
+    private long haPingedAt;
 
     private float uiScale = 1f;
 
@@ -301,13 +305,13 @@ public class IcarLauncherActivity extends FitActivity {
                 });
     }
 
-    /** 第六卡：Home Assistant。已装官方 App 显示绿色，否则提示内置面板可用。 */
+    /** 第六卡：Home Assistant。只看本机是否配好 HA（不检测官方 App，也不再依赖它）。 */
     private View cardHa() {
-        boolean official = HaApp.isInstalled(this);
-        return makeCard("Home Assistant", "面板 · 官方 App", PageUi.CYAN,
+        boolean configured = !HaApi.baseUrl(this).isEmpty();
+        return makeCard("Home Assistant", "面板 · 内置客户端", PageUi.CYAN,
                 R.drawable.ic_ui_ha, R.drawable.ic_ui_ha,
-                official ? "官方 App 已装" : "内置面板",
-                official ? PageUi.GREEN : PageUi.CYAN,
+                configured ? "连接中…" : "未配置",
+                configured ? PageUi.GOLD : PageUi.CYAN,
                 v -> startActivity(new Intent(this, HaPanelActivity.class)));
     }
 
@@ -392,6 +396,7 @@ public class IcarLauncherActivity extends FitActivity {
         else if ("CarLife+".equals(title)) carlifeState = state;
         else if ("Android Auto".equals(title)) autoState = state;
         else if ("Huawei HiCar".equals(title)) hicarState = state;
+        else if ("Home Assistant".equals(title)) haState = state;
 
         return card;
     }
@@ -644,6 +649,8 @@ public class IcarLauncherActivity extends FitActivity {
         setPill(hicarState, hicarRunning ? "运行中" : "待连接",
                 hicarRunning ? PageUi.GREEN : PageUi.GOLD);
 
+        refreshHaPill();
+
         floatButton.setText(running ? "悬浮按钮：关" : "悬浮按钮：开");
         floatButton.setTextColor(running ? PageUi.GREEN : PageUi.TEXT);
 
@@ -658,6 +665,32 @@ public class IcarLauncherActivity extends FitActivity {
             statusView.setClickable(false);
             statusView.setOnClickListener(null);
         }
+    }
+
+    /** 首页第六卡：未配置=青、探测中=金、连通=绿、连不上=金（提示未连上）。 */
+    private void refreshHaPill() {
+        if (haState == null) return;
+        if (HaApi.baseUrl(this).isEmpty()) {
+            setPill(haState, "未配置", PageUi.CYAN);
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - haPingedAt < 20_000) {
+            setPill(haState, haReachable ? "已连接" : "未连上",
+                    haReachable ? PageUi.GREEN : PageUi.GOLD);
+            return;
+        }
+        haPingedAt = now;
+        setPill(haState, "连接中…", PageUi.GOLD);
+        new Thread(() -> {
+            String body = HaApi.ping(this, 5000);
+            haReachable = body != null;
+            runOnUiThread(() -> {
+                if (isFinishing() || haState == null) return;
+                setPill(haState, haReachable ? "已连接" : "未连上",
+                        haReachable ? PageUi.GREEN : PageUi.GOLD);
+            });
+        }, "ha-home-ping").start();
     }
 
     private void chip(SpannableStringBuilder builder, String text, int color) {
@@ -787,3 +820,4 @@ public class IcarLauncherActivity extends FitActivity {
     }
 
 }
+

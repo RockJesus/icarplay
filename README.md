@@ -27,14 +27,19 @@
 
 ## Home Assistant
 
-首页第六卡「Home Assistant」，一条入口两种用法：
+首页第六卡「Home Assistant」，入口即内置 HA 客户端：**不需要另外安装官方伴侣应用**。
 
-| 用法 | 说明 |
+| 能力 | 说明 |
 |---|---|
-| **内置面板（默认）** | 走系统 WebView 打开 HA 前端：填一次地址、强制横屏、隐藏侧边栏（kiosk）、屏幕常亮，不申请任何系统权限（详见 [docs/HA-PANEL.md](docs/HA-PANEL.md)） |
-| **官方 App 桥接** | 已装官方伴侣应用（full 版 `io.homeassistant.companion.android` 或 minimal 版 `io.homeassistant.companion.android.minimal`）时，面板页顶部与设置页都能一键切过去；未装则给官方 Release 下载页，建议下 `app-minimal-release.apk`（无 Google 服务依赖，minSdk 24） |
+| **面板** | 用系统 WebView 直接渲染 HA 自己的 Lovelace 页面。面板由你在 HA 里自建，本应用不代画任何控件 |
+| **登录态** | 在面板里登录一次即可；本应用自动从页面 `localStorage.hassTokens` 取出长期令牌并保存 |
+| **令牌** | 也可以在 HA「个人资料 → 长期访问令牌」里创建后手工粘贴到设置页 |
+| **连通性** | 首页卡状态胶囊直连 `/api/` 探测：未配置 / 连接中 / 已连接 / 未连上 |
+| **面板路径** | 可指定默认落点（如 `/lovelace/car`），开机进面板直接落到你给车机做的那一页 |
+| **显示** | 横屏铺满、隐藏侧边栏（kiosk）、屏幕常亮、全屏沉浸 |
+| **证书** | 内网自签 HTTPS 可选「忽略证书错误」，默认严格校验 |
 
-车机没有 GMS，官方 App 的推送、定位、传感器上报是空的，能用的主要就是前端界面本身，所以**日常建议用内置面板**，官方 App 当作可选补充。本应用不内嵌、不打包官方 APK，也不申请安装类权限。
+不申请任何系统权限，也不内嵌、不打包、不引导安装任何第三方 APK；令牌只存在本机 preferences 里。
 
 ## 屏幕适配
 

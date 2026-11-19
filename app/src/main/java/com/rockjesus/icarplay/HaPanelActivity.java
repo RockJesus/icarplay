@@ -1,8 +1,8 @@
 package com.rockjesus.icarplay;
 
-import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.net.http.SslError;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,6 +11,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -23,33 +24,39 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * HA 面板：用系统 WebView 直接打开 Home Assistant 前端。
+ * HA 面板：用系统 WebView 打开 Home Assistant 前端（仪表盘由用户在 HA 里自建）。
  *
- * <p>车机是 Android 8.1、没有 GMS，官方 HA 伴侣应用的推送/定位/传感器都依赖 Google 服务，
- * 而 WebView 方案只吃网络和页面渲染，能把「车上控制家里」这件事先跑通。
- * 页面支持隐藏侧边栏（kiosk）、屏幕常亮、横屏铺满，地址存在本机 preferences 里。
+ * <p>不依赖官方伴侣应用，也不需要另外装任何 APK：登录一次后本应用会自己从
+ * {@code localStorage.hassTokens} 里取出长期令牌，之后用 {@link HaApi} 直接走
+ * {@code /api/}（连通性探测、服务调用），面板本身仍然渲染 HA 自己的 Lovelace 页面。
  */
 public class HaPanelActivity extends FitActivity {
 
-    private static final String PREF_URL = "ha_url";
-    private static final String PREF_KIOSK = "ha_kiosk";
+    /** 从 HA 前端 localStorage 里取长期令牌。 */
+    private static final String JS_READ_TOKEN =
+            "(function(){try{var raw=localStorage.getItem('hassTokens');"
+                    + "if(!raw)return '';var t=JSON.parse(raw);"
+                    + "return (t&&t.access_token)?t.access_token:'';}catch(e){return '';}})()";
 
     private SharedPreferences prefs;
     private WebView web;
     private final Handler ui = new Handler(Looper.getMainLooper());
 
+    /** 本次会话是否已经尝试过取令牌，避免每次翻页都执行。 */
+    private boolean tokenTried;
+    private boolean tokenToastShown;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        prefs = getSharedPreferences("icarplay", MODE_PRIVATE);
+        prefs = HaApi.prefs(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         immersive();
 
-        String url = prefs.getString(PREF_URL, "");
-        if (url == null || url.isEmpty()) {
+        if (HaApi.baseUrl(this).isEmpty()) {
             showSetup();
         } else {
-            showPanel(url);
+            showPanel();
         }
     }
 
@@ -65,10 +72,12 @@ public class HaPanelActivity extends FitActivity {
         }
     }
 
-    // ---------- 首次打开：填地址 ----------
+    // ---------- 设置页 ----------
 
     private void showSetup() {
         destroyWeb();
+        tokenTried = false;
+
         LinearLayout shell = new LinearLayout(this);
         shell.setOrientation(LinearLayout.VERTICAL);
         shell.setBackground(PageUi.background(this));
@@ -79,13 +88,14 @@ public class HaPanelActivity extends FitActivity {
                 PageUi.matchWrap(this));
 
         TextView sub = PageUi.text(this,
-                "用系统 WebView 打开 Home Assistant · 横屏铺满 · 屏幕常亮 · 不依赖 Google 服务",
+                "内置 HA 客户端 · 不依赖官方 App · 面板由你在 HA 里自建",
                 10.5f, PageUi.MUTED, false);
         sub.setGravity(Gravity.CENTER_HORIZONTAL);
         LinearLayout.LayoutParams subLp = PageUi.matchWrap(this);
         PageUi.margin(subLp, this, 0, 3, 0, 10);
         shell.addView(sub, subLp);
 
+        // ---------- 地址 ----------
         LinearLayout card = PageUi.card(this, PageUi.CYAN, 16, 14);
 
         LinearLayout labelRow = new LinearLayout(this);
@@ -93,29 +103,21 @@ public class HaPanelActivity extends FitActivity {
         labelRow.setGravity(Gravity.CENTER_VERTICAL);
         labelRow.addView(PageUi.text(this, "Home Assistant 地址", 11f, PageUi.CYAN, true));
         TextView kioskPill = PageUi.statusPill(this, "kiosk 隐藏侧边栏",
-                prefs.getBoolean(PREF_KIOSK, true) ? PageUi.GREEN : PageUi.MUTED);
+                prefs.getBoolean(HaApi.PREF_KIOSK, true) ? PageUi.GREEN : PageUi.MUTED);
         LinearLayout.LayoutParams klp = PageUi.wrap(this);
         PageUi.margin(klp, this, 10, 0, 0, 0);
         labelRow.addView(kioskPill, klp);
         card.addView(labelRow, PageUi.matchWrap(this));
 
-        EditText input = new EditText(this);
-        input.setText(prefs.getString(PREF_URL, ""));
-        input.setHint("http://192.168.x.x:8123");
-        input.setHintTextColor(PageUi.MUTED);
-        input.setTextColor(PageUi.TEXT);
-        input.setTextSize(14f);
-        input.setSingleLine(true);
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-        input.setBackground(PageUi.rounded(this, PageUi.CARD_ALT, PageUi.BORDER, 10));
-        input.setPadding(PageUi.dp(this, 10), PageUi.dp(this, 8),
-                PageUi.dp(this, 10), PageUi.dp(this, 8));
+        EditText input = edit(prefs.getString(HaApi.PREF_URL, ""),
+                "http://192.168.x.x:8123", InputType.TYPE_CLASS_TEXT
+                        | InputType.TYPE_TEXT_VARIATION_URI);
         LinearLayout.LayoutParams ilp = PageUi.matchWrap(this);
         PageUi.margin(ilp, this, 0, 8, 0, 0);
         card.addView(input, ilp);
 
         TextView tip = PageUi.text(this,
-                "地址要填完整的 http:// 或 https:// 前缀；同一 Wi‑Fi 下可直接用车机浏览器访问该地址自测。",
+                "地址要填完整的 http:// 或 https:// 前缀；同一 Wi‑Fi 下可直接用手机浏览器访问该地址自测。",
                 9.5f, PageUi.MUTED, false);
         LinearLayout.LayoutParams tlp = PageUi.matchWrap(this);
         PageUi.margin(tlp, this, 0, 8, 0, 0);
@@ -128,81 +130,147 @@ public class HaPanelActivity extends FitActivity {
 
         Button save = PageUi.button(this, "保存并打开", 12f, PageUi.GREEN);
         save.setOnClickListener(v -> {
-            String url = normalize(input.getText().toString());
+            String url = HaApi.normalize(input.getText().toString());
             if (url == null) {
                 toast("地址不合法，要 http:// 或 https:// 开头");
                 return;
             }
-            prefs.edit().putString(PREF_URL, url).apply();
-            showPanel(url);
+            prefs.edit().putString(HaApi.PREF_URL, HaApi.stripTrailingSlash(url)).apply();
+            showPanel();
         });
-        btnRow.addView(save, PageUi.weight(this, 1.4f));
+        btnRow.addView(save, PageUi.weight(this, 1.2f));
 
-        Button kioskBtn = PageUi.button(this, "切换 kiosk", 11f, PageUi.CYAN);
+        Button test = PageUi.button(this, "测试连接", 11.5f, PageUi.CYAN);
+        bindTestButton(test, input);
+        LinearLayout.LayoutParams tlp2 = PageUi.weight(this, 1);
+        PageUi.margin(tlp2, this, 8, 0, 0, 0);
+        btnRow.addView(test, tlp2);
+        card.addView(btnRow, rowLp);
+
+        LinearLayout btnRow2 = new LinearLayout(this);
+        btnRow2.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams rowLp2 = PageUi.matchWrap(this);
+        PageUi.margin(rowLp2, this, 0, 10, 0, 0);
+
+        Button kioskBtn = PageUi.button(this, "切换 kiosk", 11f, PageUi.PURPLE);
         kioskBtn.setOnClickListener(v -> {
-            boolean now = !prefs.getBoolean(PREF_KIOSK, true);
-            prefs.edit().putBoolean(PREF_KIOSK, now).apply();
+            boolean now = !prefs.getBoolean(HaApi.PREF_KIOSK, true);
+            prefs.edit().putBoolean(HaApi.PREF_KIOSK, now).apply();
             kioskPill.setText(now ? "kiosk 隐藏侧边栏" : "kiosk 关闭");
             kioskPill.setTextColor(now ? PageUi.GREEN : PageUi.MUTED);
             toast(now ? "下次打开将隐藏侧边栏" : "下次打开显示侧边栏");
         });
-        LinearLayout.LayoutParams klp2 = PageUi.weight(this, 1);
-        PageUi.margin(klp2, this, 8, 0, 0, 0);
-        btnRow.addView(kioskBtn, klp2);
-        card.addView(btnRow, rowLp);
+        btnRow2.addView(kioskBtn, PageUi.weight(this, 1));
+
+        Button insecureBtn = PageUi.button(this,
+                prefs.getBoolean(HaApi.PREF_INSECURE, false) ? "证书错误：忽略" : "证书：严格校验",
+                11f, PageUi.GOLD);
+        insecureBtn.setOnClickListener(v -> {
+            boolean now = !prefs.getBoolean(HaApi.PREF_INSECURE, false);
+            prefs.edit().putBoolean(HaApi.PREF_INSECURE, now).apply();
+            insecureBtn.setText(now ? "证书错误：忽略" : "证书：严格校验");
+            insecureBtn.setTextColor(now ? PageUi.GOLD : PageUi.MUTED);
+            toast(now ? "已允许忽略证书错误（仅建议内网自签 HA 使用）"
+                    : "已恢复严格证书校验");
+        });
+        LinearLayout.LayoutParams ilp2 = PageUi.weight(this, 1);
+        PageUi.margin(ilp2, this, 8, 0, 0, 0);
+        btnRow2.addView(insecureBtn, ilp2);
+        card.addView(btnRow2, rowLp2);
 
         shell.addView(card, PageUi.matchWrap(this));
 
-        // ---------- 官方 App 桥接（可选，不影响内置面板） ----------
-        boolean appInstalled = HaApp.isInstalled(this);
-        String appVersion = HaApp.versionLabel(this);
+        // ---------- 令牌 ----------
+        LinearLayout tokenCard = PageUi.card(this, PageUi.PURPLE, 14, 12);
+        LinearLayout.LayoutParams tokenLp = PageUi.matchWrap(this);
+        PageUi.margin(tokenLp, this, 0, 10, 0, 0);
 
-        LinearLayout appCard = PageUi.card(this, PageUi.PURPLE, 14, 12);
-        LinearLayout.LayoutParams appLp = PageUi.matchWrap(this);
-        PageUi.margin(appLp, this, 0, 10, 0, 0);
+        LinearLayout tokenRow = new LinearLayout(this);
+        tokenRow.setOrientation(LinearLayout.HORIZONTAL);
+        tokenRow.setGravity(Gravity.CENTER_VERTICAL);
+        tokenRow.addView(PageUi.text(this, "访问令牌", 11f, PageUi.PURPLE, true));
+        String tokenNow = HaApi.token(this);
+        TextView tokenPill = PageUi.statusPill(this,
+                tokenNow.isEmpty() ? "未取到" : "已就绪",
+                tokenNow.isEmpty() ? PageUi.MUTED : PageUi.GREEN);
+        LinearLayout.LayoutParams tklp = PageUi.wrap(this);
+        PageUi.margin(tklp, this, 10, 0, 0, 0);
+        tokenRow.addView(tokenPill, tklp);
+        tokenCard.addView(tokenRow, PageUi.matchWrap(this));
 
-        LinearLayout appRow = new LinearLayout(this);
-        appRow.setOrientation(LinearLayout.HORIZONTAL);
-        appRow.setGravity(Gravity.CENTER_VERTICAL);
-        appRow.addView(PageUi.text(this, "官方 HA App（可选）", 11f, PageUi.PURPLE, true));
-        TextView appPill = PageUi.statusPill(this,
-                appInstalled ? ("已装 " + appVersion) : "未安装",
-                appInstalled ? PageUi.GREEN : PageUi.MUTED);
-        LinearLayout.LayoutParams aplp = PageUi.wrap(this);
-        PageUi.margin(aplp, this, 10, 0, 0, 0);
-        appRow.addView(appPill, aplp);
-        appCard.addView(appRow, PageUi.matchWrap(this));
+        EditText tokenInput = edit(tokenNow, "粘贴长期令牌（可选）",
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        tokenInput.setSingleLine(true);
+        LinearLayout.LayoutParams tilp = PageUi.matchWrap(this);
+        PageUi.margin(tilp, this, 0, 8, 0, 0);
+        tokenCard.addView(tokenInput, tilp);
 
-        TextView appTip = PageUi.text(this,
-                appInstalled
-                        ? "已检测到官方伴侣应用，可直接切过去；车载仪表盘仍建议用上面的内置面板。"
-                        : "车机没装官方 App 时，内置面板已能完整使用。要装官方 App 就下载 app-minimal-release.apk"
-                        + "（无 Google 服务依赖，minSdk 24，与本车机兼容）。",
+        TextView tokenTip = PageUi.text(this,
+                "进面板后登录一次，本应用会自动从页面里取到令牌，无需手工粘贴；"
+                        + "也可以自己在 HA「个人资料 → 长期访问令牌」里创建后贴在这里。",
                 9.5f, PageUi.MUTED, false);
-        LinearLayout.LayoutParams atlp = PageUi.matchWrap(this);
-        PageUi.margin(atlp, this, 0, 8, 0, 0);
-        appCard.addView(appTip, atlp);
+        LinearLayout.LayoutParams ttlp = PageUi.matchWrap(this);
+        PageUi.margin(ttlp, this, 0, 8, 0, 0);
+        tokenCard.addView(tokenTip, ttlp);
 
-        LinearLayout appBtnRow = new LinearLayout(this);
-        appBtnRow.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams abLp = PageUi.matchWrap(this);
-        PageUi.margin(abLp, this, 0, 10, 0, 0);
+        Button saveToken = PageUi.button(this, "保存令牌", 11f, PageUi.PURPLE);
+        saveToken.setOnClickListener(v -> {
+            String t = tokenInput.getText().toString().trim();
+            if (t.isEmpty()) {
+                toast("令牌为空；留空则等面板登录后自动获取");
+                return;
+            }
+            HaApi.saveToken(this, t);
+            tokenPill.setText("已就绪");
+            tokenPill.setTextColor(PageUi.GREEN);
+            toast("令牌已保存");
+        });
+        LinearLayout.LayoutParams stlp = PageUi.matchWrap(this);
+        PageUi.margin(stlp, this, 0, 10, 0, 0);
+        tokenCard.addView(saveToken, stlp);
 
-        Button openApp = PageUi.button(this, "启动官方 App", 11.5f, PageUi.PURPLE);
-        openApp.setOnClickListener(v -> launchOfficialApp());
-        appBtnRow.addView(openApp, PageUi.weight(this, 1));
+        shell.addView(tokenCard, tokenLp);
 
-        Button getApp = PageUi.button(this, "下载官方 APK", 11.5f, PageUi.CYAN);
-        getApp.setOnClickListener(v -> openOfficialDownload());
-        LinearLayout.LayoutParams galp = PageUi.weight(this, 1);
-        PageUi.margin(galp, this, 8, 0, 0, 0);
-        appBtnRow.addView(getApp, galp);
-        appCard.addView(appBtnRow, abLp);
+        // ---------- 路径 ----------
+        LinearLayout pathCard = PageUi.card(this, PageUi.GOLD, 14, 12);
+        LinearLayout.LayoutParams pathLp = PageUi.matchWrap(this);
+        PageUi.margin(pathLp, this, 0, 10, 0, 0);
+        pathCard.addView(PageUi.text(this, "默认面板路径（可选）", 11f, PageUi.GOLD, true),
+                PageUi.matchWrap(this));
 
-        shell.addView(appCard, appLp);
+        EditText pathInput = edit(HaApi.panelPath(this), "/lovelace/car",
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        LinearLayout.LayoutParams pllp = PageUi.matchWrap(this);
+        PageUi.margin(pllp, this, 0, 8, 0, 0);
+        pathCard.addView(pathInput, pllp);
+
+        TextView pathTip = PageUi.text(this,
+                "填你在 HA 里给车机做的那块 dashboard 的路径，打开就直接落到它；留空进默认首页。",
+                9.5f, PageUi.MUTED, false);
+        LinearLayout.LayoutParams ptlp = PageUi.matchWrap(this);
+        PageUi.margin(ptlp, this, 0, 8, 0, 0);
+        pathCard.addView(pathTip, ptlp);
+
+        Button savePath = PageUi.button(this, "保存路径", 11f, PageUi.GOLD);
+        savePath.setOnClickListener(v -> {
+            String raw = pathInput.getText().toString().trim();
+            if (raw.isEmpty()) {
+                prefs.edit().remove(HaApi.PREF_PATH).apply();
+                toast("已清空路径，下次打开进默认首页");
+                return;
+            }
+            String clean = raw.startsWith("/") ? raw : "/" + raw;
+            prefs.edit().putString(HaApi.PREF_PATH, clean).apply();
+            toast("已保存：打开面板直接进 " + clean);
+        });
+        LinearLayout.LayoutParams svlp = PageUi.matchWrap(this);
+        PageUi.margin(svlp, this, 0, 10, 0, 0);
+        pathCard.addView(savePath, svlp);
+
+        shell.addView(pathCard, pathLp);
 
         TextView foot = PageUi.text(this,
-                "建议先在 HA 里给车机单独做一个宽屏 dashboard，横屏 8:3 才排得好看。",
+                "面板本身由 HA 自己的 Lovelace 渲染；本应用只负责登录态、连通性与全屏显示。",
                 9.5f, PageUi.MUTED, false);
         LinearLayout.LayoutParams flp = PageUi.matchWrap(this);
         PageUi.margin(flp, this, 2, 10, 2, 0);
@@ -220,10 +288,56 @@ public class HaPanelActivity extends FitActivity {
         setFitContentView(shell);
     }
 
-    // ---------- 已配置：直接进面板 ----------
+    /** 供「测试连接」按钮复用：点一下 → 后台 ping → toast 结果。 */
+    private void bindTestButton(Button test, EditText input) {
+        test.setOnClickListener(v -> {
+            String url = HaApi.normalize(input.getText().toString());
+            if (url == null) {
+                toast("地址不合法，要 http:// 或 https:// 开头");
+                return;
+            }
+            prefs.edit().putString(HaApi.PREF_URL, HaApi.stripTrailingSlash(url)).apply();
+            test.setEnabled(false);
+            test.setText("测试中…");
+            new Thread(() -> {
+                String body = HaApi.ping(this, 6000);
+                runOnUiThread(() -> {
+                    test.setText("测试连接");
+                    test.setEnabled(true);
+                    if (body != null) {
+                        toast(HaApi.token(this).isEmpty()
+                                ? "连接成功（尚未取到令牌，进去登录一次即可）"
+                                : "连接成功（令牌已就绪）");
+                    } else {
+                        toast("连接失败：检查地址、Wi-Fi，或把「忽略证书错误」打开（自签 HTTPS）");
+                    }
+                });
+            }, "ha-ping").start();
+        });
+    }
 
-    private void showPanel(String url) {
+    private EditText edit(String value, String hint, int inputType) {
+        EditText e = new EditText(this);
+        e.setText(value == null ? "" : value);
+        e.setHint(hint);
+        e.setHintTextColor(PageUi.MUTED);
+        e.setTextColor(PageUi.TEXT);
+        e.setTextSize(14f);
+        e.setSingleLine(true);
+        e.setInputType(inputType);
+        e.setBackground(PageUi.rounded(this, PageUi.CARD_ALT, PageUi.BORDER, 10));
+        e.setPadding(PageUi.dp(this, 10), PageUi.dp(this, 8),
+                PageUi.dp(this, 10), PageUi.dp(this, 8));
+        return e;
+    }
+
+    // ---------- 面板 ----------
+
+    private void showPanel() {
         destroyWeb();
+        tokenTried = false;
+        tokenToastShown = false;
+
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
         setContentView(root);
@@ -250,11 +364,27 @@ public class HaPanelActivity extends FitActivity {
                                         String failingUrl) {
                 toast("面板打不开：" + description + "，检查地址与 Wi‑Fi");
             }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                if (prefs.getBoolean(HaApi.PREF_INSECURE, false)) {
+                    handler.proceed();
+                } else {
+                    handler.cancel();
+                    toast("HTTPS 证书校验失败；内网自签可在设置里打开「忽略证书错误」");
+                }
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                maybeHarvestToken(view);
+            }
         });
         root.addView(web, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        // 顶部细工具条：返回 / 刷新 / 设置
+        // 顶部细工具条：刷新 / 首页 / 设置 / 返回
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
@@ -268,10 +398,7 @@ public class HaPanelActivity extends FitActivity {
         bar.addView(smallBarButton("刷新", PageUi.CYAN, v -> {
             if (web != null) web.reload();
         }));
-        bar.addView(smallBarButton("首页", PageUi.GREEN, v -> {
-            if (web != null) web.loadUrl(targetUrl(prefs.getString(PREF_URL, "")));
-        }));
-        bar.addView(smallBarButton("官方 App", PageUi.PURPLE, v -> launchOfficialApp()));
+        bar.addView(smallBarButton("首页", PageUi.GREEN, v -> loadPanel()));
         bar.addView(smallBarButton("设置", PageUi.GOLD, v -> showSetup()));
         bar.addView(smallBarButton("返回", PageUi.RED, v -> finish()));
 
@@ -279,7 +406,47 @@ public class HaPanelActivity extends FitActivity {
                 ViewGroup.LayoutParams.MATCH_PARENT, PageUi.dp(this, 40), Gravity.TOP);
         root.addView(bar, barLp);
 
-        web.loadUrl(targetUrl(url));
+        loadPanel();
+    }
+
+    private void loadPanel() {
+        if (web == null) return;
+        String url = HaApi.panelUrl(this);
+        web.loadUrl(url.isEmpty() ? "about:blank" : url);
+    }
+
+    /**
+     * 面板加载完成后尝试从 localStorage 里取出 long-lived token。
+     * 只取一次：取到了以后，REST 请求和后续面板复用都不再需要重新登录。
+     */
+    private void maybeHarvestToken(WebView view) {
+        if (tokenTried) return;
+        tokenTried = true;
+        try {
+            view.evaluateJavascript(JS_READ_TOKEN, value -> {
+                String token = unwrapJsString(value);
+                if (token != null && !token.isEmpty()
+                        && !token.equals(HaApi.token(HaPanelActivity.this))) {
+                    HaApi.saveToken(HaPanelActivity.this, token);
+                    if (!tokenToastShown) {
+                        tokenToastShown = true;
+                        toast("已自动取到 HA 令牌");
+                    }
+                }
+            });
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** 把 evaluateJavascript 返回的 JSON 字符串（形如 "abc"）还原成明文。 */
+    private String unwrapJsString(String raw) {
+        if (raw == null) return "";
+        String s = raw.trim();
+        if (s.isEmpty() || "null".equals(s)) return "";
+        if (s.length() >= 2 && s.startsWith("\"") && s.endsWith("\"")) {
+            s = s.substring(1, s.length() - 1);
+        }
+        return s.replace("\\\"", "\"").replace("\\\\", "\\");
     }
 
     private TextView smallBarButton(String label, int accent, View.OnClickListener onClick) {
@@ -296,39 +463,6 @@ public class HaPanelActivity extends FitActivity {
         return b;
     }
 
-    /** 加 kiosk 参数隐藏 HA 侧边栏。 */
-    private String targetUrl(String raw) {
-        if (raw == null || raw.isEmpty()) return "about:blank";
-        if (!prefs.getBoolean(PREF_KIOSK, true)) return raw;
-        if (raw.contains("kiosk")) return raw;
-        int hash = raw.indexOf('#');
-        String base = hash >= 0 ? raw.substring(0, hash) : raw;
-        String tail = hash >= 0 ? raw.substring(hash) : "";
-        return base + (base.contains("?") ? "&" : "?") + "kiosk" + tail;
-    }
-
-    /** 拉起官方 HA App；未安装时给出去哪里装。 */
-    private void launchOfficialApp() {
-        if (HaApp.open(this)) {
-            toast("已切到官方 HA App");
-            return;
-        }
-        if (!HaApp.isInstalled(this)) {
-            toast("未安装官方 App；点「设置 → 下载官方 APK」先装它");
-        } else {
-            toast("官方 App 启动失败，请在车机应用列表里手动打开一次");
-        }
-    }
-
-    /** 打开官方 APK 的下载页；车机无浏览器时把地址提示出来。 */
-    private void openOfficialDownload() {
-        if (HaApp.openDownloadPage(this)) {
-            toast("已在浏览器打开官方 Release 页，下载 app-minimal-release.apk");
-        } else {
-            toast("车机没有可用浏览器，请用手机访问：\n" + HaApp.DOWNLOAD_PAGE);
-        }
-    }
-
     private void destroyWeb() {
         try {
             if (web != null) {
@@ -340,21 +474,6 @@ public class HaPanelActivity extends FitActivity {
         } catch (Throwable ignored) {
         }
         web = null;
-    }
-
-    private String normalize(String raw) {
-        if (raw == null) return null;
-        String s = raw.trim();
-        if (s.isEmpty()) return null;
-        if (!s.startsWith("http://") && !s.startsWith("https://")) {
-            s = "http://" + s;
-        }
-        try {
-            new java.net.URL(s);
-        } catch (Throwable e) {
-            return null;
-        }
-        return s;
     }
 
     @Override
